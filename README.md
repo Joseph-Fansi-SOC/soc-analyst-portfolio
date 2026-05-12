@@ -11,3 +11,9 @@ I'm actively building hands-on skills through:
 
 This portfolio documents my learning journey.
 Best Regards and Happy SOC day
+
+## My SOC Project (March 2026)
+A hands-on SOC investigation report — see My-SOC_Project_March_2026.docx above.
+
+## Connect with me
+[LinkedIn](https://www.linkedin.com/in/joseph-fansi)
