@@ -1,4 +1,4 @@
-# soc-analyst-portfolio
+# SOC-analyst-portfolio
 ## Hi, I'm Dr. Joseph Fansi
 Aspiring SOC Analyst (L1)
 
@@ -10,3 +10,4 @@ I'm actively building hands-on skills through:
 - Home lab with Splunk, Wazuh and Wireshark
 
 This portfolio documents my learning journey.
+Best Regards and Happy SOC day
