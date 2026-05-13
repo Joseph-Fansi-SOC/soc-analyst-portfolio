@@ -7,14 +7,16 @@ Aspiring SOC Analyst (L1) actively building hands-on defensive security skills.
 ## Certifications
 
 ### Professional
-- CompTIA Security+
-- ITIL v4
+- Scrum Master (2021)
+- Google Project Manager (2024)
+- ITIL v4 (2025)
+- CompTIA Security+ (2025)
 
 ### TryHackMe (practical, hands-on)
-- SOC Level 1 — THM-EBBKII5I2C
-- Cyber Security 101 — THM-56USFRQG9K
-- Advent of Cyber 2025 — THM-4TQYJBCJUT
 - Pre-Security — THM-IWVZUPO3EH
+- Cyber Security 101 — THM-56USFRQG9K
+- SOC Level 1 — THM-EBBKII5I2C
+- Advent of Cyber 2025 — THM-4TQYJBCJUT
 
 ---
 
@@ -26,7 +28,7 @@ Aspiring SOC Analyst (L1) actively building hands-on defensive security skills.
 ---
 
 ## Home lab
-Built a personal SOC environment with Splunk, Wazuh and Wireshark.
+Built a personal SOC environment with Splunk, Wazuh and Wireshark and AI for SOC analyst
 Used to investigate real security cases for friends and family.
 
 ---
