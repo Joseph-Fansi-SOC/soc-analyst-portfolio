@@ -13,6 +13,8 @@ Aspiring SOC Analyst (L1) actively building hands-on defensive security skills.
 - CompTIA Security+ (2025)
 
 ### TryHackMe (practical, hands-on)
+Started after CompTIA Security+ — November 2025
+
 - Pre-Security — THM-IWVZUPO3EH
 - Cyber Security 101 — THM-56USFRQG9K
 - SOC Level 1 — THM-EBBKII5I2C
