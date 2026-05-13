@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sysmon Filter Cheat Sheet</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --border: #252a38;
+    --border2: #2e3447;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --accent-blue: #4f8ef7;
+    --accent-cyan: #22d3ee;
+    --accent-green: #4ade80;
+    --accent-amber: #fbbf24;
+    --accent-red: #f87171;
+    --accent-purple: #a78bfa;
+    --accent-pink: #f472b6;
+    --accent-orange: #fb923c;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Grid noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,142,247,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,142,247,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 3rem 2rem 4rem;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .header-left {}
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 1px;
+    background: var(--accent-cyan);
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  h1 span {
+    color: var(--accent-blue);
+  }
+
+  .subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 1rem;
+    max-width: 480px;
+    line-height: 1.6;
+  }
+
+  .version-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(79,142,247,0.12);
+    border: 1px solid rgba(79,142,247,0.25);
+    color: var(--accent-blue);
+    padding: 4px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    align-self: flex-start;
+    margin-top: 8px;
+  }
+
+  /* Search */
+  .search-wrap {
+    margin-bottom: 2.5rem;
+    position: relative;
+  }
+
+  .search-wrap input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 12px 16px 12px 44px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-wrap input::placeholder { color: var(--muted); }
+  .search-wrap input:focus { border-color: var(--accent-blue); }
+
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 16px;
+    pointer-events: none;
+    font-family: monospace;
+  }
+
+  /* Filter tabs */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+  }
+
+  .tab {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .tab:hover { border-color: var(--accent-blue); color: var(--accent-blue); }
+  .tab.active { background: rgba(79,142,247,0.15); border-color: var(--accent-blue); color: var(--accent-blue); }
+
+  /* Section */
+  .section {
+    margin-bottom: 3rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .section-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-left: auto;
+  }
+
+  /* Table */
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+  }
+
+  thead tr {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border2);
+  }
+
+  th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 16px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 16px;
+    font-size: 13px;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.5;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody tr {
+    background: transparent;
+    transition: background 0.1s;
+  }
+
+  tbody tr:hover { background: var(--surface2); }
+
+  tbody tr.hidden { display: none; }
+
+  /* Cells */
+  .field-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    white-space: nowrap;
+  }
+
+  .field-type {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .desc { color: var(--muted); font-size: 12px; }
+
+  .example-wrap {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-green);
+    background: rgba(74,222,128,0.06);
+    border: 1px solid rgba(74,222,128,0.15);
+    border-radius: 4px;
+    padding: 4px 8px;
+    display: inline-block;
+    line-height: 1.6;
+    word-break: break-all;
+  }
+
+  /* Condition badge */
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    white-space: nowrap;
+    display: inline-block;
+    font-weight: 500;
+  }
+
+  .badge-is          { background: rgba(79,142,247,0.15); color: var(--accent-blue); border: 1px solid rgba(79,142,247,0.25); }
+  .badge-contains    { background: rgba(34,211,238,0.12); color: var(--accent-cyan); border: 1px solid rgba(34,211,238,0.2); }
+  .badge-begins      { background: rgba(167,139,250,0.12); color: var(--accent-purple); border: 1px solid rgba(167,139,250,0.2); }
+  .badge-ends        { background: rgba(244,114,182,0.12); color: var(--accent-pink); border: 1px solid rgba(244,114,182,0.2); }
+  .badge-image       { background: rgba(251,191,36,0.12); color: var(--accent-amber); border: 1px solid rgba(251,191,36,0.2); }
+  .badge-regex       { background: rgba(248,113,113,0.12); color: var(--accent-red); border: 1px solid rgba(248,113,113,0.2); }
+  .badge-lt          { background: rgba(74,222,128,0.1); color: var(--accent-green); border: 1px solid rgba(74,222,128,0.2); }
+
+  /* Conditions table */
+  .cond-op { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--accent-amber); font-weight: 700; }
+
+  /* Quick ref panel */
+  .quickref-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 3rem;
+  }
+
+  .qcard {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+  }
+
+  .qcard-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .qcard code {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.9;
+    color: var(--text);
+  }
+
+  .qcard code .kw { color: var(--accent-blue); }
+  .qcard code .attr { color: var(--accent-cyan); }
+  .qcard code .val { color: var(--accent-green); }
+  .qcard code .op { color: var(--accent-amber); }
+  .qcard code .comment { color: var(--muted); }
+
+  /* XML block */
+  .xml-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent-blue);
+    border-radius: 0 8px 8px 0;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 3rem;
+    overflow-x: auto;
+  }
+
+  .xml-block code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 2;
+    white-space: pre;
+    display: block;
+    color: var(--text);
+  }
+
+  .xml-block .kw  { color: #7dd3fc; }
+  .xml-block .attr{ color: var(--accent-cyan); }
+  .xml-block .val { color: var(--accent-green); }
+  .xml-block .cm  { color: var(--muted); }
+
+  .no-results {
+    text-align: center;
+    padding: 3rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    display: none;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  footer p {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  footer a { color: var(--accent-blue); text-decoration: none; }
+
+  @media (max-width: 600px) {
+    .page { padding: 1.5rem 1rem; }
+    h1 { font-size: 2rem; }
+  }
+
+  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+  .section { animation: fadeIn 0.3s ease both; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="header-left">
+      <div class="eyebrow">Reference Guide</div>
+      <h1>Sysmon<br><span>Filter Cheat Sheet</span></h1>
+      <p class="subtitle">Complete reference for all Sysmon event IDs, filterable fields, conditions, and XML rule syntax.</p>
+    </div>
+    <div class="version-badge">Sysmon v15.x compatible</div>
+  </header>
+
+  <!-- Quick Ref -->
+  <div class="quickref-grid">
+    <div class="qcard">
+      <div class="qcard-title">Rule structure</div>
+      <code>
+<span class="kw">&lt;RuleGroup</span> <span class="attr">name</span>=<span class="val">""</span> <span class="attr">groupRelation</span>=<span class="val">"or"</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;EventFiltering&gt;</span>
+    <span class="kw">&lt;ProcessCreate</span> <span class="attr">onmatch</span>=<span class="val">"include"</span><span class="kw">&gt;</span>
+      <span class="kw">&lt;Image</span> <span class="attr">condition</span>=<span class="val">"end with"</span><span class="kw">&gt;</span>powershell.exe<span class="kw">&lt;/Image&gt;</span>
+    <span class="kw">&lt;/ProcessCreate&gt;</span>
+  <span class="kw">&lt;/EventFiltering&gt;</span>
+<span class="kw">&lt;/RuleGroup&gt;</span>
+      </code>
+    </div>
+    <div class="qcard">
+      <div class="qcard-title">onmatch values</div>
+      <code>
+<span class="op">include</span>  <span class="comment">→ log if rule matches</span>
+<span class="op">exclude</span>  <span class="comment">→ suppress if rule matches</span>
+
+<span class="comment">; Default behavior when no rule matches:</span>
+<span class="comment">; include → event is excluded (not logged)</span>
+<span class="comment">; exclude → event is included (logged)</span>
+      </code>
+    </div>
+    <div class="qcard">
+      <div class="qcard-title">groupRelation</div>
+      <code>
+<span class="op">or</span>   <span class="comment">→ match if ANY field matches</span>
+<span class="op">and</span>  <span class="comment">→ match if ALL fields match</span>
+
+<span class="comment">; Applied per EventFilter block</span>
+<span class="comment">; Multiple rules → logical OR between</span>
+<span class="comment">; rule groups by default</span>
+      </code>
+    </div>
+    <div class="qcard">
+      <div class="qcard-title">CLI commands</div>
+      <code>
+<span class="comment"># Install with config</span>
+<span class="op">sysmon</span> -i config.xml -accepteula
+
+<span class="comment"># Update config</span>
+<span class="op">sysmon</span> -c config.xml
+
+<span class="comment"># Uninstall</span>
+<span class="op">sysmon</span> -u
+
+<span class="comment"># Show schema</span>
+<span class="op">sysmon</span> -s
+      </code>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input type="text" id="search" placeholder="Search event, field, condition…" oninput="doSearch()">
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs">
+    <button class="tab active" onclick="filterTab('all', this)">All Events</button>
+    <button class="tab" onclick="filterTab('process', this)">Process</button>
+    <button class="tab" onclick="filterTab('network', this)">Network</button>
+    <button class="tab" onclick="filterTab('file', this)">File</button>
+    <button class="tab" onclick="filterTab('registry', this)">Registry</button>
+    <button class="tab" onclick="filterTab('driver', this)">Driver / Image</button>
+    <button class="tab" onclick="filterTab('wmi', this)">WMI</button>
+    <button class="tab" onclick="filterTab('dns', this)">DNS</button>
+    <button class="tab" onclick="filterTab('pipe', this)">Pipe / Clip</button>
+  </div>
+
+  <div id="no-results" class="no-results">No matching events or fields found.</div>
+
+  <!-- ===== CONDITIONS ===== -->
+  <div class="section" data-category="all">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-amber)"></div>
+      <span class="section-title">Filter Conditions</span>
+      <span class="section-count">13 operators</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Condition</th>
+            <th>Negation</th>
+            <th>Description</th>
+            <th>Type</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="cond-op">is</span></td><td><span class="cond-op">is not</span></td><td class="desc">Exact string match (case-insensitive)</td><td><span class="badge badge-is">string</span></td></tr>
+          <tr><td><span class="cond-op">contains</span></td><td><span class="cond-op">not contains</span></td><td class="desc">Substring match anywhere in field value</td><td><span class="badge badge-contains">string</span></td></tr>
+          <tr><td><span class="cond-op">contains any</span></td><td><span class="cond-op">not contains any</span></td><td class="desc">Pipe-delimited: matches if value contains any token</td><td><span class="badge badge-contains">string</span></td></tr>
+          <tr><td><span class="cond-op">contains all</span></td><td><span class="cond-op">not contains all</span></td><td class="desc">Pipe-delimited: matches if value contains all tokens</td><td><span class="badge badge-contains">string</span></td></tr>
+          <tr><td><span class="cond-op">begin with</span></td><td><span class="cond-op">not begin with</span></td><td class="desc">Prefix match</td><td><span class="badge badge-begins">string</span></td></tr>
+          <tr><td><span class="cond-op">end with</span></td><td><span class="cond-op">not end with</span></td><td class="desc">Suffix match</td><td><span class="badge badge-ends">string</span></td></tr>
+          <tr><td><span class="cond-op">image</span></td><td><span class="cond-op">not image</span></td><td class="desc">Matches executable image name only (basename of path)</td><td><span class="badge badge-image">path</span></td></tr>
+          <tr><td><span class="cond-op">match image</span></td><td>—</td><td class="desc">Same as image but glob-enabled</td><td><span class="badge badge-image">path</span></td></tr>
+          <tr><td><span class="cond-op">is any</span></td><td><span class="cond-op">is not any</span></td><td class="desc">Pipe-delimited exact match list</td><td><span class="badge badge-is">string</span></td></tr>
+          <tr><td><span class="cond-op">regex</span></td><td><span class="cond-op">not regex</span></td><td class="desc">PCRE-style regular expression match</td><td><span class="badge badge-regex">regex</span></td></tr>
+          <tr><td><span class="cond-op">less than</span></td><td>—</td><td class="desc">Numeric / version less-than comparison</td><td><span class="badge badge-lt">numeric</span></td></tr>
+          <tr><td><span class="cond-op">more than</span></td><td>—</td><td class="desc">Numeric / version greater-than comparison</td><td><span class="badge badge-lt">numeric</span></td></tr>
+          <tr><td><span class="cond-op">excludes</span></td><td>—</td><td class="desc">Exclude when field is missing / empty</td><td><span class="badge badge-is">string</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 1 ProcessCreate ===== -->
+  <div class="section" data-category="process">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-blue)"></div>
+      <span class="section-title">EID 1 — ProcessCreate</span>
+      <span class="section-count">16 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">UtcTime</span></td><td><span class="field-type" style="color:var(--accent-purple)">datetime</span></td><td class="desc">Event creation time (UTC)</td><td><span class="example-wrap">2024-01-15 10:22:01.000</span></td></tr>
+          <tr><td><span class="field-name">ProcessGuid</span></td><td><span class="field-type" style="color:var(--accent-purple)">GUID</span></td><td class="desc">Globally unique process identifier across reboots</td><td><span class="example-wrap">{...}</span></td></tr>
+          <tr><td><span class="field-name">ProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">Process ID (PID)</td><td><span class="example-wrap">4892</span></td></tr>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Full path to the process executable</td><td><span class="example-wrap">C:\Windows\System32\cmd.exe</span></td></tr>
+          <tr><td><span class="field-name">FileVersion</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Version of executable from PE header</td><td><span class="example-wrap">10.0.19041.3636</span></td></tr>
+          <tr><td><span class="field-name">Description</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">PE file description metadata</td><td><span class="example-wrap">Windows Command Processor</span></td></tr>
+          <tr><td><span class="field-name">Product</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">PE product name metadata</td><td><span class="example-wrap">Microsoft Windows OS</span></td></tr>
+          <tr><td><span class="field-name">Company</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">PE company name metadata</td><td><span class="example-wrap">Microsoft Corporation</span></td></tr>
+          <tr><td><span class="field-name">OriginalFileName</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Original PE filename — survives binary rename attacks</td><td><span class="example-wrap">Cmd.Exe</span></td></tr>
+          <tr><td><span class="field-name">CommandLine</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Full command line including arguments</td><td><span class="example-wrap">powershell -enc JABj...</span></td></tr>
+          <tr><td><span class="field-name">CurrentDirectory</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Working directory of process at launch</td><td><span class="example-wrap">C:\Users\user\Downloads\</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">DOMAIN\user running the process</td><td><span class="example-wrap">CORP\jdoe</span></td></tr>
+          <tr><td><span class="field-name">LogonGuid</span></td><td><span class="field-type" style="color:var(--accent-purple)">GUID</span></td><td class="desc">Logon session GUID correlatable to Security log</td><td><span class="example-wrap">{...}</span></td></tr>
+          <tr><td><span class="field-name">LogonId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">Win32 logon session ID</td><td><span class="example-wrap">0x3e7</span></td></tr>
+          <tr><td><span class="field-name">ParentProcessGuid</span></td><td><span class="field-type" style="color:var(--accent-purple)">GUID</span></td><td class="desc">GUID of the spawning parent process</td><td><span class="example-wrap">{...}</span></td></tr>
+          <tr><td><span class="field-name">ParentImage</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Full path of parent executable</td><td><span class="example-wrap">C:\Windows\explorer.exe</span></td></tr>
+          <tr><td><span class="field-name">ParentCommandLine</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Parent command line string</td><td><span class="example-wrap">explorer.exe</span></td></tr>
+          <tr><td><span class="field-name">Hashes</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Hash(es) of the image (MD5, SHA256, IMPHASH, etc.)</td><td><span class="example-wrap">SHA256=abc123...</span></td></tr>
+          <tr><td><span class="field-name">IntegrityLevel</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Process integrity level (Low/Medium/High/System)</td><td><span class="example-wrap">High</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 2 FileCreationTimeChanged ===== -->
+  <div class="section" data-category="file">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-orange)"></div>
+      <span class="section-title">EID 2 — FileCreationTimeChanged</span>
+      <span class="section-count">7 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process that changed the timestamp</td><td><span class="example-wrap">C:\malware\timestomp.exe</span></td></tr>
+          <tr><td><span class="field-name">TargetFilename</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">File whose creation time was modified</td><td><span class="example-wrap">C:\Users\user\evil.exe</span></td></tr>
+          <tr><td><span class="field-name">CreationUtcTime</span></td><td><span class="field-type" style="color:var(--accent-purple)">datetime</span></td><td class="desc">New (forged) creation time</td><td><span class="example-wrap">2000-01-01 00:00:00.000</span></td></tr>
+          <tr><td><span class="field-name">PreviousCreationUtcTime</span></td><td><span class="field-type" style="color:var(--accent-purple)">datetime</span></td><td class="desc">Original creation time before modification</td><td><span class="example-wrap">2024-01-15 10:22:01.000</span></td></tr>
+          <tr><td><span class="field-name">ProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of changing process</td><td><span class="example-wrap">7712</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User account context</td><td><span class="example-wrap">CORP\attacker</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 3 NetworkConnect ===== -->
+  <div class="section" data-category="network">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-cyan)"></div>
+      <span class="section-title">EID 3 — NetworkConnect</span>
+      <span class="section-count">12 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process initiating the connection</td><td><span class="example-wrap">C:\Windows\System32\svchost.exe</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Account context</td><td><span class="example-wrap">NT AUTHORITY\SYSTEM</span></td></tr>
+          <tr><td><span class="field-name">Protocol</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Transport protocol</td><td><span class="example-wrap">tcp</span></td></tr>
+          <tr><td><span class="field-name">Initiated</span></td><td><span class="field-type" style="color:var(--accent-cyan)">boolean</span></td><td class="desc">true = outbound; false = inbound</td><td><span class="example-wrap">true</span></td></tr>
+          <tr><td><span class="field-name">SourceIp</span></td><td><span class="field-type" style="color:var(--accent-cyan)">IP</span></td><td class="desc">Source IP address</td><td><span class="example-wrap">192.168.1.50</span></td></tr>
+          <tr><td><span class="field-name">SourceHostname</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Reverse-resolved source hostname</td><td><span class="example-wrap">workstation01.corp</span></td></tr>
+          <tr><td><span class="field-name">SourcePort</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">Ephemeral source port</td><td><span class="example-wrap">54312</span></td></tr>
+          <tr><td><span class="field-name">SourcePortName</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Named source port (if known)</td><td><span class="example-wrap">—</span></td></tr>
+          <tr><td><span class="field-name">DestinationIp</span></td><td><span class="field-type" style="color:var(--accent-cyan)">IP</span></td><td class="desc">Destination IP address</td><td><span class="example-wrap">185.220.101.5</span></td></tr>
+          <tr><td><span class="field-name">DestinationHostname</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Reverse-resolved destination hostname</td><td><span class="example-wrap">c2.evil.com</span></td></tr>
+          <tr><td><span class="field-name">DestinationPort</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">Destination port number</td><td><span class="example-wrap">443</span></td></tr>
+          <tr><td><span class="field-name">DestinationPortName</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Named destination port</td><td><span class="example-wrap">https</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 5 ProcessTerminate ===== -->
+  <div class="section" data-category="process">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-blue)"></div>
+      <span class="section-title">EID 5 — ProcessTerminate</span>
+      <span class="section-count">4 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">ProcessGuid</span></td><td><span class="field-type" style="color:var(--accent-purple)">GUID</span></td><td class="desc">GUID of the terminated process</td><td><span class="example-wrap">{...}</span></td></tr>
+          <tr><td><span class="field-name">ProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of terminated process</td><td><span class="example-wrap">4892</span></td></tr>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Full path of terminated executable</td><td><span class="example-wrap">C:\Windows\System32\cmd.exe</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User context at termination</td><td><span class="example-wrap">CORP\jdoe</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 6 DriverLoad ===== -->
+  <div class="section" data-category="driver">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-amber)"></div>
+      <span class="section-title">EID 6 — DriverLoad</span>
+      <span class="section-count">5 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">ImageLoaded</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Path to the loaded driver (.sys)</td><td><span class="example-wrap">C:\Windows\System32\drivers\evil.sys</span></td></tr>
+          <tr><td><span class="field-name">Hashes</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Cryptographic hashes of driver</td><td><span class="example-wrap">SHA256=dead...</span></td></tr>
+          <tr><td><span class="field-name">Signed</span></td><td><span class="field-type" style="color:var(--accent-cyan)">boolean</span></td><td class="desc">Whether driver is Authenticode-signed</td><td><span class="example-wrap">false</span></td></tr>
+          <tr><td><span class="field-name">Signature</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Signing certificate subject name</td><td><span class="example-wrap">Microsoft Windows</span></td></tr>
+          <tr><td><span class="field-name">SignatureStatus</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Valid / Expired / Revoked / Unavailable</td><td><span class="example-wrap">Valid</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 7 ImageLoad ===== -->
+  <div class="section" data-category="driver">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-amber)"></div>
+      <span class="section-title">EID 7 — ImageLoad</span>
+      <span class="section-count">9 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process that loaded the image</td><td><span class="example-wrap">C:\Windows\System32\rundll32.exe</span></td></tr>
+          <tr><td><span class="field-name">ImageLoaded</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Full path of the loaded DLL/module</td><td><span class="example-wrap">C:\Users\user\AppData\evil.dll</span></td></tr>
+          <tr><td><span class="field-name">FileVersion</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">PE version string</td><td><span class="example-wrap">1.0.0.1</span></td></tr>
+          <tr><td><span class="field-name">Description</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">PE description metadata</td><td><span class="example-wrap">Malicious DLL</span></td></tr>
+          <tr><td><span class="field-name">Product</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">PE product name</td><td><span class="example-wrap">—</span></td></tr>
+          <tr><td><span class="field-name">Company</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">PE company name</td><td><span class="example-wrap">—</span></td></tr>
+          <tr><td><span class="field-name">OriginalFileName</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">PE original filename (anti-rename)</td><td><span class="example-wrap">loader.dll</span></td></tr>
+          <tr><td><span class="field-name">Hashes</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Cryptographic hashes of loaded image</td><td><span class="example-wrap">SHA256=abc...</span></td></tr>
+          <tr><td><span class="field-name">Signed</span></td><td><span class="field-type" style="color:var(--accent-cyan)">boolean</span></td><td class="desc">Is the image signed?</td><td><span class="example-wrap">false</span></td></tr>
+          <tr><td><span class="field-name">Signature</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Signer subject</td><td><span class="example-wrap">—</span></td></tr>
+          <tr><td><span class="field-name">SignatureStatus</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Signature validity status</td><td><span class="example-wrap">Unavailable</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 8 CreateRemoteThread ===== -->
+  <div class="section" data-category="process">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-blue)"></div>
+      <span class="section-title">EID 8 — CreateRemoteThread</span>
+      <span class="section-count">8 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">SourceImage</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Injecting process image</td><td><span class="example-wrap">C:\malware\injector.exe</span></td></tr>
+          <tr><td><span class="field-name">SourceProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of injecting process</td><td><span class="example-wrap">1234</span></td></tr>
+          <tr><td><span class="field-name">SourceUser</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User context of source</td><td><span class="example-wrap">CORP\attacker</span></td></tr>
+          <tr><td><span class="field-name">TargetImage</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Victim process receiving the thread</td><td><span class="example-wrap">C:\Windows\System32\lsass.exe</span></td></tr>
+          <tr><td><span class="field-name">TargetProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of victim process</td><td><span class="example-wrap">700</span></td></tr>
+          <tr><td><span class="field-name">TargetUser</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User context of target</td><td><span class="example-wrap">NT AUTHORITY\SYSTEM</span></td></tr>
+          <tr><td><span class="field-name">NewThreadId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">Thread ID of the newly created thread</td><td><span class="example-wrap">4488</span></td></tr>
+          <tr><td><span class="field-name">StartAddress</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Memory address where thread starts (hex)</td><td><span class="example-wrap">0x7FFB3A1C0000</span></td></tr>
+          <tr><td><span class="field-name">StartModule</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Module containing start address</td><td><span class="example-wrap">ntdll.dll</span></td></tr>
+          <tr><td><span class="field-name">StartFunction</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Named function at start address (if resolved)</td><td><span class="example-wrap">RtlUserThreadStart</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 9 RawAccessRead ===== -->
+  <div class="section" data-category="file">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-orange)"></div>
+      <span class="section-title">EID 9 — RawAccessRead</span>
+      <span class="section-count">4 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process performing raw disk read</td><td><span class="example-wrap">C:\malware\dumpntds.exe</span></td></tr>
+          <tr><td><span class="field-name">Device</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Device being raw-read</td><td><span class="example-wrap">\Device\HarddiskVolume2</span></td></tr>
+          <tr><td><span class="field-name">ProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of accessing process</td><td><span class="example-wrap">5632</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User account</td><td><span class="example-wrap">NT AUTHORITY\SYSTEM</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 10 ProcessAccess ===== -->
+  <div class="section" data-category="process">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-blue)"></div>
+      <span class="section-title">EID 10 — ProcessAccess</span>
+      <span class="section-count">8 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">SourceImage</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process requesting access</td><td><span class="example-wrap">C:\Windows\System32\msiexec.exe</span></td></tr>
+          <tr><td><span class="field-name">SourceProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of source process</td><td><span class="example-wrap">3344</span></td></tr>
+          <tr><td><span class="field-name">SourceUser</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User context of source</td><td><span class="example-wrap">CORP\attacker</span></td></tr>
+          <tr><td><span class="field-name">TargetImage</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process being accessed</td><td><span class="example-wrap">C:\Windows\System32\lsass.exe</span></td></tr>
+          <tr><td><span class="field-name">TargetProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of target process</td><td><span class="example-wrap">700</span></td></tr>
+          <tr><td><span class="field-name">TargetUser</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User context of target</td><td><span class="example-wrap">NT AUTHORITY\SYSTEM</span></td></tr>
+          <tr><td><span class="field-name">GrantedAccess</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Access mask granted (hex) — e.g. 0x1010 = LSASS dump</td><td><span class="example-wrap">0x1fffff</span></td></tr>
+          <tr><td><span class="field-name">CallTrace</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Call stack at time of access (DLLs and offsets)</td><td><span class="example-wrap">ntdll.dll+0x...</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 11 FileCreate ===== -->
+  <div class="section" data-category="file">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-orange)"></div>
+      <span class="section-title">EID 11 — FileCreate</span>
+      <span class="section-count">5 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process creating the file</td><td><span class="example-wrap">C:\Windows\System32\wscript.exe</span></td></tr>
+          <tr><td><span class="field-name">TargetFilename</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Full path of created/overwritten file</td><td><span class="example-wrap">C:\ProgramData\payload.exe</span></td></tr>
+          <tr><td><span class="field-name">CreationUtcTime</span></td><td><span class="field-type" style="color:var(--accent-purple)">datetime</span></td><td class="desc">File creation time</td><td><span class="example-wrap">2024-01-15 10:22:01.000</span></td></tr>
+          <tr><td><span class="field-name">ProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of creating process</td><td><span class="example-wrap">9988</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User account</td><td><span class="example-wrap">CORP\jdoe</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 12/13/14 Registry ===== -->
+  <div class="section" data-category="registry">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-pink)"></div>
+      <span class="section-title">EID 12/13/14 — Registry (Object, Value, Rename)</span>
+      <span class="section-count">7 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">EventType</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">CreateKey / DeleteKey / SetValue / DeleteValue / RenameKey</td><td><span class="example-wrap">SetValue</span></td></tr>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process performing registry operation</td><td><span class="example-wrap">C:\Windows\regedit.exe</span></td></tr>
+          <tr><td><span class="field-name">TargetObject</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Full registry key path</td><td><span class="example-wrap">HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run</span></td></tr>
+          <tr><td><span class="field-name">Details</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">New value data (EID 13 only)</td><td><span class="example-wrap">C:\malware\persist.exe</span></td></tr>
+          <tr><td><span class="field-name">NewName</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">New key name after rename (EID 14 only)</td><td><span class="example-wrap">HKLM\...\NewKey</span></td></tr>
+          <tr><td><span class="field-name">ProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of process</td><td><span class="example-wrap">4432</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User account</td><td><span class="example-wrap">CORP\jdoe</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 15 FileCreateStreamHash ===== -->
+  <div class="section" data-category="file">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-orange)"></div>
+      <span class="section-title">EID 15 — FileCreateStreamHash (ADS)</span>
+      <span class="section-count">5 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process creating the alternate data stream</td><td><span class="example-wrap">C:\Windows\System32\cmd.exe</span></td></tr>
+          <tr><td><span class="field-name">TargetFilename</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">File with the ADS (name:stream)</td><td><span class="example-wrap">C:\file.exe:Zone.Identifier</span></td></tr>
+          <tr><td><span class="field-name">CreationUtcTime</span></td><td><span class="field-type" style="color:var(--accent-purple)">datetime</span></td><td class="desc">Stream creation time</td><td><span class="example-wrap">2024-01-15 10:22:01.000</span></td></tr>
+          <tr><td><span class="field-name">Hash</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Hash of the stream content</td><td><span class="example-wrap">SHA256=abc123...</span></td></tr>
+          <tr><td><span class="field-name">Contents</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">First 1 KB of stream (text streams only)</td><td><span class="example-wrap">[ZoneTransfer]\nZoneId=3</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 17/18 Pipe ===== -->
+  <div class="section" data-category="pipe">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-green)"></div>
+      <span class="section-title">EID 17/18 — PipeCreated / PipeConnected</span>
+      <span class="section-count">4 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">EventType</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">CreatePipe (17) or ConnectPipe (18)</td><td><span class="example-wrap">CreatePipe</span></td></tr>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process creating/connecting to the pipe</td><td><span class="example-wrap">C:\tools\cobaltstrike.exe</span></td></tr>
+          <tr><td><span class="field-name">PipeName</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Named pipe identifier</td><td><span class="example-wrap">\MSSE-1234-server</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User context</td><td><span class="example-wrap">NT AUTHORITY\SYSTEM</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 19/20/21 WMI ===== -->
+  <div class="section" data-category="wmi">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-red)"></div>
+      <span class="section-title">EID 19/20/21 — WmiEvent (Filter / Consumer / Binding)</span>
+      <span class="section-count">6 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">EventType</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">WmiFilterEvent / WmiConsumerEvent / WmiConsumerToFilterEvent</td><td><span class="example-wrap">WmiFilterEvent</span></td></tr>
+          <tr><td><span class="field-name">Operation</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Created / Deleted</td><td><span class="example-wrap">Created</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User performing WMI operation</td><td><span class="example-wrap">NT AUTHORITY\SYSTEM</span></td></tr>
+          <tr><td><span class="field-name">Name</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Name of WMI filter/consumer</td><td><span class="example-wrap">SCM Event Log Consumer</span></td></tr>
+          <tr><td><span class="field-name">Type</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Consumer type (EID 20): Script / CommandLine / etc.</td><td><span class="example-wrap">Command Line</span></td></tr>
+          <tr><td><span class="field-name">Destination</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Command or script being executed by consumer</td><td><span class="example-wrap">powershell -enc JABj...</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 22 DNSQuery ===== -->
+  <div class="section" data-category="dns">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-purple)"></div>
+      <span class="section-title">EID 22 — DNSQuery</span>
+      <span class="section-count">6 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process issuing the DNS query</td><td><span class="example-wrap">C:\Windows\System32\svchost.exe</span></td></tr>
+          <tr><td><span class="field-name">QueryName</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Domain name being resolved</td><td><span class="example-wrap">c2.evil.com</span></td></tr>
+          <tr><td><span class="field-name">QueryStatus</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">DNS status code (0 = success, 9003 = NXDOMAIN)</td><td><span class="example-wrap">0</span></td></tr>
+          <tr><td><span class="field-name">QueryResults</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Resolved IP address(es)</td><td><span class="example-wrap">185.220.101.5</span></td></tr>
+          <tr><td><span class="field-name">ProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of querying process</td><td><span class="example-wrap">3424</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User account</td><td><span class="example-wrap">CORP\jdoe</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 23/26/27/29 FileDelete/Shredded/Executable/BlockedExe ===== -->
+  <div class="section" data-category="file">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-orange)"></div>
+      <span class="section-title">EID 23/26 — FileDelete / FileDeleteDetected</span>
+      <span class="section-count">6 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process deleting the file</td><td><span class="example-wrap">C:\malware\cleanup.exe</span></td></tr>
+          <tr><td><span class="field-name">TargetFilename</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Path of deleted file</td><td><span class="example-wrap">C:\Temp\stager.exe</span></td></tr>
+          <tr><td><span class="field-name">Hashes</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Hash before deletion (EID 23 — archived copy)</td><td><span class="example-wrap">SHA256=abc...</span></td></tr>
+          <tr><td><span class="field-name">IsExecutable</span></td><td><span class="field-type" style="color:var(--accent-cyan)">boolean</span></td><td class="desc">Whether deleted file was executable</td><td><span class="example-wrap">true</span></td></tr>
+          <tr><td><span class="field-name">Archived</span></td><td><span class="field-type" style="color:var(--accent-cyan)">boolean</span></td><td class="desc">Whether file was archived in Sysmon's directory</td><td><span class="example-wrap">true</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User account</td><td><span class="example-wrap">CORP\attacker</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 24 ClipboardChange ===== -->
+  <div class="section" data-category="pipe">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-green)"></div>
+      <span class="section-title">EID 24 — ClipboardChange</span>
+      <span class="section-count">4 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Process that changed the clipboard</td><td><span class="example-wrap">C:\Windows\System32\notepad.exe</span></td></tr>
+          <tr><td><span class="field-name">Session</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">Interactive session ID</td><td><span class="example-wrap">1</span></td></tr>
+          <tr><td><span class="field-name">ClientInfo</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">RDP client info if applicable</td><td><span class="example-wrap">—</span></td></tr>
+          <tr><td><span class="field-name">Hashes</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Hash of clipboard content</td><td><span class="example-wrap">SHA256=def...</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== EID 25 ProcessTampering ===== -->
+  <div class="section" data-category="process">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-blue)"></div>
+      <span class="section-title">EID 25 — ProcessTampering (Herpaderping / Hollowing)</span>
+      <span class="section-count">4 fields</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Field</th><th>Type</th><th>Description</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="field-name">Image</span></td><td><span class="field-type" style="color:var(--accent-green)">path</span></td><td class="desc">Path of tampered process image</td><td><span class="example-wrap">C:\Windows\System32\svchost.exe</span></td></tr>
+          <tr><td><span class="field-name">ProcessId</span></td><td><span class="field-type" style="color:var(--accent-amber)">integer</span></td><td class="desc">PID of the affected process</td><td><span class="example-wrap">2244</span></td></tr>
+          <tr><td><span class="field-name">Type</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">Tampering technique detected</td><td><span class="example-wrap">Process Hollowing</span></td></tr>
+          <tr><td><span class="field-name">User</span></td><td><span class="field-type" style="color:var(--accent-cyan)">string</span></td><td class="desc">User account</td><td><span class="example-wrap">CORP\jdoe</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- XML Skeleton -->
+  <div class="section" data-category="all">
+    <div class="section-header">
+      <div class="section-dot" style="background: var(--accent-blue)"></div>
+      <span class="section-title">Minimal Config Skeleton</span>
+    </div>
+    <div class="xml-block">
+<code><span class="kw">&lt;Sysmon</span> <span class="attr">schemaversion</span>=<span class="val">"4.90"</span><span class="kw">&gt;</span>
+  <span class="cm">&lt;!-- Hash algorithms to capture (comma-separated) --&gt;</span>
+  <span class="kw">&lt;HashAlgorithms&gt;</span>md5,sha256,imphash<span class="kw">&lt;/HashAlgorithms&gt;</span>
+
+  <span class="cm">&lt;!-- Archive deleted executables (EID 23) --&gt;</span>
+  <span class="kw">&lt;ArchiveDirectory&gt;</span>C:\Sysmon\Archive<span class="kw">&lt;/ArchiveDirectory&gt;</span>
+
+  <span class="kw">&lt;EventFiltering&gt;</span>
+
+    <span class="cm">&lt;!-- EID 1: Log powershell.exe launches --&gt;</span>
+    <span class="kw">&lt;RuleGroup</span> <span class="attr">name</span>=<span class="val">""</span> <span class="attr">groupRelation</span>=<span class="val">"or"</span><span class="kw">&gt;</span>
+      <span class="kw">&lt;ProcessCreate</span> <span class="attr">onmatch</span>=<span class="val">"include"</span><span class="kw">&gt;</span>
+        <span class="kw">&lt;Image</span> <span class="attr">condition</span>=<span class="val">"image"</span><span class="kw">&gt;</span>powershell.exe<span class="kw">&lt;/Image&gt;</span>
+        <span class="kw">&lt;Image</span> <span class="attr">condition</span>=<span class="val">"image"</span><span class="kw">&gt;</span>pwsh.exe<span class="kw">&lt;/Image&gt;</span>
+      <span class="kw">&lt;/ProcessCreate&gt;</span>
+    <span class="kw">&lt;/RuleGroup&gt;</span>
+
+    <span class="cm">&lt;!-- EID 3: Network connections — exclude known good --&gt;</span>
+    <span class="kw">&lt;RuleGroup</span> <span class="attr">name</span>=<span class="val">""</span> <span class="attr">groupRelation</span>=<span class="val">"or"</span><span class="kw">&gt;</span>
+      <span class="kw">&lt;NetworkConnect</span> <span class="attr">onmatch</span>=<span class="val">"exclude"</span><span class="kw">&gt;</span>
+        <span class="kw">&lt;Image</span> <span class="attr">condition</span>=<span class="val">"image"</span><span class="kw">&gt;</span>svchost.exe<span class="kw">&lt;/Image&gt;</span>
+        <span class="kw">&lt;DestinationPort</span> <span class="attr">condition</span>=<span class="val">"is"</span><span class="kw">&gt;</span>53<span class="kw">&lt;/DestinationPort&gt;</span>
+      <span class="kw">&lt;/NetworkConnect&gt;</span>
+    <span class="kw">&lt;/RuleGroup&gt;</span>
+
+    <span class="cm">&lt;!-- EID 10: LSASS access detection --&gt;</span>
+    <span class="kw">&lt;RuleGroup</span> <span class="attr">name</span>=<span class="val">""</span> <span class="attr">groupRelation</span>=<span class="val">"or"</span><span class="kw">&gt;</span>
+      <span class="kw">&lt;ProcessAccess</span> <span class="attr">onmatch</span>=<span class="val">"include"</span><span class="kw">&gt;</span>
+        <span class="kw">&lt;TargetImage</span> <span class="attr">condition</span>=<span class="val">"image"</span><span class="kw">&gt;</span>lsass.exe<span class="kw">&lt;/TargetImage&gt;</span>
+        <span class="kw">&lt;GrantedAccess</span> <span class="attr">condition</span>=<span class="val">"contains any"</span><span class="kw">&gt;</span>0x1010|0x1410|0x143a|0x1fffff<span class="kw">&lt;/GrantedAccess&gt;</span>
+      <span class="kw">&lt;/ProcessAccess&gt;</span>
+    <span class="kw">&lt;/RuleGroup&gt;</span>
+
+  <span class="kw">&lt;/EventFiltering&gt;</span>
+<span class="kw">&lt;/Sysmon&gt;</span></code>
+    </div>
+  </div>
+
+  <footer>
+    <p>Sysmon Filter Cheat Sheet — all event IDs up to v15.x schema 4.90</p>
+    <p>Ref: <a href="https://learn.microsoft.com/en-us/sysinternals/downloads/sysmon">Microsoft Sysinternals</a> &amp; <a href="https://github.com/SwiftOnSecurity/sysmon-config">SwiftOnSecurity config</a></p>
+  </footer>
+
+</div>
+
+<script>
+  let activeTab = 'all';
+
+  function doSearch() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const sections = document.querySelectorAll('.section');
+    let anyVisible = false;
+
+    sections.forEach(sec => {
+      const catOk = activeTab === 'all' || sec.dataset.category === activeTab || sec.dataset.category === 'all';
+      if (!catOk) { sec.style.display = 'none'; return; }
+
+      if (!q) { sec.style.display = ''; anyVisible = true; return; }
+
+      const rows = sec.querySelectorAll('tbody tr');
+      let secMatch = sec.innerText.toLowerCase().includes(q);
+
+      rows.forEach(row => {
+        row.classList.toggle('hidden', !row.innerText.toLowerCase().includes(q));
+      });
+
+      const visibleRows = sec.querySelectorAll('tbody tr:not(.hidden)');
+      const sectionHeaderMatch = sec.querySelector('.section-title')?.innerText.toLowerCase().includes(q);
+
+      if (sectionHeaderMatch) {
+        rows.forEach(r => r.classList.remove('hidden'));
+        sec.style.display = '';
+        anyVisible = true;
+      } else if (visibleRows.length > 0) {
+        sec.style.display = '';
+        anyVisible = true;
+      } else {
+        sec.style.display = 'none';
+      }
+    });
+
+    document.getElementById('no-results').style.display = anyVisible ? 'none' : 'block';
+  }
+
+  function filterTab(cat, btn) {
+    activeTab = cat;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+
+    const sections = document.querySelectorAll('.section');
+    sections.forEach(sec => {
+      const show = cat === 'all' || sec.dataset.category === cat || sec.dataset.category === 'all';
+      sec.style.display = show ? '' : 'none';
+    });
+
+    doSearch();
+  }
+</script>
+</body>
+</html>

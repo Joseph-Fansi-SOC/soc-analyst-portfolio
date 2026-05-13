@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ELK Stack SOC Analyst Cheat Sheet</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: #30363d;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7ee787;
+    --accent4: #f78166;
+    --accent5: #d2a8ff;
+    --accent6: #ffa657;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --tag-bg: #1f2937;
+    --danger: #ff4757;
+    --warning: #ffd32a;
+    --success: #2ed573;
+    --info: #1e90ff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 28px 32px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .header-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .logo-area {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .elk-badge {
+    background: linear-gradient(135deg, #00d4ff, #0099cc);
+    color: #000;
+    font-weight: 900;
+    font-size: 14px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    letter-spacing: 2px;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  header h1 span { color: var(--accent); }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .pill.live { border-color: var(--success); color: var(--success); }
+
+  /* SEARCH & FILTER BAR */
+  .controls {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px 32px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+  }
+
+  #globalSearch {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 14px 10px 38px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #globalSearch:focus { border-color: var(--accent); }
+
+  .tab-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+
+  /* MAIN LAYOUT */
+  main {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 32px 60px;
+  }
+
+  /* SECTION */
+  .section {
+    margin-bottom: 40px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .section-header h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .section-header .count {
+    margin-left: auto;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2px 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* CARDS GRID */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.1s;
+    cursor: pointer;
+  }
+
+  .card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px 8px;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    flex: 1;
+  }
+
+  .severity-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .sev-critical { background: rgba(255,71,87,0.15); color: var(--danger); border: 1px solid rgba(255,71,87,0.3); }
+  .sev-high     { background: rgba(255,106,53,0.15); color: var(--accent2); border: 1px solid rgba(255,106,53,0.3); }
+  .sev-medium   { background: rgba(255,211,42,0.12); color: var(--warning); border: 1px solid rgba(255,211,42,0.3); }
+  .sev-low      { background: rgba(46,213,115,0.12); color: var(--success); border: 1px solid rgba(46,213,115,0.3); }
+  .sev-info     { background: rgba(0,212,255,0.10); color: var(--accent); border: 1px solid rgba(0,212,255,0.25); }
+
+  .card-body {
+    padding: 10px 14px 12px;
+  }
+
+  .card-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    line-height: 1.5;
+  }
+
+  .query-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    position: relative;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 12.5px;
+    color: #e6edf3;
+    line-height: 1.6;
+    word-break: break-all;
+  }
+
+  .query-block .kw  { color: #ff7b72; }   /* operators AND/OR/NOT */
+  .query-block .fld { color: #79c0ff; }   /* field names */
+  .query-block .val { color: #a5d6ff; }   /* values */
+  .query-block .op  { color: #d2a8ff; }   /* : > < >= */
+  .query-block .str { color: #a8d8a8; }   /* quoted strings */
+  .query-block .wc  { color: #ffa657; }   /* wildcards */
+
+  .copy-btn {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 3px 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--success); color: var(--success); }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 8px;
+  }
+
+  .tag {
+    background: var(--tag-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 1px 6px;
+  }
+
+  /* HIDDEN FOR FILTERING */
+  .card.hidden { display: none; }
+  .section.hidden { display: none; }
+
+  /* STATS BAR */
+  .stats-bar {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 32px 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-value { font-size: 26px; font-weight: 800; }
+  .stat-sub   { font-size: 11px; color: var(--text-muted); }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--surface);
+    border: 1px solid var(--success);
+    border-radius: 8px;
+    color: var(--success);
+    padding: 10px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.25s;
+    z-index: 9999;
+    pointer-events: none;
+  }
+
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  /* RESPONSIVE */
+  @media (max-width: 700px) {
+    header, .controls, main, .stats-bar { padding-left: 16px; padding-right: 16px; }
+    .cards-grid { grid-template-columns: 1fr; }
+    header h1 { font-size: 17px; }
+  }
+
+  /* NO RESULTS */
+  .no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-size: 15px;
+    display: none;
+  }
+  .no-results.show { display: block; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="elk-badge">ELK</div>
+      <div>
+        <h1><span>SOC Analyst</span> — ELK / KQL Cheat Sheet</h1>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span class="pill live">● Live Reference</span>
+      <span class="pill">Elastic Stack 8.x</span>
+      <span class="pill">KQL + Lucene</span>
+    </div>
+  </div>
+</header>
+
+<!-- STATS BAR -->
+<div class="stats-bar" id="statsBar">
+  <div class="stat-card">
+    <span class="stat-label">Total Queries</span>
+    <span class="stat-value" style="color:var(--accent)" id="statTotal">0</span>
+    <span class="stat-sub">Ready to copy</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Critical</span>
+    <span class="stat-value" style="color:var(--danger)" id="statCritical">0</span>
+    <span class="stat-sub">High priority</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Categories</span>
+    <span class="stat-value" style="color:var(--accent5)">8</span>
+    <span class="stat-sub">Use-case groups</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">One-Click</span>
+    <span class="stat-value" style="color:var(--success)">⎘</span>
+    <span class="stat-sub">Copy any query</span>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="globalSearch" placeholder="Search queries, fields, descriptions…">
+  </div>
+  <div class="tab-filters">
+    <button class="tab-btn active" data-filter="all">All</button>
+    <button class="tab-btn" data-filter="kql-basics">KQL Basics</button>
+    <button class="tab-btn" data-filter="auth">Auth & Login</button>
+    <button class="tab-btn" data-filter="network">Network</button>
+    <button class="tab-btn" data-filter="malware">Malware & Process</button>
+    <button class="tab-btn" data-filter="lateral">Lateral Movement</button>
+    <button class="tab-btn" data-filter="exfil">Exfiltration</button>
+    <button class="tab-btn" data-filter="threat">Threat Intel</button>
+    <button class="tab-btn" data-filter="windows">Windows Events</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main id="mainContent">
+
+  <!-- ── SECTION 1: KQL BASICS ── -->
+  <div class="section" data-section="kql-basics">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(0,212,255,0.1)">⌨️</div>
+      <h2>KQL Fundamentals</h2>
+      <span class="count" id="count-kql-basics"></span>
+    </div>
+    <div class="cards-grid" data-grid="kql-basics">
+
+      <div class="card" data-tags="kql-basics kql">
+        <div class="card-header">
+          <span class="card-title">Field Value Match</span>
+          <span class="severity-badge sev-info">Syntax</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Match an exact field value. The bread-and-butter of KQL filtering.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.outcome</span><span class="op">:</span><span class="str">"failure"</span>
+          </div>
+          <div class="tags"><span class="tag">field:value</span><span class="tag">basic</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="kql-basics kql">
+        <div class="card-header">
+          <span class="card-title">Boolean AND / OR / NOT</span>
+          <span class="severity-badge sev-info">Syntax</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Combine multiple conditions. AND narrows results; OR widens them; NOT excludes.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"authentication"</span> <span class="kw">AND</span> <span class="fld">event.outcome</span><span class="op">:</span><span class="str">"failure"</span> <span class="kw">AND NOT</span> <span class="fld">user.name</span><span class="op">:</span><span class="str">"serviceaccount"</span>
+          </div>
+          <div class="tags"><span class="tag">boolean</span><span class="tag">logic</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="kql-basics kql">
+        <div class="card-header">
+          <span class="card-title">Wildcard Search</span>
+          <span class="severity-badge sev-info">Syntax</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Use * for multi-char wildcard or ? for single-char wildcard.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">process.name</span><span class="op">:</span><span class="wc">*mimikatz*</span><br>
+            <span class="fld">user.name</span><span class="op">:</span><span class="wc">admin?</span>
+          </div>
+          <div class="tags"><span class="tag">wildcard</span><span class="tag">pattern</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="kql-basics kql">
+        <div class="card-header">
+          <span class="card-title">Range Queries (Numeric & Date)</span>
+          <span class="severity-badge sev-info">Syntax</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Filter by numeric ranges (ports, status codes) or time windows.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">http.response.status_code</span> <span class="op">>=</span> <span class="val">400</span> <span class="kw">AND</span> <span class="fld">http.response.status_code</span> <span class="op"><=</span> <span class="val">599</span><br>
+            <span class="fld">@timestamp</span> <span class="op">>=</span> <span class="str">"now-24h"</span>
+          </div>
+          <div class="tags"><span class="tag">range</span><span class="tag">timestamp</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="kql-basics kql">
+        <div class="card-header">
+          <span class="card-title">Field Exists Check</span>
+          <span class="severity-badge sev-info">Syntax</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Check whether a field is present or absent in a document.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">process.parent.name</span><span class="op">:</span><span class="wc">*</span><br>
+            <span class="kw">NOT</span> <span class="fld">user_agent.name</span><span class="op">:</span><span class="wc">*</span>
+          </div>
+          <div class="tags"><span class="tag">exists</span><span class="tag">null check</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="kql-basics kql">
+        <div class="card-header">
+          <span class="card-title">Nested Field (Dot Notation)</span>
+          <span class="severity-badge sev-info">Syntax</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Access nested ECS fields using dot notation for deep field paths.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">threat.enrichments.indicator.type</span><span class="op">:</span><span class="str">"ip-addr"</span><br>
+            <span class="fld">kubernetes.pod.name</span><span class="op">:</span><span class="wc">nginx*</span>
+          </div>
+          <div class="tags"><span class="tag">nested</span><span class="tag">ECS</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 2: AUTH & LOGIN ── -->
+  <div class="section" data-section="auth">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(255,71,87,0.1)">🔐</div>
+      <h2>Authentication & Login Events</h2>
+      <span class="count" id="count-auth"></span>
+    </div>
+    <div class="cards-grid" data-grid="auth">
+
+      <div class="card" data-tags="auth windows brute-force">
+        <div class="card-header">
+          <span class="card-title">Brute Force — Multiple Failed Logins</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Detect repeated authentication failures from the same source. Tune threshold in Kibana alerting.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"authentication"</span> <span class="kw">AND</span> <span class="fld">event.outcome</span><span class="op">:</span><span class="str">"failure"</span>
+          </div>
+          <div class="tags"><span class="tag">brute-force</span><span class="tag">auth</span><span class="tag">MITRE T1110</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="auth windows">
+        <div class="card-header">
+          <span class="card-title">Successful Login After Multiple Failures</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Pivot on a user who had failures and then succeeded — strong brute-force signal.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"authentication"</span> <span class="kw">AND</span> <span class="fld">event.outcome</span><span class="op">:</span><span class="str">"success"</span> <span class="kw">AND</span> <span class="fld">source.ip</span><span class="op">:</span><span class="wc">*</span>
+          </div>
+          <div class="tags"><span class="tag">brute-force</span><span class="tag">compromise</span><span class="tag">MITRE T1078</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="auth windows">
+        <div class="card-header">
+          <span class="card-title">Admin / Privileged Account Login</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Monitor logins from privileged or administrative accounts, especially outside business hours.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"authentication"</span> <span class="kw">AND</span> <span class="fld">event.outcome</span><span class="op">:</span><span class="str">"success"</span> <span class="kw">AND</span> (<span class="fld">user.name</span><span class="op">:</span><span class="wc">*admin*</span> <span class="kw">OR</span> <span class="fld">user.name</span><span class="op">:</span><span class="wc">*administrator*</span>)
+          </div>
+          <div class="tags"><span class="tag">privilege</span><span class="tag">admin</span><span class="tag">MITRE T1078.002</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="auth windows">
+        <div class="card-header">
+          <span class="card-title">Login Outside Business Hours</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Logins at unusual times. In KQL use time filter in Kibana UI (e.g. 11 PM–6 AM range).</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"authentication"</span> <span class="kw">AND</span> <span class="fld">event.outcome</span><span class="op">:</span><span class="str">"success"</span> <span class="kw">AND</span> <span class="fld">@timestamp</span> <span class="op">>=</span> <span class="str">"now-1d/d"</span>
+          </div>
+          <div class="tags"><span class="tag">after-hours</span><span class="tag">anomaly</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="auth windows">
+        <div class="card-header">
+          <span class="card-title">Windows EventID 4625 — Failed Logon</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Windows Security Event ID for failed logon attempts. Maps to brute-force detection.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"4625"</span> <span class="kw">AND</span> <span class="fld">event.provider</span><span class="op">:</span><span class="str">"Microsoft-Windows-Security-Auditing"</span>
+          </div>
+          <div class="tags"><span class="tag">windows</span><span class="tag">eventid</span><span class="tag">4625</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="auth windows">
+        <div class="card-header">
+          <span class="card-title">Windows EventID 4648 — Explicit Credential Use</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Logon attempt using explicit credentials (e.g., RunAs). Common in pass-the-hash attacks.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"4648"</span> <span class="kw">AND</span> <span class="fld">event.provider</span><span class="op">:</span><span class="str">"Microsoft-Windows-Security-Auditing"</span>
+          </div>
+          <div class="tags"><span class="tag">pass-the-hash</span><span class="tag">runas</span><span class="tag">4648</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 3: NETWORK ── -->
+  <div class="section" data-section="network">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(30,144,255,0.1)">🌐</div>
+      <h2>Network Detection</h2>
+      <span class="count" id="count-network"></span>
+    </div>
+    <div class="cards-grid" data-grid="network">
+
+      <div class="card" data-tags="network dns">
+        <div class="card-header">
+          <span class="card-title">Suspicious DNS Queries</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Detect DNS lookups to known suspicious TLDs or unusually long hostnames (DGA detection).</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"dns"</span> <span class="kw">AND</span> (<span class="fld">dns.question.name</span><span class="op">:</span><span class="wc">*.xyz</span> <span class="kw">OR</span> <span class="fld">dns.question.name</span><span class="op">:</span><span class="wc">*.tk</span> <span class="kw">OR</span> <span class="fld">dns.question.name</span><span class="op">:</span><span class="wc">*.top</span>)
+          </div>
+          <div class="tags"><span class="tag">dns</span><span class="tag">DGA</span><span class="tag">C2</span><span class="tag">MITRE T1071.004</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="network dns">
+        <div class="card-header">
+          <span class="card-title">DNS over Non-Standard Port (DNS Tunneling)</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">DNS tunneling often uses non-standard ports. Standard DNS is UDP/TCP port 53.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">network.protocol</span><span class="op">:</span><span class="str">"dns"</span> <span class="kw">AND NOT</span> <span class="fld">destination.port</span><span class="op">:</span><span class="val">53</span>
+          </div>
+          <div class="tags"><span class="tag">dns-tunnel</span><span class="tag">exfil</span><span class="tag">MITRE T1071.004</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="network">
+        <div class="card-header">
+          <span class="card-title">Large Outbound Data Transfer</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">High outbound bytes may indicate data exfiltration. Adjust threshold per your baseline.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">network.direction</span><span class="op">:</span><span class="str">"egress"</span> <span class="kw">AND</span> <span class="fld">destination.bytes</span> <span class="op">></span> <span class="val">10000000</span>
+          </div>
+          <div class="tags"><span class="tag">exfiltration</span><span class="tag">large-transfer</span><span class="tag">MITRE T1041</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="network">
+        <div class="card-header">
+          <span class="card-title">Connection to Non-Standard HTTP Ports</span>
+          <span class="severity-badge sev-medium">Medium</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">C2 channels often use HTTP/HTTPS on non-standard ports to evade detection.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">network.protocol</span><span class="op">:</span><span class="str">"http"</span> <span class="kw">AND NOT</span> (<span class="fld">destination.port</span><span class="op">:</span><span class="val">80</span> <span class="kw">OR</span> <span class="fld">destination.port</span><span class="op">:</span><span class="val">8080</span> <span class="kw">OR</span> <span class="fld">destination.port</span><span class="op">:</span><span class="val">443</span>)
+          </div>
+          <div class="tags"><span class="tag">C2</span><span class="tag">http</span><span class="tag">MITRE T1071.001</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="network">
+        <div class="card-header">
+          <span class="card-title">Internal Host Port Scanning</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">A single source IP connecting to many destination ports on different hosts — scan behavior.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"network"</span> <span class="kw">AND</span> <span class="fld">network.direction</span><span class="op">:</span><span class="str">"internal"</span> <span class="kw">AND</span> <span class="fld">event.action</span><span class="op">:</span><span class="str">"connection_attempted"</span>
+          </div>
+          <div class="tags"><span class="tag">scan</span><span class="tag">recon</span><span class="tag">MITRE T1046</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="network">
+        <div class="card-header">
+          <span class="card-title">Tor / Known Proxy IP Connections</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Filter for connections to/from known Tor exit nodes or anonymizing proxy ranges.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">threat.indicator.type</span><span class="op">:</span><span class="str">"ip-addr"</span> <span class="kw">AND</span> <span class="fld">threat.indicator.marking.tlp</span><span class="op">:</span><span class="wc">*</span>
+          </div>
+          <div class="tags"><span class="tag">tor</span><span class="tag">proxy</span><span class="tag">anonymizer</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="network">
+        <div class="card-header">
+          <span class="card-title">Beaconing — Periodic C2 Connections</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Look for repeated outbound connections at regular intervals to the same external IP/domain.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"network"</span> <span class="kw">AND</span> <span class="fld">network.direction</span><span class="op">:</span><span class="str">"egress"</span> <span class="kw">AND</span> <span class="fld">network.transport</span><span class="op">:</span><span class="str">"tcp"</span> <span class="kw">AND</span> <span class="fld">destination.port</span><span class="op">:</span>(<span class="val">443</span> <span class="kw">or</span> <span class="val">80</span> <span class="kw">or</span> <span class="val">8443</span>)
+          </div>
+          <div class="tags"><span class="tag">beaconing</span><span class="tag">C2</span><span class="tag">MITRE T1071</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="network">
+        <div class="card-header">
+          <span class="card-title">HTTP 4xx / 5xx Error Spike</span>
+          <span class="severity-badge sev-medium">Medium</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Sudden spike in HTTP errors can indicate scanning, fuzzing, or application attacks.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">http.response.status_code</span> <span class="op">>=</span> <span class="val">400</span> <span class="kw">AND</span> <span class="fld">http.response.status_code</span> <span class="op"><=</span> <span class="val">599</span> <span class="kw">AND</span> <span class="fld">source.ip</span><span class="op">:</span><span class="wc">*</span>
+          </div>
+          <div class="tags"><span class="tag">web</span><span class="tag">http-errors</span><span class="tag">fuzzing</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 4: MALWARE & PROCESS ── -->
+  <div class="section" data-section="malware">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(255,106,53,0.1)">🦠</div>
+      <h2>Malware, Process & Endpoint</h2>
+      <span class="count" id="count-malware"></span>
+    </div>
+    <div class="cards-grid" data-grid="malware">
+
+      <div class="card" data-tags="malware process endpoint">
+        <div class="card-header">
+          <span class="card-title">Suspicious Process Execution</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Detect execution of common offensive tools by name. Expand list as needed.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"process"</span> <span class="kw">AND</span> <span class="fld">event.type</span><span class="op">:</span><span class="str">"start"</span> <span class="kw">AND</span> <span class="fld">process.name</span><span class="op">:</span>(<span class="wc">*mimikatz*</span> <span class="kw">OR</span> <span class="wc">*cobalt*</span> <span class="kw">OR</span> <span class="wc">*meterpreter*</span> <span class="kw">OR</span> <span class="wc">*psexec*</span>)
+          </div>
+          <div class="tags"><span class="tag">malware</span><span class="tag">offensive-tools</span><span class="tag">MITRE T1059</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="malware process">
+        <div class="card-header">
+          <span class="card-title">PowerShell Suspicious Execution</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Encoded, hidden, or bypassed PowerShell execution — common malware delivery vector.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">process.name</span><span class="op">:</span><span class="str">"powershell.exe"</span> <span class="kw">AND</span> <span class="fld">process.args</span><span class="op">:</span>(<span class="wc">*-enc*</span> <span class="kw">OR</span> <span class="wc">*-EncodedCommand*</span> <span class="kw">OR</span> <span class="wc">*-nop*</span> <span class="kw">OR</span> <span class="wc">*bypass*</span> <span class="kw">OR</span> <span class="wc">*hidden*</span>)
+          </div>
+          <div class="tags"><span class="tag">powershell</span><span class="tag">encoded</span><span class="tag">MITRE T1059.001</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="malware process">
+        <div class="card-header">
+          <span class="card-title">cmd.exe Spawned by Office App</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Office macro-based malware spawns cmd/powershell. Classic phishing-to-execution chain.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">process.name</span><span class="op">:</span>(<span class="str">"cmd.exe"</span> <span class="kw">OR</span> <span class="str">"powershell.exe"</span>) <span class="kw">AND</span> <span class="fld">process.parent.name</span><span class="op">:</span>(<span class="str">"winword.exe"</span> <span class="kw">OR</span> <span class="str">"excel.exe"</span> <span class="kw">OR</span> <span class="str">"outlook.exe"</span>)
+          </div>
+          <div class="tags"><span class="tag">macro</span><span class="tag">phishing</span><span class="tag">MITRE T1566.001</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="malware process">
+        <div class="card-header">
+          <span class="card-title">Credential Dumping (LSASS Access)</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Access to lsass.exe is a strong indicator of credential dumping activity.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"process"</span> <span class="kw">AND</span> <span class="fld">process.name</span><span class="op">:</span><span class="str">"lsass.exe"</span> <span class="kw">AND</span> <span class="fld">event.action</span><span class="op">:</span><span class="str">"accessed"</span>
+          </div>
+          <div class="tags"><span class="tag">credential-dump</span><span class="tag">lsass</span><span class="tag">MITRE T1003.001</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="malware process">
+        <div class="card-header">
+          <span class="card-title">Script Interpreters Execution</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Detect execution of script interpreters often used in Living-off-the-Land attacks.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"process"</span> <span class="kw">AND</span> <span class="fld">process.name</span><span class="op">:</span>(<span class="str">"wscript.exe"</span> <span class="kw">OR</span> <span class="str">"cscript.exe"</span> <span class="kw">OR</span> <span class="str">"mshta.exe"</span> <span class="kw">OR</span> <span class="str">"regsvr32.exe"</span>)
+          </div>
+          <div class="tags"><span class="tag">lolbas</span><span class="tag">wscript</span><span class="tag">MITRE T1218</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="malware process">
+        <div class="card-header">
+          <span class="card-title">Ransomware — Mass File Modification</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Rapid file modifications/renames across many files is a ransomware behavioral signature.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"file"</span> <span class="kw">AND</span> <span class="fld">event.action</span><span class="op">:</span>(<span class="str">"rename"</span> <span class="kw">OR</span> <span class="str">"overwrite"</span>) <span class="kw">AND</span> <span class="fld">file.extension</span><span class="op">:</span>(<span class="wc">*.locked*</span> <span class="kw">OR</span> <span class="wc">*.enc*</span> <span class="kw">OR</span> <span class="wc">*.crypto*</span>)
+          </div>
+          <div class="tags"><span class="tag">ransomware</span><span class="tag">file</span><span class="tag">MITRE T1486</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 5: LATERAL MOVEMENT ── -->
+  <div class="section" data-section="lateral">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(210,168,255,0.1)">↔️</div>
+      <h2>Lateral Movement</h2>
+      <span class="count" id="count-lateral"></span>
+    </div>
+    <div class="cards-grid" data-grid="lateral">
+
+      <div class="card" data-tags="lateral windows smb">
+        <div class="card-header">
+          <span class="card-title">PsExec / Remote Service Creation</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">PsExec creates a remote service. EventID 7045 + network source is a strong lateral movement indicator.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"7045"</span> <span class="kw">AND</span> <span class="fld">winlog.event_data.ServiceName</span><span class="op">:</span><span class="wc">*psexec*</span>
+          </div>
+          <div class="tags"><span class="tag">psexec</span><span class="tag">lateral</span><span class="tag">MITRE T1021.002</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="lateral windows">
+        <div class="card-header">
+          <span class="card-title">WMI Remote Execution</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">WMI is a common LOLBin for remote execution and lateral movement.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">process.name</span><span class="op">:</span><span class="str">"wmiprvse.exe"</span> <span class="kw">AND</span> <span class="fld">event.type</span><span class="op">:</span><span class="str">"start"</span> <span class="kw">AND</span> <span class="fld">process.parent.name</span><span class="op">:</span><span class="str">"svchost.exe"</span>
+          </div>
+          <div class="tags"><span class="tag">wmi</span><span class="tag">lolbas</span><span class="tag">MITRE T1047</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="lateral windows rdp">
+        <div class="card-header">
+          <span class="card-title">RDP Lateral Movement (EventID 4624 Type 10)</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Logon type 10 = RemoteInteractive (RDP). Cross-reference with source IP for lateral movement.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"4624"</span> <span class="kw">AND</span> <span class="fld">winlog.event_data.LogonType</span><span class="op">:</span><span class="str">"10"</span>
+          </div>
+          <div class="tags"><span class="tag">rdp</span><span class="tag">4624</span><span class="tag">MITRE T1021.001</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="lateral windows">
+        <div class="card-header">
+          <span class="card-title">Pass-the-Hash / Pass-the-Ticket</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Network logon (Type 3) with NTLM auth from non-standard process is a PTH indicator.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"4624"</span> <span class="kw">AND</span> <span class="fld">winlog.event_data.LogonType</span><span class="op">:</span><span class="str">"3"</span> <span class="kw">AND</span> <span class="fld">winlog.event_data.AuthenticationPackageName</span><span class="op">:</span><span class="str">"NTLM"</span>
+          </div>
+          <div class="tags"><span class="tag">pth</span><span class="tag">ntlm</span><span class="tag">MITRE T1550.002</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 6: EXFILTRATION ── -->
+  <div class="section" data-section="exfil">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(255,166,87,0.1)">📤</div>
+      <h2>Data Exfiltration</h2>
+      <span class="count" id="count-exfil"></span>
+    </div>
+    <div class="cards-grid" data-grid="exfil">
+
+      <div class="card" data-tags="exfil network">
+        <div class="card-header">
+          <span class="card-title">Anomalous Upload Volume to External IP</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">High source bytes sent to a public, non-RFC1918 destination — classic exfiltration pattern.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">source.bytes</span> <span class="op">></span> <span class="val">5000000</span> <span class="kw">AND NOT</span> (<span class="fld">destination.ip</span><span class="op">:</span><span class="str">"10.0.0.0/8"</span> <span class="kw">OR</span> <span class="fld">destination.ip</span><span class="op">:</span><span class="str">"192.168.0.0/16"</span> <span class="kw">OR</span> <span class="fld">destination.ip</span><span class="op">:</span><span class="str">"172.16.0.0/12"</span>)
+          </div>
+          <div class="tags"><span class="tag">exfil</span><span class="tag">upload</span><span class="tag">MITRE T1041</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="exfil dns">
+        <div class="card-header">
+          <span class="card-title">DNS Exfiltration (Long Subdomain)</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">DNS exfil encodes data in long subdomain labels. Look for unusually long DNS query names.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"dns"</span> <span class="kw">AND</span> <span class="fld">dns.question.name</span><span class="op">:</span><span class="wc">*.*.*.*.*.* </span>
+          </div>
+          <div class="tags"><span class="tag">dns-exfil</span><span class="tag">subdomain</span><span class="tag">MITRE T1048.003</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="exfil cloud">
+        <div class="card-header">
+          <span class="card-title">Cloud Storage Upload (S3 / OneDrive / Dropbox)</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Connections to cloud storage providers from endpoints may indicate staged exfiltration.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.category</span><span class="op">:</span><span class="str">"network"</span> <span class="kw">AND</span> (<span class="fld">destination.domain</span><span class="op">:</span><span class="wc">*.s3.amazonaws.com</span> <span class="kw">OR</span> <span class="fld">destination.domain</span><span class="op">:</span><span class="wc">*.dropbox.com</span> <span class="kw">OR</span> <span class="fld">destination.domain</span><span class="op">:</span><span class="wc">*onedrive*</span>)
+          </div>
+          <div class="tags"><span class="tag">cloud</span><span class="tag">s3</span><span class="tag">MITRE T1567</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 7: THREAT INTEL ── -->
+  <div class="section" data-section="threat">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(126,231,135,0.1)">🛡️</div>
+      <h2>Threat Intelligence & IOC Matching</h2>
+      <span class="count" id="count-threat"></span>
+    </div>
+    <div class="cards-grid" data-grid="threat">
+
+      <div class="card" data-tags="threat intel ioc">
+        <div class="card-header">
+          <span class="card-title">Match Known Malicious IP (IOC)</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Check source or destination IPs against a known-bad IP. Replace with actual IOC value.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            (<span class="fld">source.ip</span><span class="op">:</span><span class="str">"185.220.101.0/24"</span> <span class="kw">OR</span> <span class="fld">destination.ip</span><span class="op">:</span><span class="str">"185.220.101.0/24"</span>)
+          </div>
+          <div class="tags"><span class="tag">IOC</span><span class="tag">threat-intel</span><span class="tag">malicious-ip</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="threat intel ioc hash">
+        <div class="card-header">
+          <span class="card-title">File Hash IOC Match (SHA256)</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Hunt for known malicious file hashes across all endpoint telemetry.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">process.hash.sha256</span><span class="op">:</span><span class="str">"&lt;replace-with-sha256&gt;"</span> <span class="kw">OR</span> <span class="fld">file.hash.sha256</span><span class="op">:</span><span class="str">"&lt;replace-with-sha256&gt;"</span>
+          </div>
+          <div class="tags"><span class="tag">hash</span><span class="tag">sha256</span><span class="tag">IOC</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="threat intel">
+        <div class="card-header">
+          <span class="card-title">Threat Match — Enriched Indicators</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Query events enriched with threat intelligence by the Elastic Threat Match rule type.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">threat.enrichments.indicator.type</span><span class="op">:</span><span class="wc">*</span> <span class="kw">AND</span> <span class="fld">threat.enrichments.matched.type</span><span class="op">:</span><span class="str">"indicator_match_rule"</span>
+          </div>
+          <div class="tags"><span class="tag">threat-match</span><span class="tag">enrichment</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="threat intel domain">
+        <div class="card-header">
+          <span class="card-title">Malicious Domain Contact</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Lookup connection events where the destination domain matches a known C2 or phishing domain.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">destination.domain</span><span class="op">:</span><span class="str">"malicious-domain.example"</span> <span class="kw">OR</span> <span class="fld">dns.question.name</span><span class="op">:</span><span class="str">"malicious-domain.example"</span>
+          </div>
+          <div class="tags"><span class="tag">domain</span><span class="tag">C2</span><span class="tag">phishing</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 8: WINDOWS EVENTS ── -->
+  <div class="section" data-section="windows">
+    <div class="section-header">
+      <div class="section-icon" style="background:rgba(0,149,255,0.1)">🪟</div>
+      <h2>Key Windows Event IDs</h2>
+      <span class="count" id="count-windows"></span>
+    </div>
+    <div class="cards-grid" data-grid="windows">
+
+      <div class="card" data-tags="windows eventid">
+        <div class="card-header">
+          <span class="card-title">EventID 4688 — Process Creation</span>
+          <span class="severity-badge sev-medium">Medium</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">New process creation. Requires "Audit Process Creation" GPO. Rich execution telemetry.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"4688"</span> <span class="kw">AND</span> <span class="fld">winlog.event_data.NewProcessName</span><span class="op">:</span><span class="wc">*</span>
+          </div>
+          <div class="tags"><span class="tag">process</span><span class="tag">4688</span><span class="tag">windows</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="windows eventid">
+        <div class="card-header">
+          <span class="card-title">EventID 4698 — Scheduled Task Created</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Attackers create scheduled tasks for persistence. Any new task deserves scrutiny.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"4698"</span> <span class="kw">AND</span> <span class="fld">event.provider</span><span class="op">:</span><span class="str">"Microsoft-Windows-Security-Auditing"</span>
+          </div>
+          <div class="tags"><span class="tag">persistence</span><span class="tag">4698</span><span class="tag">MITRE T1053.005</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="windows eventid">
+        <div class="card-header">
+          <span class="card-title">EventID 1102 — Audit Log Cleared</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Security audit log cleared — a major indicator of attacker cover-up activity.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"1102"</span> <span class="kw">OR</span> <span class="fld">event.code</span><span class="op">:</span><span class="str">"104"</span>
+          </div>
+          <div class="tags"><span class="tag">log-clear</span><span class="tag">cover-tracks</span><span class="tag">MITRE T1070.001</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="windows eventid">
+        <div class="card-header">
+          <span class="card-title">EventID 4720 — User Account Created</span>
+          <span class="severity-badge sev-high">High</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">New local or domain account creation. Attackers create backdoor accounts for persistence.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"4720"</span> <span class="kw">AND</span> <span class="fld">event.provider</span><span class="op">:</span><span class="str">"Microsoft-Windows-Security-Auditing"</span>
+          </div>
+          <div class="tags"><span class="tag">account</span><span class="tag">persistence</span><span class="tag">MITRE T1136</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="windows eventid">
+        <div class="card-header">
+          <span class="card-title">EventID 4732 — Added to Privileged Group</span>
+          <span class="severity-badge sev-critical">Critical</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">A user was added to a security-enabled local group (e.g., Administrators). Privilege escalation.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"4732"</span> <span class="kw">AND</span> <span class="fld">winlog.event_data.GroupName</span><span class="op">:</span><span class="str">"Administrators"</span>
+          </div>
+          <div class="tags"><span class="tag">privilege-escalation</span><span class="tag">4732</span><span class="tag">MITRE T1078</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="windows eventid sysmon">
+        <div class="card-header">
+          <span class="card-title">Sysmon EventID 3 — Network Connection</span>
+          <span class="severity-badge sev-medium">Medium</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Sysmon captures process-level network connections. Pair with process name for high-value hunts.</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"3"</span> <span class="kw">AND</span> <span class="fld">event.provider</span><span class="op">:</span><span class="str">"Microsoft-Windows-Sysmon"</span> <span class="kw">AND</span> <span class="fld">destination.port</span><span class="op">:</span>(<span class="val">443</span> <span class="kw">OR</span> <span class="val">80</span> <span class="kw">OR</span> <span class="val">4444</span>)
+          </div>
+          <div class="tags"><span class="tag">sysmon</span><span class="tag">network</span><span class="tag">process</span></div>
+        </div>
+      </div>
+
+      <div class="card" data-tags="windows eventid sysmon">
+        <div class="card-header">
+          <span class="card-title">Sysmon EventID 11 — File Created</span>
+          <span class="severity-badge sev-medium">Medium</span>
+        </div>
+        <div class="card-body">
+          <p class="card-desc">Track file creation events in sensitive directories (Temp, Startup, etc.).</p>
+          <div class="query-block">
+            <button class="copy-btn" onclick="copyQuery(this)">⎘ Copy</button>
+            <span class="fld">event.code</span><span class="op">:</span><span class="str">"11"</span> <span class="kw">AND</span> <span class="fld">event.provider</span><span class="op">:</span><span class="str">"Microsoft-Windows-Sysmon"</span> <span class="kw">AND</span> <span class="fld">file.path</span><span class="op">:</span>(<span class="wc">*\\Temp\\*</span> <span class="kw">OR</span> <span class="wc">*\\Startup\\*</span> <span class="kw">OR</span> <span class="wc">*\\AppData\\Roaming\\*</span>)
+          </div>
+          <div class="tags"><span class="tag">sysmon</span><span class="tag">file</span><span class="tag">temp</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="no-results" id="noResults">
+    🔍 No queries matched your search. Try a different keyword or clear the filter.
+  </div>
+
+</main>
+
+<footer>
+  ELK SOC Analyst Cheat Sheet · Elastic Stack 8.x · KQL + ECS + Sysmon · Built for Blue Team Operations
+</footer>
+
+<div id="toast">✓ Query copied to clipboard!</div>
+
+<script>
+  // ── COPY TO CLIPBOARD ──
+  function copyQuery(btn) {
+    const block = btn.closest('.query-block');
+    // Get text content stripping HTML tags
+    const text = block.innerText.replace('⎘ Copy', '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      showToast();
+      setTimeout(() => {
+        btn.innerHTML = '⎘ Copy';
+        btn.classList.remove('copied');
+      }, 1800);
+    }).catch(() => {
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      btn.textContent = '✓ Copied';
+      btn.classList.add('copied');
+      showToast();
+      setTimeout(() => {
+        btn.innerHTML = '⎘ Copy';
+        btn.classList.remove('copied');
+      }, 1800);
+    });
+  }
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // ── TAB FILTER ──
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  tabBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const filter = btn.dataset.filter;
+      filterCards(filter, document.getElementById('globalSearch').value.toLowerCase());
+    });
+  });
+
+  // ── SEARCH ──
+  document.getElementById('globalSearch').addEventListener('input', e => {
+    const activeFilter = document.querySelector('.tab-btn.active').dataset.filter;
+    filterCards(activeFilter, e.target.value.toLowerCase());
+  });
+
+  function filterCards(tabFilter, searchText) {
+    const sections = document.querySelectorAll('.section');
+    let totalVisible = 0;
+
+    sections.forEach(section => {
+      const sectionKey = section.dataset.section;
+      const cards = section.querySelectorAll('.card');
+      let sectionVisible = 0;
+
+      cards.forEach(card => {
+        const tags = card.dataset.tags || '';
+        const cardText = card.innerText.toLowerCase();
+
+        const tabMatch = tabFilter === 'all' || tags.includes(tabFilter);
+        const searchMatch = !searchText || cardText.includes(searchText);
+
+        if (tabMatch && searchMatch) {
+          card.classList.remove('hidden');
+          sectionVisible++;
+          totalVisible++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      // Hide section if no visible cards
+      if (sectionVisible === 0) {
+        section.classList.add('hidden');
+      } else {
+        section.classList.remove('hidden');
+        // Update section count
+        const countEl = document.getElementById('count-' + sectionKey);
+        if (countEl) countEl.textContent = sectionVisible + ' queries';
+      }
+    });
+
+    // No results message
+    const noResults = document.getElementById('noResults');
+    noResults.classList.toggle('show', totalVisible === 0);
+  }
+
+  // ── INIT: COUNT STATS ──
+  function initStats() {
+    const allCards = document.querySelectorAll('.card');
+    const critCards = document.querySelectorAll('.sev-critical');
+    document.getElementById('statTotal').textContent = allCards.length;
+    document.getElementById('statCritical').textContent = critCards.length;
+
+    // Init section counts
+    document.querySelectorAll('.section').forEach(section => {
+      const key = section.dataset.section;
+      const count = section.querySelectorAll('.card').length;
+      const el = document.getElementById('count-' + key);
+      if (el) el.textContent = count + ' queries';
+    });
+  }
+
+  initStats();
+
+  // ── CARD CLICK RIPPLE ──
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('click', function(e) {
+      if (e.target.classList.contains('copy-btn')) return;
+      // Highlight the query block briefly
+      const qb = this.querySelector('.query-block');
+      if (qb) {
+        qb.style.borderColor = 'var(--accent)';
+        setTimeout(() => qb.style.borderColor = '', 600);
+      }
+    });
+  });
+</script>
+</body>
+</html>

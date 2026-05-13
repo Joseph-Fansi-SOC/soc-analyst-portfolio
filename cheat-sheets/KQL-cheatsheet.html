@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SOC Analyst KQL Cheat Sheet (Advanced + KC7 Labs)</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.5; background:#fff; color:#111; }
+h1 { color: #1f4e79; }
+h2 { color: #2b579a; margin-top: 24px; }
+code { background: #f4f4f4; padding: 2px 4px; border-radius: 4px; }
+pre { background: #f4f4f4; padding: 12px; border-radius: 6px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+th, td { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
+th { background: #e8eef7; }
+.small { font-size: 0.9em; color: #444; }
+.section { margin-bottom: 28px; }
+img { max-width: 100%; border: 1px solid #ddd; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<h1>SOC Analyst KQL Cheat Sheet (Advanced + KC7 Labs)</h1>
+<p class="small">Built for Microsoft Sentinel, Defender XDR, Azure Data Explorer, and KC7-style cyber investigations</p>
+
+<div class="section">
+<h2>Reference Data Model (Enterprise SOC)</h2>
+<img src="/mnt/data/7ec628fb-087f-42b3-849d-58c48ae30b5a.png" alt="SOC data tables reference" />
+<table>
+<tr><th>Table Name</th><th>Description</th><th>SOC Use Case</th></tr>
+<tr><td><code>AuthenticationEvents</code></td><td>Login attempts (success/failure)</td><td>Brute force, credential stuffing</td></tr>
+<tr><td><code>SigninLogs</code></td><td>Azure AD sign-ins</td><td>Impossible travel, risky sign-ins</td></tr>
+<tr><td><code>EmailEvents</code></td><td>Email activity logs</td><td>Phishing, BEC tracking</td></tr>
+<tr><td><code>DeviceProcessEvents</code></td><td>Process execution telemetry</td><td>Malware execution, LOLBins</td></tr>
+<tr><td><code>DeviceNetworkEvents</code></td><td>Network connections</td><td>C2 beaconing, exfiltration</td></tr>
+<tr><td><code>DeviceFileEvents</code></td><td>File operations</td><td>Ransomware, staging data</td></tr>
+<tr><td><code>DeviceRegistryEvents</code></td><td>Registry modifications</td><td>Persistence techniques</td></tr>
+<tr><td><code>SecurityAlert</code></td><td>Security detections</td><td>Incident triage</td></tr>
+<tr><td><code>UrlClickEvents</code></td><td>Email URL clicks</td><td>Phishing investigation</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>KC7 Cyber Lab Data Model (Training Environment)</h2>
+<p class="small">Based on KC7-style SOC investigation datasets used in cyber training labs</p>
+<table>
+<tr><th>Table Name</th><th>Description</th><th>Investigation Focus</th></tr>
+<tr><td><code>Employees</code></td><td>User identity and org data</td><td>User attribution, pivots</td></tr>
+<tr><td><code>Email</code></td><td>Email sent/received logs</td><td>Phishing tracing, BEC</td></tr>
+<tr><td><code>AuthenticationEvents</code></td><td>Login activity</td><td>Account compromise detection</td></tr>
+<tr><td><code>InboundNetworkEvents</code></td><td>Inbound web traffic</td><td>External probing, exploitation attempts</td></tr>
+<tr><td><code>OutboundNetworkEvents</code></td><td>Outbound internet traffic</td><td>Data exfiltration, C2 communication</td></tr>
+<tr><td><code>ProcessEvents</code></td><td>Process execution on endpoints</td><td>Malware execution chains</td></tr>
+<tr><td><code>FileCreationEvents</code></td><td>File writes on devices</td><td>Staging, ransomware behavior</td></tr>
+<tr><td><code>PassiveDns</code></td><td>Domain-IP resolution history</td><td>Infrastructure mapping</td></tr>
+<tr><td><code>SecurityAlerts</code></td><td>Triggered detections</td><td>Incident response workflow</td></tr>
+</table>
+</div>
+
+<div class="section">
+<h2>KC7 Investigation Patterns (Core Analyst Thinking)</h2>
+<pre><code>// 1. Pivoting between datasets
+Email
+| join kind=inner Employees on $left.Sender == $right.Email
+
+// 2. Finding anomalies over time
+AuthenticationEvents
+| summarize Attempts=count() by bin(TimeGenerated, 1h), User
+
+// 3. Suspicious external communication
+OutboundNetworkEvents
+| where Url has_any ("pastebin", "discord", "ngrok", "webhook")
+
+// 4. File staging behavior
+FileCreationEvents
+| summarize FileCount=count() by FolderPath
+| where FileCount > 500
+</code></pre>
+</div>
+
+<div class="section">
+<h2>KC7-Style SOC Hunting Scenarios</h2>
+
+<h3>1. Password Spray Detection</h3>
+<pre><code>AuthenticationEvents
+| where Result == "Fail"
+| summarize FailCount=count() by IPAddress, User
+| where FailCount > 20</code></pre>
+
+<h3>2. Phishing Email Tracking</h3>
+<pre><code>Email
+| where Subject has "urgent" or Subject has "password"
+| join kind=inner Employees on Sender
+</code></pre>
+
+<h3>3. Malware Execution Chain</h3>
+<pre><code>ProcessEvents
+| where ProcessName in ("powershell.exe", "cmd.exe", "wscript.exe")
+| where CommandLine has "http" or CommandLine has "download"
+</code></pre>
+
+<h3>4. Data Exfiltration Pattern</h3>
+<pre><code>OutboundNetworkEvents
+| where Url has_any ("drive.google.com", "dropbox", "mega.nz")
+| summarize count() by Device, Url</code></pre>
+</div>
+
+<div class="section">
+<h2>Advanced SOC KQL Patterns</h2>
+<pre><code>// Time-based anomaly detection
+SigninLogs
+| summarize Attempts=count() by bin(TimeGenerated, 1h)
+
+// Rare process execution
+DeviceProcessEvents
+| summarize count() by FileName
+| top 10 by count_
+
+// DNS-based detection
+PassiveDns
+| where Domain endswith ".ru" or Domain endswith ".cn"
+</code></pre>
+</div>
+
+<div class="section">
+<h2>Analyst Notes</h2>
+<ul>
+<li>KC7 labs simulate real SOC workflows using simplified but realistic datasets</li>
+<li>Primary skill is <b>pivoting between tables</b>, not memorizing syntax</li>
+<li>Most investigations start with: <code>where</code> → <code>summarize</code> → <code>join</code></li>
+<li>Behavioral patterns matter more than single indicators</li>
+</ul>
+</div>
+
+</body>
+</html>

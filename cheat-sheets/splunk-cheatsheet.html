@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Splunk SOC Analyst Cheat Sheet</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      padding: 30px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 6px;
+      color: #58a6ff;
+      letter-spacing: 1px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #8b949e;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+
+    .toc {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 30px;
+    }
+
+    .toc a {
+      background: #161b22;
+      border: 1px solid #30363d;
+      color: #58a6ff;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.78rem;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    .toc a:hover { background: #1c2128; }
+
+    .section-title {
+      font-size: 1rem;
+      color: #f78166;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin: 32px 0 12px;
+      border-left: 4px solid #f78166;
+      padding-left: 10px;
+      scroll-margin-top: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+
+    thead tr { background: #161b22; }
+
+    thead th {
+      padding: 11px 14px;
+      text-align: left;
+      color: #58a6ff;
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      border-bottom: 2px solid #30363d;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid #21262d;
+      transition: background 0.2s;
+    }
+
+    tbody tr:hover { background: #1c2128; }
+
+    tbody td {
+      padding: 9px 14px;
+      vertical-align: top;
+      line-height: 1.6;
+    }
+
+    td.label {
+      color: #79c0ff;
+      font-weight: 600;
+      white-space: nowrap;
+      min-width: 180px;
+    }
+
+    td.desc {
+      color: #8b949e;
+      min-width: 220px;
+    }
+
+    td.example {
+      font-family: 'Courier New', monospace;
+      background: #0d1117;
+      color: #a5d6ff;
+      font-size: 0.8rem;
+      border-left: 2px solid #30363d;
+    }
+
+    code {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      color: #a5d6ff;
+    }
+
+    .tag {
+      display: inline-block;
+      border-radius: 4px;
+      padding: 1px 7px;
+      font-size: 0.72rem;
+      margin-right: 4px;
+      margin-bottom: 2px;
+      font-weight: 600;
+    }
+
+    .tag.green  { background: #23863633; color: #3fb950; border: 1px solid #238636; }
+    .tag.orange { background: #bb800922; color: #d29922; border: 1px solid #bb800966; }
+    .tag.red    { background: #da363333; color: #f85149; border: 1px solid #da363366; }
+    .tag.purple { background: #8957e533; color: #d2a8ff; border: 1px solid #8957e566; }
+    .tag.blue   { background: #1f6feb33; color: #58a6ff; border: 1px solid #1f6feb66; }
+    .tag.teal   { background: #1f6f6f33; color: #39d3c3; border: 1px solid #1f6f6f66; }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .card h3 {
+      color: #58a6ff;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      border-bottom: 1px solid #30363d;
+      padding-bottom: 8px;
+    }
+
+    .card table { margin-bottom: 0; font-size: 0.82rem; }
+
+    .mitre-badge {
+      display: inline-block;
+      background: #8957e522;
+      color: #d2a8ff;
+      border: 1px solid #8957e555;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 0.7rem;
+      font-family: monospace;
+      margin-left: 4px;
+    }
+
+    .severity-crit { color: #f85149; font-weight: 700; }
+    .severity-high { color: #d29922; font-weight: 700; }
+    .severity-med  { color: #3fb950; font-weight: 600; }
+    .severity-low  { color: #58a6ff; }
+
+    .alert-box {
+      background: #da363311;
+      border: 1px solid #da363355;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 0.83rem;
+      color: #f85149;
+    }
+
+    .info-box {
+      background: #1f6feb11;
+      border: 1px solid #1f6feb44;
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 0.83rem;
+      color: #79c0ff;
+    }
+
+    footer {
+      text-align: center;
+      color: #484f58;
+      font-size: 0.78rem;
+      margin-top: 40px;
+      border-top: 1px solid #21262d;
+      padding-top: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      td.desc { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>⚡ Splunk SOC Analyst Cheat Sheet</h1>
+<p class="subtitle">Search Processing Language · Threat Hunting · Incident Response · MITRE ATT&CK Mapped</p>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc">
+  <a href="#sources">Data Sources</a>
+  <a href="#auth">Auth & Identity</a>
+  <a href="#network">Network</a>
+  <a href="#endpoint">Endpoint</a>
+  <a href="#malware">Malware & AV</a>
+  <a href="#lateral">Lateral Movement</a>
+  <a href="#exfil">Exfiltration</a>
+  <a href="#persistence">Persistence</a>
+  <a href="#privilege">Privilege Escalation</a>
+  <a href="#hunting">Threat Hunting</a>
+  <a href="#ir">Incident Response</a>
+  <a href="#commands">SPL Commands</a>
+  <a href="#stats">Stats Functions</a>
+  <a href="#time">Time Modifiers</a>
+  <a href="#eval">Eval Functions</a>
+  <a href="#tips">Optimization Tips</a>
+</div>
+
+<!-- ─── DATA SOURCES ─── -->
+<div class="section-title" id="sources">Data Sources → SPL Index/Sourcetype</div>
+<table>
+  <thead>
+    <tr>
+      <th>Table / Source</th>
+      <th>Description</th>
+      <th>SPL Base Search</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">🔐 AuthenticationEvents</td>
+      <td class="desc">Logins — successes and failures</td>
+      <td class="example"><code>index=* sourcetype=WinEventLog:Security EventCode=4624 OR EventCode=4625</code></td>
+    </tr>
+    <tr>
+      <td class="label">📧 Email</td>
+      <td class="desc">Emails sent and received by employees</td>
+      <td class="example"><code>index=* sourcetype=smtp OR sourcetype=exchange | table _time, sender, recipient, subject</code></td>
+    </tr>
+    <tr>
+      <td class="label">👤 Employees / HR</td>
+      <td class="desc">Names, job titles, contact details</td>
+      <td class="example"><code>index=* sourcetype=hr_data | table name, title, department, email</code></td>
+    </tr>
+    <tr>
+      <td class="label">📄 FileCreationEvents</td>
+      <td class="desc">Files created on employee devices</td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=11 | table _time, host, TargetFilename, User</code></td>
+    </tr>
+    <tr>
+      <td class="label">🌐 InboundNetworkEvents</td>
+      <td class="desc">Traffic coming into the network</td>
+      <td class="example"><code>index=* sourcetype=firewall direction=inbound | stats count by src_ip, dest_port</code></td>
+    </tr>
+    <tr>
+      <td class="label">🌍 OutboundNetworkEvents</td>
+      <td class="desc">Traffic going out of the network</td>
+      <td class="example"><code>index=* sourcetype=firewall direction=outbound | stats count by dest_ip, dest_port</code></td>
+    </tr>
+    <tr>
+      <td class="label">🔎 PassiveDNS (External)</td>
+      <td class="desc">IP-to-domain resolution records</td>
+      <td class="example"><code>index=* sourcetype=dns | table _time, src_ip, query, answer</code></td>
+    </tr>
+    <tr>
+      <td class="label">⚙️ ProcessEvents</td>
+      <td class="desc">Programs launched on employee devices</td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1 | table _time, host, User, Image, CommandLine, ParentImage</code></td>
+    </tr>
+    <tr>
+      <td class="label">🚨 SecurityAlerts</td>
+      <td class="desc">AV / IDS / EDR alerts</td>
+      <td class="example"><code>index=* sourcetype=antivirus OR sourcetype=IDS severity=high | table _time, host, alert_name, file</code></td>
+    </tr>
+    <tr>
+      <td class="label">🗂️ WindowsEventLogs</td>
+      <td class="desc">All Windows security & system events</td>
+      <td class="example"><code>index=* sourcetype=WinEventLog:* | stats count by EventCode, host</code></td>
+    </tr>
+    <tr>
+      <td class="label">📡 Sysmon</td>
+      <td class="desc">Deep endpoint telemetry</td>
+      <td class="example"><code>index=* sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational</code></td>
+    </tr>
+    <tr>
+      <td class="label">🔥 Firewall / Proxy</td>
+      <td class="desc">Network allow/deny decisions</td>
+      <td class="example"><code>index=* sourcetype=paloalto OR sourcetype=cisco:asa OR sourcetype=bluecoat</code></td>
+    </tr>
+    <tr>
+      <td class="label">☁️ Cloud (AWS/Azure/GCP)</td>
+      <td class="desc">Cloud API and access logs</td>
+      <td class="example"><code>index=* sourcetype=aws:cloudtrail OR sourcetype=azure:audit OR sourcetype=google:gcp:pubsub:message</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── WINDOWS EVENT CODES ─── -->
+<div class="section-title">Key Windows Event Codes</div>
+<div class="grid-3">
+  <div class="card">
+    <h3>🔐 Authentication</h3>
+    <table>
+      <thead><tr><th>EventCode</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="label">4624</td><td class="desc">Successful logon</td></tr>
+        <tr><td class="label">4625</td><td class="desc">Failed logon</td></tr>
+        <tr><td class="label">4634</td><td class="desc">Logoff</td></tr>
+        <tr><td class="label">4648</td><td class="desc">Logon with explicit credentials</td></tr>
+        <tr><td class="label">4672</td><td class="desc">Special privileges assigned</td></tr>
+        <tr><td class="label">4768</td><td class="desc">Kerberos TGT request</td></tr>
+        <tr><td class="label">4769</td><td class="desc">Kerberos service ticket</td></tr>
+        <tr><td class="label">4771</td><td class="desc">Kerberos pre-auth failed</td></tr>
+        <tr><td class="label">4776</td><td class="desc">NTLM credential validation</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>👤 Account & Group Changes</h3>
+    <table>
+      <thead><tr><th>EventCode</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="label">4720</td><td class="desc">User account created</td></tr>
+        <tr><td class="label">4722</td><td class="desc">User account enabled</td></tr>
+        <tr><td class="label">4723</td><td class="desc">Password change attempt</td></tr>
+        <tr><td class="label">4724</td><td class="desc">Password reset attempt</td></tr>
+        <tr><td class="label">4725</td><td class="desc">User account disabled</td></tr>
+        <tr><td class="label">4726</td><td class="desc">User account deleted</td></tr>
+        <tr><td class="label">4728</td><td class="desc">Member added to global group</td></tr>
+        <tr><td class="label">4732</td><td class="desc">Member added to local group</td></tr>
+        <tr><td class="label">4756</td><td class="desc">Member added to universal group</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>⚙️ Process & Object</h3>
+    <table>
+      <thead><tr><th>EventCode</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="label">4688</td><td class="desc">New process created</td></tr>
+        <tr><td class="label">4689</td><td class="desc">Process terminated</td></tr>
+        <tr><td class="label">4698</td><td class="desc">Scheduled task created</td></tr>
+        <tr><td class="label">4702</td><td class="desc">Scheduled task updated</td></tr>
+        <tr><td class="label">4663</td><td class="desc">File/object access attempt</td></tr>
+        <tr><td class="label">4657</td><td class="desc">Registry value modified</td></tr>
+        <tr><td class="label">7045</td><td class="desc">New service installed</td></tr>
+        <tr><td class="label">1102</td><td class="desc">Audit log cleared ⚠️</td></tr>
+        <tr><td class="label">4719</td><td class="desc">Audit policy changed</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── SYSMON EVENT CODES ─── -->
+<div class="section-title">Key Sysmon Event IDs</div>
+<div class="grid-2">
+  <div class="card">
+    <h3>🖥️ Process & File</h3>
+    <table>
+      <thead><tr><th>Event ID</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="label">1</td><td class="desc">Process creation (w/ hashes)</td></tr>
+        <tr><td class="label">2</td><td class="desc">File creation time changed</td></tr>
+        <tr><td class="label">3</td><td class="desc">Network connection</td></tr>
+        <tr><td class="label">5</td><td class="desc">Process terminated</td></tr>
+        <tr><td class="label">7</td><td class="desc">Image/DLL loaded</td></tr>
+        <tr><td class="label">8</td><td class="desc">CreateRemoteThread (injection)</td></tr>
+        <tr><td class="label">10</td><td class="desc">ProcessAccess (credential dumping)</td></tr>
+        <tr><td class="label">11</td><td class="desc">File created</td></tr>
+        <tr><td class="label">15</td><td class="desc">File stream created (ADS)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>🌐 Network & Registry</h3>
+    <table>
+      <thead><tr><th>Event ID</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="label">12</td><td class="desc">Registry key/value created or deleted</td></tr>
+        <tr><td class="label">13</td><td class="desc">Registry value set</td></tr>
+        <tr><td class="label">14</td><td class="desc">Registry key/value renamed</td></tr>
+        <tr><td class="label">17</td><td class="desc">Pipe created</td></tr>
+        <tr><td class="label">18</td><td class="desc">Pipe connected</td></tr>
+        <tr><td class="label">22</td><td class="desc">DNS query</td></tr>
+        <tr><td class="label">23</td><td class="desc">File deleted</td></tr>
+        <tr><td class="label">25</td><td class="desc">Process tampering</td></tr>
+        <tr><td class="label">255</td><td class="desc">Error — Sysmon driver issue</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── AUTHENTICATION & IDENTITY ─── -->
+<div class="section-title" id="auth">Authentication & Identity Threats</div>
+<table>
+  <thead>
+    <tr><th>Threat / Use Case</th><th>Severity</th><th>SPL Detection Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">Brute Force Login <span class="mitre-badge">T1110</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=WinEventLog:Security EventCode=4625
+| stats count as failures by TargetUserName, IpAddress
+| where failures > 10
+| sort -failures</code></td>
+    </tr>
+    <tr>
+      <td class="label">Password Spray <span class="mitre-badge">T1110.003</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* EventCode=4625
+| bucket _time span=1h
+| stats dc(TargetUserName) as targets, count by _time, IpAddress
+| where targets > 20</code></td>
+    </tr>
+    <tr>
+      <td class="label">Successful Login After Failures</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* EventCode=4625 | stats count as fail_count by IpAddress, TargetUserName
+| join TargetUserName [search index=* EventCode=4624 | stats count as success by TargetUserName]
+| where fail_count > 5 AND success > 0</code></td>
+    </tr>
+    <tr>
+      <td class="label">Admin Account Logon <span class="mitre-badge">T1078</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* EventCode=4624 TargetUserName="*admin*" OR TargetUserName="Administrator"
+| table _time, host, TargetUserName, IpAddress, LogonType</code></td>
+    </tr>
+    <tr>
+      <td class="label">Off-Hours Logins</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* EventCode=4624
+| eval hour=strftime(_time,"%H") | eval day=strftime(_time,"%A")
+| where (hour < "07" OR hour > "19") OR day="Saturday" OR day="Sunday"
+| table _time, TargetUserName, IpAddress, host</code></td>
+    </tr>
+    <tr>
+      <td class="label">Kerberoasting <span class="mitre-badge">T1558.003</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* EventCode=4769 TicketEncryptionType=0x17
+| stats count by TargetUserName, IpAddress
+| where count > 3</code></td>
+    </tr>
+    <tr>
+      <td class="label">Pass-the-Hash <span class="mitre-badge">T1550.002</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* EventCode=4624 LogonType=3 AuthenticationPackageName=NTLM
+| where NOT (IpAddress="127.0.0.1" OR IpAddress="::1")
+| table _time, TargetUserName, IpAddress, WorkstationName</code></td>
+    </tr>
+    <tr>
+      <td class="label">New Local Admin Created <span class="mitre-badge">T1136</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* EventCode=4720 OR EventCode=4732
+| eval action=case(EventCode=4720,"Account Created",EventCode=4732,"Added to Group")
+| table _time, host, SubjectUserName, TargetUserName, action</code></td>
+    </tr>
+    <tr>
+      <td class="label">MFA Bypass / Impossible Travel</td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=o365:management:activity OR sourcetype=azure:audit
+| stats dc(src_ip) as ip_count, values(src_ip) as ips by user, _time
+| where ip_count > 2</code></td>
+    </tr>
+    <tr>
+      <td class="label">Audit Log Cleared <span class="mitre-badge">T1070.001</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* EventCode=1102 OR EventCode=517
+| table _time, host, SubjectUserName, SubjectDomainName</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── NETWORK THREATS ─── -->
+<div class="section-title" id="network">Network Threat Detection</div>
+<table>
+  <thead>
+    <tr><th>Threat / Use Case</th><th>Severity</th><th>SPL Detection Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">Port Scanning <span class="mitre-badge">T1046</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=firewall action=deny
+| stats dc(dest_port) as ports_scanned by src_ip
+| where ports_scanned > 50
+| sort -ports_scanned</code></td>
+    </tr>
+    <tr>
+      <td class="label">DNS Tunneling <span class="mitre-badge">T1071.004</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=dns
+| eval query_len=len(query)
+| where query_len > 50
+| stats count, avg(query_len) as avg_len by src_ip, query
+| where count > 100</code></td>
+    </tr>
+    <tr>
+      <td class="label">Beaconing / C2 <span class="mitre-badge">T1071</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=firewall OR sourcetype=proxy
+| bucket _time span=1h
+| stats count by _time, src_ip, dest_ip
+| stats stdev(count) as jitter, avg(count) as avg_c by src_ip, dest_ip
+| where jitter < 2 AND avg_c > 5</code></td>
+    </tr>
+    <tr>
+      <td class="label">Large Data Upload (Exfil) <span class="mitre-badge">T1048</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=firewall OR sourcetype=proxy
+| stats sum(bytes_out) as total_bytes by src_ip, dest_ip
+| eval total_MB=round(total_bytes/1024/1024,2)
+| where total_MB > 500
+| sort -total_MB</code></td>
+    </tr>
+    <tr>
+      <td class="label">Uncommon Outbound Ports <span class="mitre-badge">T1571</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=firewall direction=outbound
+| where NOT (dest_port=80 OR dest_port=443 OR dest_port=53 OR dest_port=25)
+| stats count by dest_port, dest_ip, src_ip
+| sort -count</code></td>
+    </tr>
+    <tr>
+      <td class="label">DGA / Suspicious Domain <span class="mitre-badge">T1568</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=dns
+| eval domain_len=len(query)
+| where domain_len > 30 AND NOT match(query,"\.google\.|\.microsoft\.|\.amazon\.")
+| stats count by query, src_ip
+| sort -count</code></td>
+    </tr>
+    <tr>
+      <td class="label">Internal Network Scan <span class="mitre-badge">T1018</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=3
+| stats dc(DestinationIp) as hosts_contacted by SourceIp, SourceHostname
+| where hosts_contacted > 30
+| sort -hosts_contacted</code></td>
+    </tr>
+    <tr>
+      <td class="label">RDP Brute Force <span class="mitre-badge">T1110</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=WinEventLog:Security EventCode=4625 LogonType=10
+| stats count by IpAddress, TargetUserName
+| where count > 5</code></td>
+    </tr>
+    <tr>
+      <td class="label">TOR / VPN Exit Node</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=firewall OR sourcetype=proxy
+| lookup tor_exit_nodes.csv ip AS src_ip OUTPUT is_tor
+| where is_tor=1
+| table _time, src_ip, dest_ip, dest_port, user</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── ENDPOINT ─── -->
+<div class="section-title" id="endpoint">Endpoint & Process Threats</div>
+<table>
+  <thead>
+    <tr><th>Threat / Use Case</th><th>Severity</th><th>SPL Detection Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">Suspicious PowerShell <span class="mitre-badge">T1059.001</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1 Image="*powershell*"
+| where match(CommandLine,"(?i)(encoded|bypass|hidden|downloadstring|iex|invoke-expression|webclient|base64)")
+| table _time, host, User, CommandLine, ParentImage</code></td>
+    </tr>
+    <tr>
+      <td class="label">Living Off the Land (LOLBins) <span class="mitre-badge">T1218</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| where match(Image,"(?i)(certutil|mshta|wscript|cscript|regsvr32|rundll32|msiexec|wmic|bitsadmin)")
+| table _time, host, User, Image, CommandLine, ParentImage</code></td>
+    </tr>
+    <tr>
+      <td class="label">Credential Dumping (LSASS) <span class="mitre-badge">T1003.001</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=10 TargetImage="*lsass*"
+| where NOT match(SourceImage,"(?i)(MsMpEng|csrss|wininit)")
+| table _time, host, SourceImage, TargetImage, GrantedAccess</code></td>
+    </tr>
+    <tr>
+      <td class="label">Process Injection <span class="mitre-badge">T1055</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=8
+| table _time, host, SourceImage, TargetImage, StartAddress, StartModule</code></td>
+    </tr>
+    <tr>
+      <td class="label">Suspicious Parent-Child Process</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| where (match(ParentImage,"(?i)(winword|excel|outlook|powerpnt)") AND match(Image,"(?i)(cmd|powershell|wscript|mshta)"))
+| table _time, host, User, ParentImage, Image, CommandLine</code></td>
+    </tr>
+    <tr>
+      <td class="label">Encoded Command Execution <span class="mitre-badge">T1027</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| where match(CommandLine,"(?i)(-enc|-encodedcommand|frombase64string)")
+| table _time, host, User, Image, CommandLine</code></td>
+    </tr>
+    <tr>
+      <td class="label">Mimikatz Indicators <span class="mitre-badge">T1003</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon OR sourcetype=WinEventLog:Security
+| where match(CommandLine,"(?i)(sekurlsa|logonpasswords|dcsync|lsadump|kerberos::)")
+| table _time, host, User, CommandLine</code></td>
+    </tr>
+    <tr>
+      <td class="label">Ransomware — Mass File Rename</td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=11
+| stats count by host, User
+| where count > 200
+| join host [search index=* sourcetype=Sysmon EventCode=1 Image="*vssadmin*" CommandLine="*delete*"]</code></td>
+    </tr>
+    <tr>
+      <td class="label">Shadow Copy Deletion <span class="mitre-badge">T1490</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| where match(CommandLine,"(?i)(vssadmin.*delete|wmic.*shadowcopy.*delete|bcdedit.*recoveryenabled)")
+| table _time, host, User, CommandLine</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── MALWARE & AV ─── -->
+<div class="section-title" id="malware">Malware & Antivirus</div>
+<table>
+  <thead>
+    <tr><th>Threat / Use Case</th><th>Severity</th><th>SPL Detection Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">AV Alert — High Severity</td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=symantec OR sourcetype=defender OR sourcetype=crowdstrike
+| where match(severity,"(?i)(high|critical)")
+| table _time, host, user, threat_name, file_path, action_taken</code></td>
+    </tr>
+    <tr>
+      <td class="label">Malware — Not Quarantined</td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=antivirus
+| where NOT match(action_taken,"(?i)(quarantine|clean|delete)")
+| table _time, host, user, threat_name, file_path, action_taken</code></td>
+    </tr>
+    <tr>
+      <td class="label">Suspicious File Extensions</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=11
+| where match(TargetFilename,"(?i)\.(exe|dll|bat|vbs|ps1|hta|js|wsf)$")
+  AND match(TargetFilename,"(?i)(temp|appdata|downloads|public)")
+| table _time, host, User, TargetFilename</code></td>
+    </tr>
+    <tr>
+      <td class="label">Hash IOC Lookup</td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| lookup known_malware_hashes.csv Hashes AS Hashes OUTPUT threat_name
+| where isnotnull(threat_name)
+| table _time, host, User, Image, Hashes, threat_name</code></td>
+    </tr>
+    <tr>
+      <td class="label">Execution from Temp/AppData <span class="mitre-badge">T1204</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| where match(Image,"(?i)(temp|appdata|programdata|public)")
+  AND NOT match(Image,"(?i)(update|install)")
+| table _time, host, User, Image, CommandLine</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── LATERAL MOVEMENT ─── -->
+<div class="section-title" id="lateral">Lateral Movement</div>
+<table>
+  <thead>
+    <tr><th>Threat / Use Case</th><th>Severity</th><th>SPL Detection Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">SMB Lateral Movement <span class="mitre-badge">T1021.002</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=WinEventLog:Security EventCode=4624 LogonType=3
+| stats dc(ComputerName) as machines by SubjectUserName
+| where machines > 5</code></td>
+    </tr>
+    <tr>
+      <td class="label">PsExec / Remote Execution <span class="mitre-badge">T1570</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| where match(CommandLine,"(?i)(psexec|paexec|winexe)")
+  OR (ParentImage="*services.exe" AND match(Image,"(?i)(cmd|powershell)"))
+| table _time, host, User, Image, CommandLine, ParentImage</code></td>
+    </tr>
+    <tr>
+      <td class="label">WMI Remote Execution <span class="mitre-badge">T1047</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1 ParentImage="*WmiPrvSE.exe*"
+| where NOT match(Image,"(?i)(mscorsvw|wmiadap)")
+| table _time, host, User, Image, CommandLine</code></td>
+    </tr>
+    <tr>
+      <td class="label">RDP Lateral Movement <span class="mitre-badge">T1021.001</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* EventCode=4624 LogonType=10
+| stats count, dc(ComputerName) as targets by SubjectUserName, IpAddress
+| where targets > 2</code></td>
+    </tr>
+    <tr>
+      <td class="label">Admin Share Access <span class="mitre-badge">T1077</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* EventCode=5140 ShareName="\\*\ADMIN$" OR ShareName="\\*\C$" OR ShareName="\\*\IPC$"
+| table _time, host, SubjectUserName, IpAddress, ShareName</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── EXFILTRATION ─── -->
+<div class="section-title" id="exfil">Data Exfiltration</div>
+<table>
+  <thead>
+    <tr><th>Threat / Use Case</th><th>Severity</th><th>SPL Detection Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">Cloud Upload Spike <span class="mitre-badge">T1567</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=proxy
+| where match(url,"(?i)(dropbox|drive\.google|onedrive|wetransfer|mega\.nz|box\.com)")
+| stats sum(bytes_out) as total_bytes by src_ip, user, url
+| eval MB=round(total_bytes/1024/1024,2)
+| where MB > 100 | sort -MB</code></td>
+    </tr>
+    <tr>
+      <td class="label">Email Exfiltration <span class="mitre-badge">T1048.003</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=exchange OR sourcetype=smtp
+| where NOT match(recipient,"@yourcompany\.com")
+| stats count as emails, values(recipient) as recipients by sender
+| where emails > 20</code></td>
+    </tr>
+    <tr>
+      <td class="label">FTP / Unusual Protocol Transfer <span class="mitre-badge">T1048</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=firewall dest_port=21 OR dest_port=22 OR dest_port=2222
+| stats sum(bytes) as total by src_ip, dest_ip, dest_port
+| eval MB=round(total/1024/1024,2)
+| where MB > 50</code></td>
+    </tr>
+    <tr>
+      <td class="label">Staging Archive Files <span class="mitre-badge">T1560</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=11
+| where match(TargetFilename,"(?i)\.(zip|rar|7z|tar|gz)$")
+| stats count by host, User, TargetFilename
+| where count > 10</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── PERSISTENCE ─── -->
+<div class="section-title" id="persistence">Persistence Mechanisms</div>
+<table>
+  <thead>
+    <tr><th>Threat / Use Case</th><th>Severity</th><th>SPL Detection Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">Scheduled Task Created <span class="mitre-badge">T1053</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* EventCode=4698 OR (sourcetype=Sysmon EventCode=1 Image="*schtasks*" CommandLine="*/create*")
+| table _time, host, SubjectUserName, TaskName, TaskContent</code></td>
+    </tr>
+    <tr>
+      <td class="label">New Service Installed <span class="mitre-badge">T1543.003</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* EventCode=7045
+| table _time, host, ServiceName, ServiceFileName, ServiceType, ServiceStartType, ServiceAccount</code></td>
+    </tr>
+    <tr>
+      <td class="label">Registry Run Key <span class="mitre-badge">T1547.001</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=13
+| where match(TargetObject,"(?i)(CurrentVersion\\Run|CurrentVersion\\RunOnce)")
+| table _time, host, User, TargetObject, Details</code></td>
+    </tr>
+    <tr>
+      <td class="label">Startup Folder Modified <span class="mitre-badge">T1547.001</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=11
+| where match(TargetFilename,"(?i)(startup|start menu\\programs\\startup)")
+| table _time, host, User, TargetFilename</code></td>
+    </tr>
+    <tr>
+      <td class="label">DLL Hijacking <span class="mitre-badge">T1574.001</span></td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=7
+| where match(ImageLoaded,"(?i)(temp|appdata|downloads)") AND Signed=false
+| table _time, host, User, Image, ImageLoaded, Signed</code></td>
+    </tr>
+    <tr>
+      <td class="label">WMI Subscription (Persistence) <span class="mitre-badge">T1546.003</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=19 OR EventCode=20 OR EventCode=21
+| table _time, host, User, EventType, Name, Query, Destination</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── PRIVILEGE ESCALATION ─── -->
+<div class="section-title" id="privilege">Privilege Escalation</div>
+<table>
+  <thead>
+    <tr><th>Threat / Use Case</th><th>Severity</th><th>SPL Detection Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">Token Impersonation <span class="mitre-badge">T1134</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* EventCode=4624 LogonType=9
+| table _time, host, SubjectUserName, TargetUserName, IpAddress, ProcessName</code></td>
+    </tr>
+    <tr>
+      <td class="label">UAC Bypass <span class="mitre-badge">T1548.002</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| where match(CommandLine,"(?i)(fodhelper|eventvwr|sdclt|slui|compmgmtlauncher)")
+  AND IntegrityLevel="High"
+| table _time, host, User, Image, CommandLine, IntegrityLevel</code></td>
+    </tr>
+    <tr>
+      <td class="label">DCSync Attack <span class="mitre-badge">T1003.006</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* EventCode=4662
+| where match(Properties,"(?i)(1131f6aa-9c07-11d1-f79f-00c04fc2dcd2|1131f6ad-9c07-11d1-f79f-00c04fc2dcd2)")
+  AND NOT match(SubjectUserName,"(?i)(\$$|^MSOL_)")
+| table _time, host, SubjectUserName, ObjectName, Properties</code></td>
+    </tr>
+    <tr>
+      <td class="label">Golden Ticket <span class="mitre-badge">T1558.001</span></td>
+      <td><span class="severity-crit">CRITICAL</span></td>
+      <td class="example"><code>index=* EventCode=4769 TicketOptions=0x40810000 TicketEncryptionType=0x17
+| table _time, host, TargetUserName, ServiceName, IpAddress, TicketEncryptionType</code></td>
+    </tr>
+    <tr>
+      <td class="label">Sudo / Elevated Process (Linux)</td>
+      <td><span class="severity-high">HIGH</span></td>
+      <td class="example"><code>index=* sourcetype=linux_secure "sudo:"
+| rex field=_raw "sudo:\s+(?P<user>\S+)\s+:.*COMMAND=(?P<command>.+)"
+| stats count by user, command, host
+| sort -count</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── THREAT HUNTING ─── -->
+<div class="section-title" id="hunting">Threat Hunting Queries</div>
+<table>
+  <thead>
+    <tr><th>Hunt</th><th>What You're Looking For</th><th>SPL Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">First-Seen Executables</td>
+      <td class="desc">New binaries never seen before on a host</td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| stats min(_time) as first_seen by Image, host
+| eval age_days=round((now()-first_seen)/86400,1)
+| where age_days < 1
+| sort first_seen</code></td>
+    </tr>
+    <tr>
+      <td class="label">Rare Parent-Child Combos</td>
+      <td class="desc">Process relationships that almost never occur</td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| stats count by ParentImage, Image
+| where count < 5
+| sort count</code></td>
+    </tr>
+    <tr>
+      <td class="label">Long-Running Processes</td>
+      <td class="desc">Processes active far longer than expected</td>
+      <td class="example"><code>index=* sourcetype=Sysmon EventCode=1
+| eval age=now()-_time
+| where age > 86400
+| stats count by host, Image, User
+| sort -age</code></td>
+    </tr>
+    <tr>
+      <td class="label">Unusual Listening Ports</td>
+      <td class="desc">New services binding to unexpected ports</td>
+      <td class="example"><code>index=* sourcetype=netstat state=LISTEN
+| where NOT (port=80 OR port=443 OR port=3389 OR port=445)
+| stats count by host, port, process
+| sort -count</code></td>
+    </tr>
+    <tr>
+      <td class="label">Repeated Failed + 1 Success</td>
+      <td class="desc">Classic brute force leading to compromise</td>
+      <td class="example"><code>index=* EventCode=4625
+| stats count as failures by TargetUserName, IpAddress
+| where failures >= 5
+| join TargetUserName [search index=* EventCode=4624 | dedup TargetUserName]
+| table TargetUserName, IpAddress, failures</code></td>
+    </tr>
+    <tr>
+      <td class="label">Spike Detection</td>
+      <td class="desc">Statistically abnormal event volume</td>
+      <td class="example"><code>index=* sourcetype=WinEventLog:Security
+| timechart span=1h count
+| streamstats avg(count) as avg, stdev(count) as std
+| eval upper_bound=avg+(std*3)
+| where count > upper_bound</code></td>
+    </tr>
+    <tr>
+      <td class="label">New Hosts on Network</td>
+      <td class="desc">Devices that appeared in the last 24h</td>
+      <td class="example"><code>index=* earliest=-24h | stats min(_time) as first_seen by host
+| eval age_h=round((now()-first_seen)/3600,1)
+| where age_h < 24
+| sort first_seen</code></td>
+    </tr>
+    <tr>
+      <td class="label">Stacking — Rare Usernames</td>
+      <td class="desc">Hunt for infrequently used accounts</td>
+      <td class="example"><code>index=* sourcetype=WinEventLog:Security EventCode=4624
+| stats count by TargetUserName
+| sort count
+| head 20</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── INCIDENT RESPONSE ─── -->
+<div class="section-title" id="ir">Incident Response Runbook Queries</div>
+<div class="info-box">💡 Use these sequentially to triage and scope an active incident.</div>
+<table>
+  <thead>
+    <tr><th>IR Step</th><th>Goal</th><th>SPL Query</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label">1. Scope Affected Hosts</td>
+      <td class="desc">Find all machines involved</td>
+      <td class="example"><code>index=* (src_ip="&lt;IOC_IP&gt;" OR dest_ip="&lt;IOC_IP&gt;" OR host="&lt;IOC_HOST&gt;")
+| stats count by host, sourcetype
+| sort -count</code></td>
+    </tr>
+    <tr>
+      <td class="label">2. Scope Affected Users</td>
+      <td class="desc">Identify all users on compromised host</td>
+      <td class="example"><code>index=* host="&lt;COMPROMISED_HOST&gt;"
+| stats values(user) as users, count by host, sourcetype
+| table host, users</code></td>
+    </tr>
+    <tr>
+      <td class="label">3. Timeline of Events</td>
+      <td class="desc">Reconstruct attacker activity</td>
+      <td class="example"><code>index=* host="&lt;COMPROMISED_HOST&gt;" earliest=-48h
+| table _time, sourcetype, EventCode, user, src_ip, CommandLine, Image
+| sort _time</code></td>
+    </tr>
+    <tr>
+      <td class="label">4. Processes Spawned</td>
+      <td class="desc">What did the attacker run?</td>
+      <td class="example"><code>index=* host="&lt;COMPROMISED_HOST&gt;" sourcetype=Sysmon EventCode=1 earliest=-24h
+| table _time, User, Image, CommandLine, ParentImage, ParentCommandLine
+| sort _time</code></td>
+    </tr>
+    <tr>
+      <td class="label">5. Files Dropped</td>
+      <td class="desc">New files created on the host</td>
+      <td class="example"><code>index=* host="&lt;COMPROMISED_HOST&gt;" sourcetype=Sysmon EventCode=11 earliest=-24h
+| table _time, User, TargetFilename
+| sort _time</code></td>
+    </tr>
+    <tr>
+      <td class="label">6. Network Connections Made</td>
+      <td class="desc">External comms from compromised host</td>
+      <td class="example"><code>index=* host="&lt;COMPROMISED_HOST&gt;" sourcetype=Sysmon EventCode=3 earliest=-24h
+| where NOT cidrmatch("10.0.0.0/8",DestinationIp)
+  AND NOT cidrmatch("192.168.0.0/16",DestinationIp)
+| table _time, Image, DestinationIp, DestinationPort, User</code></td>
+    </tr>
+    <tr>
+      <td class="label">7. Lateral Movement Check</td>
+      <td class="desc">Did attacker pivot to other hosts?</td>
+      <td class="example"><code>index=* EventCode=4624 LogonType=3
+| where SubjectUserName="&lt;COMPROMISED_USER&gt;"
+| stats dc(ComputerName) as targets, values(ComputerName) as machines by SubjectUserName
+| where targets > 1</code></td>
+    </tr>
+    <tr>
+      <td class="label">8. Persistence Check</td>
+      <td class="desc">Did they leave a backdoor?</td>
+      <td class="example"><code>index=* host="&lt;COMPROMISED_HOST&gt;" earliest=-48h
+(EventCode=4698 OR EventCode=7045 OR (sourcetype=Sysmon EventCode=13 TargetObject="*Run*"))
+| table _time, EventCode, host, User, TaskName, ServiceName, TargetObject, Details</code></td>
+    </tr>
+    <tr>
+      <td class="label">9. Data Exfil Check</td>
+      <td class="desc">Was data stolen?</td>
+      <td class="example"><code>index=* host="&lt;COMPROMISED_HOST&gt;" sourcetype=firewall OR sourcetype=proxy earliest=-48h
+| stats sum(bytes_out) as total by dest_ip
+| eval MB=round(total/1024/1024,2)
+| where MB > 10 | sort -MB</code></td>
+    </tr>
+    <tr>
+      <td class="label">10. IOC Sweep (Network-wide)</td>
+      <td class="desc">Find IOC across ALL hosts</td>
+      <td class="example"><code>index=* earliest=-7d
+| where src_ip="&lt;IOC_IP&gt;" OR dest_ip="&lt;IOC_IP&gt;" OR match(CommandLine,"&lt;IOC_HASH_OR_STRING&gt;")
+| stats count by host, user, sourcetype
+| sort -count</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── COMMON COMMANDS ─── -->
+<div class="section-title" id="commands">Common SPL Commands</div>
+<table>
+  <thead>
+    <tr><th>Command</th><th>What It Does</th><th>Example</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="label"><code>search</code></td><td class="desc">Filter events matching a keyword or field</td><td class="example"><code>index=main sourcetype=syslog error</code></td></tr>
+    <tr><td class="label"><code>table</code></td><td class="desc">Display specific fields as columns</td><td class="example"><code>| table _time, host, user, action</code></td></tr>
+    <tr><td class="label"><code>stats</code></td><td class="desc">Calculate aggregated statistics</td><td class="example"><code>| stats count by user, src_ip</code></td></tr>
+    <tr><td class="label"><code>eval</code></td><td class="desc">Create or transform a field</td><td class="example"><code>| eval risk=if(failed>5,"high","low")</code></td></tr>
+    <tr><td class="label"><code>where</code></td><td class="desc">Filter using an expression</td><td class="example"><code>| where failed_logins > 10</code></td></tr>
+    <tr><td class="label"><code>dedup</code></td><td class="desc">Remove duplicate field values</td><td class="example"><code>| dedup user</code></td></tr>
+    <tr><td class="label"><code>sort</code></td><td class="desc">Sort results ascending or descending</td><td class="example"><code>| sort -count</code></td></tr>
+    <tr><td class="label"><code>top / rare</code></td><td class="desc">Most / least frequent values</td><td class="example"><code>| top 10 src_ip</code></td></tr>
+    <tr><td class="label"><code>rex</code></td><td class="desc">Extract fields using regex</td><td class="example"><code>| rex field=_raw "user=(?P&lt;username&gt;\w+)"</code></td></tr>
+    <tr><td class="label"><code>lookup</code></td><td class="desc">Enrich events from a CSV lookup</td><td class="example"><code>| lookup malware_hashes.csv hash AS Hashes OUTPUT threat_name</code></td></tr>
+    <tr><td class="label"><code>timechart</code></td><td class="desc">Chart values over time</td><td class="example"><code>| timechart span=1h count by EventCode</code></td></tr>
+    <tr><td class="label"><code>transaction</code></td><td class="desc">Group related events into sessions</td><td class="example"><code>| transaction user maxspan=1h</code></td></tr>
+    <tr><td class="label"><code>join</code></td><td class="desc">Merge results from two subsearches</td><td class="example"><code>| join user [search index=hr sourcetype=employees]</code></td></tr>
+    <tr><td class="label"><code>append</code></td><td class="desc">Append second search results below</td><td class="example"><code>| append [search index=linux sourcetype=syslog error]</code></td></tr>
+    <tr><td class="label"><code>rename</code></td><td class="desc">Rename a field for display</td><td class="example"><code>| rename src_ip AS "Source IP"</code></td></tr>
+    <tr><td class="label"><code>fields</code></td><td class="desc">Keep or remove fields</td><td class="example"><code>| fields - _raw, punct</code></td></tr>
+    <tr><td class="label"><code>streamstats</code></td><td class="desc">Running stats across events in order</td><td class="example"><code>| streamstats count as event_num by user</code></td></tr>
+    <tr><td class="label"><code>eventstats</code></td><td class="desc">Add stats to each event without collapsing</td><td class="example"><code>| eventstats avg(bytes) as avg_bytes by host</code></td></tr>
+    <tr><td class="label"><code>bucket</code></td><td class="desc">Group numeric/time field into buckets</td><td class="example"><code>| bucket _time span=1h</code></td></tr>
+    <tr><td class="label"><code>iplocation</code></td><td class="desc">Add geo data to an IP field</td><td class="example"><code>| iplocation src_ip | table src_ip, Country, City, lat, lon</code></td></tr>
+    <tr><td class="label"><code>inputlookup</code></td><td class="desc">Read a full lookup table into results</td><td class="example"><code>| inputlookup watchlist.csv | search is_malicious=1</code></td></tr>
+    <tr><td class="label"><code>outputlookup</code></td><td class="desc">Save results to a lookup CSV</td><td class="example"><code>| outputlookup compromised_hosts.csv</code></td></tr>
+    <tr><td class="label"><code>map</code></td><td class="desc">Run a search for each result row</td><td class="example"><code>| map search="search index=* host=$host$"</code></td></tr>
+    <tr><td class="label"><code>multisearch</code></td><td class="desc">Run multiple searches in parallel</td><td class="example"><code>| multisearch [search index=A] [search index=B]</code></td></tr>
+  </tbody>
+</table>
+
+<!-- ─── STATS + TIME + EVAL ─── -->
+<div class="section-title" id="stats">Stats Functions</div>
+<div class="grid-2">
+  <div class="card">
+    <h3>📊 Aggregation Functions</h3>
+    <table>
+      <thead><tr><th>Function</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="label"><code>count</code></td><td class="desc">Number of events</td></tr>
+        <tr><td class="label"><code>dc(field)</code></td><td class="desc">Distinct count of values</td></tr>
+        <tr><td class="label"><code>sum(field)</code></td><td class="desc">Sum of numeric field</td></tr>
+        <tr><td class="label"><code>avg(field)</code></td><td class="desc">Average value</td></tr>
+        <tr><td class="label"><code>max(field)</code></td><td class="desc">Maximum value</td></tr>
+        <tr><td class="label"><code>min(field)</code></td><td class="desc">Minimum value</td></tr>
+        <tr><td class="label"><code>stdev(field)</code></td><td class="desc">Standard deviation</td></tr>
+        <tr><td class="label"><code>var(field)</code></td><td class="desc">Variance</td></tr>
+        <tr><td class="label"><code>median(field)</code></td><td class="desc">Median value</td></tr>
+        <tr><td class="label"><code>perc95(field)</code></td><td class="desc">95th percentile</td></tr>
+        <tr><td class="label"><code>range(field)</code></td><td class="desc">Difference of max and min</td></tr>
+        <tr><td class="label"><code>list(field)</code></td><td class="desc">List all values (with repeats)</td></tr>
+        <tr><td class="label"><code>values(field)</code></td><td class="desc">List unique values only</td></tr>
+        <tr><td class="label"><code>earliest(field)</code></td><td class="desc">First chronological value</td></tr>
+        <tr><td class="label"><code>latest(field)</code></td><td class="desc">Last chronological value</td></tr>
+        <tr><td class="label"><code>first(field)</code></td><td class="desc">First value by index order</td></tr>
+        <tr><td class="label"><code>last(field)</code></td><td class="desc">Last value by index order</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>⏱ Time Modifiers</h3>
+    <table>
+      <thead><tr><th>Modifier</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td class="label"><code>earliest=-15m</code></td><td class="desc">Last 15 minutes</td></tr>
+        <tr><td class="label"><code>earliest=-1h</code></td><td class="desc">Last 1 hour</td></tr>
+        <tr><td class="label"><code>earliest=-24h</code></td><td class="desc">Last 24 hours</td></tr>
+        <tr><td class="label"><code>earliest=-7d@d</code></td><td class="desc">Last 7 days snapped to day</td></tr>
+        <tr><td class="label"><code>earliest=-30d</code></td><td class="desc">Last 30 days</td></tr>
+        <tr><td class="label"><code>earliest=@d</code></td><td class="desc">Start of today</td></tr>
+        <tr><td class="label"><code>earliest=@w1</code></td><td class="desc">Start of this week (Mon)</td></tr>
+        <tr><td class="label"><code>earliest=@mon</code></td><td class="desc">Start of this month</td></tr>
+        <tr><td class="label"><code>earliest=-1mon@mon</code></td><td class="desc">Start of last month</td></tr>
+        <tr><td class="label"><code>latest=now</code></td><td class="desc">Up to current time</td></tr>
+        <tr><td class="label"><code>latest=@d</code></td><td class="desc">Up to start of today</td></tr>
+        <tr><td class="label"><code>span=5m</code></td><td class="desc">Bucket by 5-minute intervals</td></tr>
+        <tr><td class="label"><code>span=1h</code></td><td class="desc">Bucket by 1-hour intervals</td></tr>
+        <tr><td class="label"><code>span=1d</code></td><td class="desc">Bucket by day</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── EVAL FUNCTIONS ─── -->
+<div class="section-title" id="eval">Eval Functions Reference</div>
+<div class="grid-3">
+  <div class="card">
+    <h3>🔀 Logic & Conditionals</h3>
+    <table>
+      <thead><tr><th>Function</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="label"><code>if(X,Y,Z)</code></td><td class="desc">Ternary if-else</td></tr>
+        <tr><td class="label"><code>case(c1,v1,...)</code></td><td class="desc">Multi-condition switch</td></tr>
+        <tr><td class="label"><code>coalesce(A,B)</code></td><td class="desc">First non-null value</td></tr>
+        <tr><td class="label"><code>isnull(X)</code></td><td class="desc">True if field is null</td></tr>
+        <tr><td class="label"><code>isnotnull(X)</code></td><td class="desc">True if field has value</td></tr>
+        <tr><td class="label"><code>validate(c,v)</code></td><td class="desc">Return v if condition fails</td></tr>
+        <tr><td class="label"><code>nullif(X,Y)</code></td><td class="desc">Return null if X equals Y</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>📝 String Functions</h3>
+    <table>
+      <thead><tr><th>Function</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="label"><code>len(X)</code></td><td class="desc">Length of string</td></tr>
+        <tr><td class="label"><code>lower(X)</code></td><td class="desc">Lowercase string</td></tr>
+        <tr><td class="label"><code>upper(X)</code></td><td class="desc">Uppercase string</td></tr>
+        <tr><td class="label"><code>substr(X,s,l)</code></td><td class="desc">Substring from position</td></tr>
+        <tr><td class="label"><code>replace(X,r,s)</code></td><td class="desc">Regex replace in string</td></tr>
+        <tr><td class="label"><code>trim(X)</code></td><td class="desc">Strip whitespace</td></tr>
+        <tr><td class="label"><code>split(X,",")</code></td><td class="desc">Split to multivalue field</td></tr>
+        <tr><td class="label"><code>match(X,regex)</code></td><td class="desc">True if regex matches</td></tr>
+        <tr><td class="label"><code>like(X,"%val%")</code></td><td class="desc">SQL-style wildcard match</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h3>🔢 Math & Time</h3>
+    <table>
+      <thead><tr><th>Function</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="label"><code>round(X,d)</code></td><td class="desc">Round to d decimal places</td></tr>
+        <tr><td class="label"><code>abs(X)</code></td><td class="desc">Absolute value</td></tr>
+        <tr><td class="label"><code>floor(X)</code></td><td class="desc">Round down to integer</td></tr>
+        <tr><td class="label"><code>ceiling(X)</code></td><td class="desc">Round up to integer</td></tr>
+        <tr><td class="label"><code>log(X,b)</code></td><td class="desc">Logarithm base b</td></tr>
+        <tr><td class="label"><code>now()</code></td><td class="desc">Current Unix timestamp</td></tr>
+        <tr><td class="label"><code>strftime(_time,"%Y-%m-%d")</code></td><td class="desc">Format timestamp to string</td></tr>
+        <tr><td class="label"><code>strptime(X,fmt)</code></td><td class="desc">Parse string to timestamp</td></tr>
+        <tr><td class="label"><code>cidrmatch("X",Y)</code></td><td class="desc">Match IP to CIDR subnet</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ─── OPTIMIZATION TIPS ─── -->
+<div class="section-title" id="tips">Search Optimization Tips</div>
+<table>
+  <thead>
+    <tr><th>Tip</th><th>Why It Helps</th><th>Example</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="label"><span class="tag green">✔ DO</span> Specify index=</td>
+      <td class="desc">Restricts scan to targeted data</td>
+      <td class="example"><code>index=windows sourcetype=WinEventLog:Security</code></td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag green">✔ DO</span> Narrow time range</td>
+      <td class="desc">Less disk I/O = dramatically faster</td>
+      <td class="example"><code>earliest=-1h latest=now</code></td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag green">✔ DO</span> Filter before pipe</td>
+      <td class="desc">Reduce event volume early in pipeline</td>
+      <td class="example"><code>index=* EventCode=4625 | stats count by user</code></td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag green">✔ DO</span> Use fields early</td>
+      <td class="desc">Drop unneeded fields to cut memory</td>
+      <td class="example"><code>| fields host, user, action, _time</code></td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag green">✔ DO</span> Use summary indexes</td>
+      <td class="desc">Pre-aggregated data for dashboards</td>
+      <td class="example"><code>index=summary report=daily_logins | stats sum(count) by user</code></td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag red">✖ AVOID</span> Leading wildcards</td>
+      <td class="desc">Cannot leverage the index efficiently</td>
+      <td class="example"><code>*error* → use: sourcetype=syslog error</code></td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag red">✖ AVOID</span> table before stats</td>
+      <td class="desc">table should come at the end of a pipeline</td>
+      <td class="example"><code>| stats count by user | sort -count | table user, count</code></td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag red">✖ AVOID</span> NOT with wildcards</td>
+      <td class="desc">Very expensive; use != or where clause</td>
+      <td class="example"><code>| where user!="service_account"</code></td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag orange">⚡ TIP</span> Use tstats for speed</td>
+      <td class="desc">Queries index metadata — extremely fast</td>
+      <td class="example"><code>| tstats count WHERE index=windows by host, _time span=1h</code></td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag orange">⚡ TIP</span> Accelerate reports</td>
+      <td class="desc">Enable report acceleration for recurring searches</td>
+      <td class="example">Settings → Searches → Enable acceleration on saved searches</td>
+    </tr>
+    <tr>
+      <td class="label"><span class="tag purple">🔍 HUNT</span> Use subsearch wisely</td>
+      <td class="desc">Limit subsearch results to &lt;10k for performance</td>
+      <td class="example"><code>| join user [search index=hr | head 1000]</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<footer>
+  Splunk SOC Analyst Cheat Sheet &nbsp;·&nbsp; SPL Reference &nbsp;·&nbsp; MITRE ATT&CK Mapped &nbsp;·&nbsp; docs.splunk.com &nbsp;·&nbsp; attack.mitre.org
+</footer>
+
+</body>
+</html>

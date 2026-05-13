@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wireshark Filters Cheat Sheet</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #4e9bff;
+      --accent2: #7b5ea7;
+      --green: #3ddc84;
+      --yellow: #f0c040;
+      --red: #ff6b6b;
+      --cyan: #56d0e0;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #12151f;
+      --radius: 8px;
+      --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 24px 16px 48px;
+    }
+
+    header {
+      text-align: center;
+      padding: 32px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 36px;
+    }
+
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    header .badge {
+      display: inline-block;
+      margin-top: 12px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 16px;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-header .icon {
+      font-size: 1.1rem;
+    }
+
+    .card-header h2 {
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    tr:not(:last-child) td {
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:hover td {
+      background: var(--surface2);
+    }
+
+    td {
+      padding: 9px 16px;
+      vertical-align: top;
+    }
+
+    td:first-child {
+      width: 55%;
+    }
+
+    code {
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      background: var(--code-bg);
+      color: var(--green);
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid #1e2535;
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .desc {
+      color: var(--muted);
+      font-size: 0.83rem;
+      line-height: 1.45;
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin-left: 4px;
+      vertical-align: middle;
+    }
+
+    .tag-display { background: #1a3a5c; color: var(--accent); }
+    .tag-capture { background: #2a1f3d; color: #b388ff; }
+    .tag-both    { background: #1a3020; color: var(--green); }
+
+    .section-label {
+      grid-column: 1 / -1;
+      margin-top: 12px;
+      margin-bottom: -4px;
+      color: var(--muted);
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding-left: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .operators-card {
+      grid-column: 1 / -1;
+    }
+
+    .op-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0;
+    }
+
+    .op-item {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+
+    .op-item:last-child, .op-item:nth-last-child(-n+3) {
+      border-bottom: none;
+    }
+
+    .op-sym {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 3px;
+    }
+
+    .op-sym code { color: var(--yellow); }
+    .op-sym code.alt { color: var(--cyan); font-size: 0.75rem; }
+
+    .op-desc {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .tip-box {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #0d1f3c, #0f1a2e);
+      border: 1px solid #1e3a60;
+      border-radius: var(--radius);
+      padding: 18px 20px;
+    }
+
+    .tip-box h3 {
+      color: var(--accent);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 12px;
+    }
+
+    .tips-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 8px;
+    }
+
+    .tips-list li {
+      color: var(--muted);
+      font-size: 0.83rem;
+      padding-left: 18px;
+      position: relative;
+    }
+
+    .tips-list li::before {
+      content: "▸";
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+    }
+
+    .tips-list code { font-size: 0.78rem; }
+
+    footer {
+      text-align: center;
+      margin-top: 48px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    @media print {
+      body { background: #fff; color: #000; }
+      .card { border: 1px solid #ccc; break-inside: avoid; }
+      code { background: #f5f5f5; color: #1a6e2e; border-color: #ddd; }
+    }
+
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>🦈 Wireshark Filters</h1>
+  <p>Display &amp; Capture Filter Reference</p>
+  <div class="badge">v4.x compatible</div>
+</header>
+
+<div class="grid">
+
+  <!-- OPERATORS -->
+  <div class="section-label">Operators &amp; Logic</div>
+
+  <div class="card operators-card">
+    <div class="card-header">
+      <span class="icon">⚙️</span>
+      <h2>Comparison &amp; Logical Operators</h2>
+    </div>
+    <div class="op-grid">
+      <div class="op-item">
+        <div class="op-sym"><code>==</code><code class="alt">eq</code></div>
+        <div class="op-desc">Equal</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>!=</code><code class="alt">ne</code></div>
+        <div class="op-desc">Not equal</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>&gt;</code><code class="alt">gt</code></div>
+        <div class="op-desc">Greater than</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>&lt;</code><code class="alt">lt</code></div>
+        <div class="op-desc">Less than</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>&gt;=</code><code class="alt">ge</code></div>
+        <div class="op-desc">Greater or equal</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>&lt;=</code><code class="alt">le</code></div>
+        <div class="op-desc">Less or equal</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>&amp;&amp;</code><code class="alt">and</code></div>
+        <div class="op-desc">Logical AND</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>||</code><code class="alt">or</code></div>
+        <div class="op-desc">Logical OR</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>!</code><code class="alt">not</code></div>
+        <div class="op-desc">Logical NOT</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>contains</code></div>
+        <div class="op-desc">Field contains value</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>matches</code><code class="alt">~</code></div>
+        <div class="op-desc">Regex match (display only)</div>
+      </div>
+      <div class="op-item">
+        <div class="op-sym"><code>in {a..b}</code></div>
+        <div class="op-desc">Value in range/set</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IP FILTERS -->
+  <div class="section-label">Network Layer</div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">🌐</span>
+      <h2>IP Address Filters</h2>
+    </div>
+    <table>
+      <tr>
+        <td><code>ip.addr == 192.168.1.1</code></td>
+        <td class="desc">Any traffic to/from IP</td>
+      </tr>
+      <tr>
+        <td><code>ip.src == 10.0.0.1</code></td>
+        <td class="desc">Source IP</td>
+      </tr>
+      <tr>
+        <td><code>ip.dst == 10.0.0.2</code></td>
+        <td class="desc">Destination IP</td>
+      </tr>
+      <tr>
+        <td><code>ip.addr == 192.168.0.0/24</code></td>
+        <td class="desc">Entire subnet</td>
+      </tr>
+      <tr>
+        <td><code>!ip.addr == 192.168.1.1</code></td>
+        <td class="desc">Exclude an IP</td>
+      </tr>
+      <tr>
+        <td><code>ip.ttl &lt; 10</code></td>
+        <td class="desc">Low TTL (possible loop/attack)</td>
+      </tr>
+      <tr>
+        <td><code>ip.flags.df == 1</code></td>
+        <td class="desc">Don't Fragment bit set</td>
+      </tr>
+      <tr>
+        <td><code>ip.len &gt; 1000</code></td>
+        <td class="desc">Large IP packets</td>
+      </tr>
+      <tr>
+        <td><code>ipv6.addr == ::1</code></td>
+        <td class="desc">IPv6 loopback</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- PROTOCOL FILTERS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">📡</span>
+      <h2>Protocol Filters</h2>
+    </div>
+    <table>
+      <tr>
+        <td><code>tcp</code></td>
+        <td class="desc">All TCP traffic</td>
+      </tr>
+      <tr>
+        <td><code>udp</code></td>
+        <td class="desc">All UDP traffic</td>
+      </tr>
+      <tr>
+        <td><code>icmp</code></td>
+        <td class="desc">ICMP (ping, etc.)</td>
+      </tr>
+      <tr>
+        <td><code>arp</code></td>
+        <td class="desc">ARP packets</td>
+      </tr>
+      <tr>
+        <td><code>dns</code></td>
+        <td class="desc">DNS queries &amp; responses</td>
+      </tr>
+      <tr>
+        <td><code>http</code></td>
+        <td class="desc">HTTP traffic (port 80)</td>
+      </tr>
+      <tr>
+        <td><code>tls</code></td>
+        <td class="desc">TLS/SSL traffic</td>
+      </tr>
+      <tr>
+        <td><code>ftp</code></td>
+        <td class="desc">FTP control channel</td>
+      </tr>
+      <tr>
+        <td><code>ssh</code></td>
+        <td class="desc">SSH sessions</td>
+      </tr>
+      <tr>
+        <td><code>dhcp</code></td>
+        <td class="desc">DHCP lease traffic</td>
+      </tr>
+      <tr>
+        <td><code>smb</code></td>
+        <td class="desc">SMB file sharing</td>
+      </tr>
+      <tr>
+        <td><code>ntp</code></td>
+        <td class="desc">NTP time sync</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- TCP FILTERS -->
+  <div class="section-label">Transport Layer</div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">🔌</span>
+      <h2>TCP Filters</h2>
+    </div>
+    <table>
+      <tr>
+        <td><code>tcp.port == 443</code></td>
+        <td class="desc">Port 443 (either direction)</td>
+      </tr>
+      <tr>
+        <td><code>tcp.srcport == 8080</code></td>
+        <td class="desc">Source port</td>
+      </tr>
+      <tr>
+        <td><code>tcp.dstport == 22</code></td>
+        <td class="desc">Destination port</td>
+      </tr>
+      <tr>
+        <td><code>tcp.flags.syn == 1</code></td>
+        <td class="desc">SYN packets (new connections)</td>
+      </tr>
+      <tr>
+        <td><code>tcp.flags.rst == 1</code></td>
+        <td class="desc">RST (reset/rejected)</td>
+      </tr>
+      <tr>
+        <td><code>tcp.flags.fin == 1</code></td>
+        <td class="desc">FIN (connection teardown)</td>
+      </tr>
+      <tr>
+        <td><code>tcp.flags.push == 1</code></td>
+        <td class="desc">PSH flag set</td>
+      </tr>
+      <tr>
+        <td><code>tcp.flags == 0x002</code></td>
+        <td class="desc">Only SYN (exact flag match)</td>
+      </tr>
+      <tr>
+        <td><code>tcp.analysis.retransmission</code></td>
+        <td class="desc">Retransmitted segments</td>
+      </tr>
+      <tr>
+        <td><code>tcp.analysis.duplicate_ack</code></td>
+        <td class="desc">Duplicate ACKs</td>
+      </tr>
+      <tr>
+        <td><code>tcp.analysis.zero_window</code></td>
+        <td class="desc">Zero window (flow control)</td>
+      </tr>
+      <tr>
+        <td><code>tcp.len &gt; 0</code></td>
+        <td class="desc">TCP with payload data</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- UDP FILTERS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">📦</span>
+      <h2>UDP Filters</h2>
+    </div>
+    <table>
+      <tr>
+        <td><code>udp.port == 53</code></td>
+        <td class="desc">DNS (port 53)</td>
+      </tr>
+      <tr>
+        <td><code>udp.srcport == 1234</code></td>
+        <td class="desc">UDP source port</td>
+      </tr>
+      <tr>
+        <td><code>udp.dstport == 5353</code></td>
+        <td class="desc">mDNS destination</td>
+      </tr>
+      <tr>
+        <td><code>udp.length &gt; 100</code></td>
+        <td class="desc">UDP datagram size filter</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- APPLICATION LAYER -->
+  <div class="section-label">Application Layer</div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">🌍</span>
+      <h2>HTTP / HTTPS</h2>
+    </div>
+    <table>
+      <tr>
+        <td><code>http.request</code></td>
+        <td class="desc">HTTP requests only</td>
+      </tr>
+      <tr>
+        <td><code>http.response</code></td>
+        <td class="desc">HTTP responses only</td>
+      </tr>
+      <tr>
+        <td><code>http.request.method == "GET"</code></td>
+        <td class="desc">GET requests</td>
+      </tr>
+      <tr>
+        <td><code>http.request.method == "POST"</code></td>
+        <td class="desc">POST requests</td>
+      </tr>
+      <tr>
+        <td><code>http.response.code == 200</code></td>
+        <td class="desc">HTTP 200 OK</td>
+      </tr>
+      <tr>
+        <td><code>http.response.code == 404</code></td>
+        <td class="desc">HTTP 404 Not Found</td>
+      </tr>
+      <tr>
+        <td><code>http.response.code &gt;= 400</code></td>
+        <td class="desc">All HTTP errors</td>
+      </tr>
+      <tr>
+        <td><code>http.host contains "example"</code></td>
+        <td class="desc">Host header contains string</td>
+      </tr>
+      <tr>
+        <td><code>http.request.uri contains "login"</code></td>
+        <td class="desc">URI path match</td>
+      </tr>
+      <tr>
+        <td><code>http.cookie</code></td>
+        <td class="desc">Packets with cookies</td>
+      </tr>
+      <tr>
+        <td><code>tls.handshake.type == 1</code></td>
+        <td class="desc">TLS Client Hello</td>
+      </tr>
+      <tr>
+        <td><code>tls.handshake.type == 2</code></td>
+        <td class="desc">TLS Server Hello</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- DNS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">🔎</span>
+      <h2>DNS Filters</h2>
+    </div>
+    <table>
+      <tr>
+        <td><code>dns.qry.name == "example.com"</code></td>
+        <td class="desc">Query for specific domain</td>
+      </tr>
+      <tr>
+        <td><code>dns.qry.name contains "google"</code></td>
+        <td class="desc">Domain contains string</td>
+      </tr>
+      <tr>
+        <td><code>dns.flags.response == 0</code></td>
+        <td class="desc">DNS queries only</td>
+      </tr>
+      <tr>
+        <td><code>dns.flags.response == 1</code></td>
+        <td class="desc">DNS responses only</td>
+      </tr>
+      <tr>
+        <td><code>dns.resp.type == 1</code></td>
+        <td class="desc">A record responses</td>
+      </tr>
+      <tr>
+        <td><code>dns.resp.type == 28</code></td>
+        <td class="desc">AAAA (IPv6) responses</td>
+      </tr>
+      <tr>
+        <td><code>dns.flags.rcode != 0</code></td>
+        <td class="desc">DNS errors (NXDOMAIN, etc.)</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- SECURITY / ANALYSIS -->
+  <div class="section-label">Security &amp; Analysis</div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">🔐</span>
+      <h2>Security &amp; Reconnaissance</h2>
+    </div>
+    <table>
+      <tr>
+        <td><code>tcp.flags.syn==1 &amp;&amp; tcp.flags.ack==0</code></td>
+        <td class="desc">SYN scan detection</td>
+      </tr>
+      <tr>
+        <td><code>icmp.type == 8</code></td>
+        <td class="desc">ICMP Echo Request (ping)</td>
+      </tr>
+      <tr>
+        <td><code>icmp.type == 0</code></td>
+        <td class="desc">ICMP Echo Reply</td>
+      </tr>
+      <tr>
+        <td><code>arp.opcode == 1</code></td>
+        <td class="desc">ARP requests</td>
+      </tr>
+      <tr>
+        <td><code>arp.duplicate-address-detected</code></td>
+        <td class="desc">ARP spoofing indicator</td>
+      </tr>
+      <tr>
+        <td><code>tcp.port == 4444</code></td>
+        <td class="desc">Common reverse shell port</td>
+      </tr>
+      <tr>
+        <td><code>http.request.method == "CONNECT"</code></td>
+        <td class="desc">HTTP CONNECT tunneling</td>
+      </tr>
+      <tr>
+        <td><code>dns.qry.name matches ".*\\.xyz$"</code></td>
+        <td class="desc">Suspicious TLD (regex)</td>
+      </tr>
+      <tr>
+        <td><code>tcp.analysis.flags</code></td>
+        <td class="desc">Any TCP expert event</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- CAPTURE FILTERS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">📷</span>
+      <h2>Capture Filters (BPF syntax)</h2>
+    </div>
+    <table>
+      <tr>
+        <td><code>host 192.168.1.1</code></td>
+        <td class="desc">Traffic to/from host</td>
+      </tr>
+      <tr>
+        <td><code>src host 10.0.0.1</code></td>
+        <td class="desc">From source only</td>
+      </tr>
+      <tr>
+        <td><code>dst host 10.0.0.2</code></td>
+        <td class="desc">To destination only</td>
+      </tr>
+      <tr>
+        <td><code>net 192.168.0.0/24</code></td>
+        <td class="desc">Entire subnet</td>
+      </tr>
+      <tr>
+        <td><code>port 80</code></td>
+        <td class="desc">Port 80 traffic</td>
+      </tr>
+      <tr>
+        <td><code>not port 22</code></td>
+        <td class="desc">Exclude SSH</td>
+      </tr>
+      <tr>
+        <td><code>tcp</code></td>
+        <td class="desc">TCP only</td>
+      </tr>
+      <tr>
+        <td><code>udp port 53</code></td>
+        <td class="desc">DNS capture</td>
+      </tr>
+      <tr>
+        <td><code>port 80 or port 443</code></td>
+        <td class="desc">Web traffic only</td>
+      </tr>
+      <tr>
+        <td><code>host x.x.x.x and not port 22</code></td>
+        <td class="desc">Host, exclude SSH</td>
+      </tr>
+      <tr>
+        <td><code>greater 1000</code></td>
+        <td class="desc">Packets &gt; 1000 bytes</td>
+      </tr>
+      <tr>
+        <td><code>ether host aa:bb:cc:dd:ee:ff</code></td>
+        <td class="desc">By MAC address</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- USEFUL COMBOS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="icon">⚡</span>
+      <h2>Useful Combinations</h2>
+    </div>
+    <table>
+      <tr>
+        <td><code>ip.addr==10.0.0.1 &amp;&amp; tcp</code></td>
+        <td class="desc">TCP from/to specific host</td>
+      </tr>
+      <tr>
+        <td><code>tcp.port==80 || tcp.port==443</code></td>
+        <td class="desc">All web traffic</td>
+      </tr>
+      <tr>
+        <td><code>!arp &amp;&amp; !dns &amp;&amp; !icmp</code></td>
+        <td class="desc">Exclude noisy protocols</td>
+      </tr>
+      <tr>
+        <td><code>tcp.flags.syn==1 &amp;&amp; ip.src==x.x.x.x</code></td>
+        <td class="desc">New connections from host</td>
+      </tr>
+      <tr>
+        <td><code>http &amp;&amp; ip.addr==1.2.3.4</code></td>
+        <td class="desc">HTTP to/from specific IP</td>
+      </tr>
+      <tr>
+        <td><code>dns &amp;&amp; !ip.dst==8.8.8.8</code></td>
+        <td class="desc">DNS not going to Google</td>
+      </tr>
+      <tr>
+        <td><code>tcp.analysis.retransmission || tcp.analysis.lost_segment</code></td>
+        <td class="desc">Network quality issues</td>
+      </tr>
+      <tr>
+        <td><code>frame.time_delta &gt; 1</code></td>
+        <td class="desc">Gaps &gt; 1 second between packets</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- TIPS BOX -->
+  <div class="tip-box">
+    <h3>💡 Quick Tips</h3>
+    <ul class="tips-list">
+      <li><strong>Display filters</strong> work on captured packets; <strong>capture filters</strong> (BPF) limit what's recorded — apply capture filters first.</li>
+      <li>Right-click any field in the packet detail pane → <em>Apply as Filter</em> to build filters automatically.</li>
+      <li>Use <code>Follow → TCP Stream</code> (Ctrl+Alt+Shift+T) to reconstruct full conversations.</li>
+      <li><code>Statistics → Conversations</code> gives a quick bandwidth-by-host overview.</li>
+      <li>Save complex display filters with <em>Analyze → Display Filter Macros</em>.</li>
+      <li>Use <code>frame.number</code>, <code>frame.len</code>, and <code>frame.time</code> for packet-level meta filtering.</li>
+      <li>Colorization rules are at <em>View → Coloring Rules</em> — use the same syntax as display filters.</li>
+      <li><code>tshark -r file.pcap -Y "display_filter"</code> applies display filters from the command line.</li>
+    </ul>
+  </div>
+
+</div>
+
+<footer>
+  Wireshark Filters Cheat Sheet &bull; Display filter syntax unless noted &bull; Wireshark v4.x
+</footer>
+
+</body>
+</html>

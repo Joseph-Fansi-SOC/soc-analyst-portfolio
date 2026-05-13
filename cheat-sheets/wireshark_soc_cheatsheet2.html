@@ -1,0 +1,1429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wireshark SOC Analyst Cheat Sheet</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@700;900&display=swap');
+
+  :root {
+    --bg: #080c10;
+    --bg2: #0d1117;
+    --bg3: #111820;
+    --panel: #0a1628;
+    --border: #1a3a5c;
+    --accent: #00d4ff;
+    --accent2: #00ff88;
+    --accent3: #ff4d6d;
+    --accent4: #ffb347;
+    --accent5: #b47aff;
+    --text: #c8d8e8;
+    --text-dim: #607080;
+    --mono: 'Share Tech Mono', monospace;
+    --head: 'Orbitron', sans-serif;
+    --body: 'Rajdhani', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* PRINT */
+  @media print {
+    body { background: #fff; color: #000; font-size: 11px; }
+    .cover { page-break-after: always; }
+    .section { page-break-inside: avoid; }
+    .no-print { display: none; }
+    :root {
+      --bg: #fff; --bg2: #f5f5f5; --bg3: #eee; --panel: #f0f4f8;
+      --border: #ccc; --accent: #0066cc; --accent2: #007744;
+      --accent3: #cc2244; --accent4: #cc7700; --accent5: #6644bb;
+      --text: #111; --text-dim: #555;
+    }
+    table { break-inside: avoid; }
+    tr { break-inside: avoid; }
+  }
+
+  /* COVER PAGE */
+  .cover {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 30% 40%, #001833 0%, var(--bg) 70%);
+    position: relative;
+    overflow: hidden;
+    padding: 60px 40px;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  .cover-glow {
+    position: absolute;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+
+  .cover-badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    border: 1px solid rgba(0,212,255,0.3);
+    padding: 6px 16px;
+    margin-bottom: 32px;
+  }
+
+  .cover h1 {
+    font-family: var(--head);
+    font-size: 42px;
+    font-weight: 900;
+    color: #fff;
+    text-align: center;
+    letter-spacing: 3px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .cover h1 span { color: var(--accent); }
+
+  .cover h2 {
+    font-family: var(--head);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent2);
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 40px;
+  }
+
+  .cover-stats {
+    display: flex;
+    gap: 48px;
+    margin: 40px 0;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: var(--head);
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--accent);
+    display: block;
+  }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .cover-divider {
+    width: 300px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    margin: 32px 0;
+  }
+
+  .cover-desc {
+    font-family: var(--body);
+    font-size: 15px;
+    color: var(--text-dim);
+    text-align: center;
+    max-width: 560px;
+    font-weight: 500;
+  }
+
+  .cover-footer {
+    position: absolute;
+    bottom: 28px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  /* TOC */
+  .toc-page {
+    padding: 48px 60px;
+    background: var(--bg2);
+    min-height: 100vh;
+  }
+
+  .toc-title {
+    font-family: var(--head);
+    font-size: 22px;
+    font-weight: 900;
+    color: var(--accent);
+    letter-spacing: 4px;
+    margin-bottom: 32px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .toc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+  }
+
+  .toc-num {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--accent);
+    min-width: 24px;
+  }
+
+  .toc-name {
+    font-family: var(--body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .toc-icon { font-size: 16px; }
+
+  /* MAIN CONTENT */
+  .content {
+    padding: 40px 60px;
+    background: var(--bg);
+  }
+
+  .section {
+    margin-bottom: 48px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-icon {
+    font-size: 22px;
+    width: 40px;
+    text-align: center;
+  }
+
+  .section-title {
+    font-family: var(--head);
+    font-size: 15px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+
+  .section-accent {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  .section-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    border: 1px solid rgba(0,212,255,0.25);
+    padding: 2px 8px;
+    letter-spacing: 2px;
+  }
+
+  /* TABLES */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    margin-bottom: 8px;
+  }
+
+  thead tr {
+    background: var(--panel);
+  }
+
+  thead th {
+    padding: 8px 12px;
+    text-align: left;
+    font-family: var(--body);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(26,58,92,0.4);
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover { background: rgba(0,212,255,0.04); }
+  tbody tr:nth-child(even) { background: rgba(10,22,40,0.5); }
+  tbody tr:nth-child(even):hover { background: rgba(0,212,255,0.06); }
+
+  td {
+    padding: 6px 12px;
+    vertical-align: top;
+  }
+
+  td:first-child {
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 12px;
+    font-weight: 600;
+    min-width: 180px;
+  }
+
+  td:last-child {
+    color: var(--accent2);
+    font-family: var(--mono);
+    font-size: 11px;
+    word-break: break-all;
+  }
+
+  /* COLOR ACCENTS PER SECTION */
+  .red td:last-child { color: #ff6b7a; }
+  .orange td:last-child { color: #ffb347; }
+  .purple td:last-child { color: #c084fc; }
+  .yellow td:last-child { color: #fde047; }
+  .blue td:last-child { color: #60a5fa; }
+  .pink td:last-child { color: #f472b6; }
+  .teal td:last-child { color: #2dd4bf; }
+  .lime td:last-child { color: #a3e635; }
+
+  /* SECTION BORDER ACCENT */
+  .section-header.red .section-title { color: #ff6b7a; }
+  .section-header.orange .section-title { color: #ffb347; }
+  .section-header.purple .section-title { color: #c084fc; }
+  .section-header.yellow .section-title { color: #fde047; }
+  .section-header.blue .section-title { color: #60a5fa; }
+  .section-header.pink .section-title { color: #f472b6; }
+  .section-header.teal .section-title { color: #2dd4bf; }
+  .section-header.lime .section-title { color: #a3e635; }
+
+  .section-header.red { border-bottom-color: rgba(255,107,122,0.4); }
+  .section-header.orange { border-bottom-color: rgba(255,179,71,0.4); }
+  .section-header.purple { border-bottom-color: rgba(192,132,252,0.4); }
+  .section-header.yellow { border-bottom-color: rgba(253,224,71,0.4); }
+  .section-header.blue { border-bottom-color: rgba(96,165,250,0.4); }
+  .section-header.pink { border-bottom-color: rgba(244,114,182,0.4); }
+  .section-header.teal { border-bottom-color: rgba(45,212,191,0.4); }
+  .section-header.lime { border-bottom-color: rgba(163,230,53,0.4); }
+
+  /* TWO COLUMN LAYOUT */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  /* TIPS BOX */
+  .tip-box {
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-left: 3px solid var(--accent);
+    padding: 14px 18px;
+    margin-top: 16px;
+    font-family: var(--body);
+    font-size: 12px;
+    font-weight: 500;
+    color: #a0c4d8;
+  }
+
+  .tip-box strong {
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  /* WORKFLOW STEPS */
+  .workflow {
+    display: flex;
+    gap: 0;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 10px 14px;
+    flex: 1;
+    min-width: 140px;
+    position: relative;
+  }
+
+  .step:not(:last-child)::after {
+    content: '▶';
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent);
+    font-size: 10px;
+    z-index: 1;
+  }
+
+  .step-num {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 1px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .step-text {
+    font-family: var(--body);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  /* SEVERITY BADGES */
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+
+  .badge-crit { background: rgba(255,77,109,0.2); color: #ff4d6d; border: 1px solid #ff4d6d; }
+  .badge-high { background: rgba(255,179,71,0.15); color: #ffb347; border: 1px solid #ffb347; }
+  .badge-med { background: rgba(0,212,255,0.1); color: var(--accent); border: 1px solid var(--accent); }
+
+  /* PAGE BREAK HINT */
+  .page-break { page-break-before: always; padding-top: 20px; }
+
+  /* PRINT BUTTON */
+  .print-bar {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 999;
+    display: flex;
+    gap: 10px;
+  }
+
+  .print-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 12px 24px;
+    font-family: var(--head);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    box-shadow: 0 0 20px rgba(0,212,255,0.4);
+  }
+
+  .print-btn:hover { background: #fff; box-shadow: 0 0 30px rgba(0,212,255,0.6); }
+
+  /* FILTER HIGHLIGHT */
+  code {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: rgba(0,212,255,0.08);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--accent2);
+  }
+
+  .section-subtitle {
+    font-family: var(--body);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    margin-top: -8px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  /* DIVIDER */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 40px 0;
+  }
+
+  /* REFERENCE CARD */
+  .ref-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 12px 0;
+  }
+
+  .ref-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 12px;
+    text-align: center;
+  }
+
+  .ref-card .port {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--accent);
+    display: block;
+  }
+
+  .ref-card .proto {
+    font-family: var(--body);
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .ref-card .desc {
+    font-family: var(--body);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* ALERT INDICATORS */
+  .indicator-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .indicator {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent3);
+    padding: 10px 14px;
+  }
+
+  .indicator.warn { border-left-color: var(--accent4); }
+  .indicator.info { border-left-color: var(--accent); }
+  .indicator.ok { border-left-color: var(--accent2); }
+
+  .indicator-title {
+    font-family: var(--body);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .indicator-desc {
+    font-family: var(--body);
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<!-- PRINT BUTTON -->
+<div class="print-bar no-print">
+  <button class="print-btn" onclick="window.print()">⬇ Save as PDF</button>
+</div>
+
+<!-- COVER PAGE -->
+<div class="cover">
+  <div class="cover-glow"></div>
+  <div class="cover-badge">SOC Analyst Reference // v2.0</div>
+  <h1>WIRESHARK<br><span>ANALYST BIBLE</span></h1>
+  <h2>Complete Filter & Analysis Guide</h2>
+  <div class="cover-divider"></div>
+  <div class="cover-stats">
+    <div class="stat">
+      <span class="stat-num">200+</span>
+      <span class="stat-label">Filters</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">15</span>
+      <span class="stat-label">Categories</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">SOC</span>
+      <span class="stat-label">Focused</span>
+    </div>
+  </div>
+  <div class="cover-divider"></div>
+  <div class="cover-desc">
+    A complete operational reference for network traffic analysis, threat hunting, incident response and forensics using Wireshark.
+  </div>
+  <div class="cover-footer">WIRESHARK SOC CHEATSHEET &nbsp;|&nbsp; CONFIDENTIAL INTERNAL USE &nbsp;|&nbsp; 2026</div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc-page">
+  <div class="toc-title">// TABLE OF CONTENTS</div>
+  <div class="toc-grid">
+    <div class="toc-item"><span class="toc-icon">🚀</span><span class="toc-num">01</span><span class="toc-name">First Steps & File Info</span></div>
+    <div class="toc-item"><span class="toc-icon">🔍</span><span class="toc-num">02</span><span class="toc-name">Reconnaissance & Scanning</span></div>
+    <div class="toc-item"><span class="toc-icon">💥</span><span class="toc-num">03</span><span class="toc-name">DoS / DDoS Detection</span></div>
+    <div class="toc-item"><span class="toc-icon">🐛</span><span class="toc-num">04</span><span class="toc-name">Malware & C2 Detection</span></div>
+    <div class="toc-item"><span class="toc-icon">🔑</span><span class="toc-num">05</span><span class="toc-name">Credential & Data Exfil</span></div>
+    <div class="toc-item"><span class="toc-icon">🏠</span><span class="toc-num">06</span><span class="toc-name">Lateral Movement</span></div>
+    <div class="toc-item"><span class="toc-icon">🌐</span><span class="toc-num">07</span><span class="toc-name">DNS Analysis</span></div>
+    <div class="toc-item"><span class="toc-icon">🔒</span><span class="toc-num">08</span><span class="toc-name">TLS/SSL Analysis</span></div>
+    <div class="toc-item"><span class="toc-icon">📡</span><span class="toc-num">09</span><span class="toc-name">ARP Poisoning / MITM</span></div>
+    <div class="toc-item"><span class="toc-icon">🔥</span><span class="toc-num">10</span><span class="toc-name">HTTP / Web Attacks</span></div>
+    <div class="toc-item"><span class="toc-icon">📊</span><span class="toc-num">11</span><span class="toc-name">TCP Performance</span></div>
+    <div class="toc-item"><span class="toc-icon">🛡️</span><span class="toc-num">12</span><span class="toc-name">ICMP Analysis</span></div>
+    <div class="toc-item"><span class="toc-icon">🔐</span><span class="toc-num">13</span><span class="toc-name">Active Directory / Kerberos</span></div>
+    <div class="toc-item"><span class="toc-icon">🧰</span><span class="toc-num">14</span><span class="toc-name">General SOC Filters</span></div>
+    <div class="toc-item"><span class="toc-icon">📦</span><span class="toc-num">15</span><span class="toc-name">Protocol Quick Reference</span></div>
+    <div class="toc-item"><span class="toc-icon">⚡</span><span class="toc-num">16</span><span class="toc-name">Advanced & Misc Filters</span></div>
+    <div class="toc-item"><span class="toc-icon">🗂️</span><span class="toc-num">17</span><span class="toc-name">File Extraction Guide</span></div>
+    <div class="toc-item"><span class="toc-icon">📋</span><span class="toc-num">18</span><span class="toc-name">IOC Hunting Workflow</span></div>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content">
+
+  <!-- SECTION 1: FIRST STEPS -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-icon">🚀</span>
+      <span class="section-title">01 — First Steps & File Analysis</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">START HERE</span>
+    </div>
+    <p class="section-subtitle">Always begin every PCAP investigation with these steps to understand scope before diving into specific threats.</p>
+
+    <div class="workflow">
+      <div class="step"><span class="step-num">STEP 01</span><span class="step-text">Open & Check File Properties</span></div>
+      <div class="step"><span class="step-num">STEP 02</span><span class="step-text">Protocol Hierarchy</span></div>
+      <div class="step"><span class="step-num">STEP 03</span><span class="step-text">Endpoints & Conversations</span></div>
+      <div class="step"><span class="step-num">STEP 04</span><span class="step-text">Expert Info Review</span></div>
+      <div class="step"><span class="step-num">STEP 05</span><span class="step-text">IO Graph & Timelines</span></div>
+      <div class="step"><span class="step-num">STEP 06</span><span class="step-text">Deep Dive by Protocol</span></div>
+    </div>
+
+    <table>
+      <thead><tr><th>Action</th><th>Menu Path / Filter</th></tr></thead>
+      <tbody>
+        <tr><td>Capture file properties</td><td>Statistics &gt; Capture File Properties</td></tr>
+        <tr><td>Protocol hierarchy breakdown</td><td>Statistics &gt; Protocol Hierarchy</td></tr>
+        <tr><td>All endpoints (IP, MAC, ports)</td><td>Statistics &gt; Endpoints</td></tr>
+        <tr><td>All conversations</td><td>Statistics &gt; Conversations</td></tr>
+        <tr><td>IO graph (traffic spikes)</td><td>Statistics &gt; I/O Graph</td></tr>
+        <tr><td>Expert info (errors/warnings)</td><td>Analyze &gt; Expert Information</td></tr>
+        <tr><td>TCP stream graphs (RTT)</td><td>Statistics &gt; TCP Stream Graphs &gt; RTT</td></tr>
+        <tr><td>Resolve IPs to hostnames</td><td>View &gt; Name Resolution &gt; Resolve Network Addresses</td></tr>
+        <tr><td>Follow TCP stream</td><td>Right-click packet &gt; Follow &gt; TCP Stream</td></tr>
+        <tr><td>Follow UDP stream</td><td>Right-click packet &gt; Follow &gt; UDP Stream</td></tr>
+        <tr><td>Apply as filter from packet</td><td>Right-click field &gt; Apply as Filter &gt; Selected</td></tr>
+        <tr><td>Export HTTP objects</td><td>File &gt; Export Objects &gt; HTTP</td></tr>
+        <tr><td>Export SMB objects</td><td>File &gt; Export Objects &gt; SMB</td></tr>
+        <tr><td>Mark/unmark packets</td><td>Ctrl+M / Edit &gt; Mark Packet</td></tr>
+        <tr><td>Set time reference</td><td>Ctrl+T on a packet</td></tr>
+        <tr><td>Filter by time range</td><td>frame.time &gt;= "2026-01-01 00:00:00"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 2: RECON & SCANNING -->
+  <div class="section">
+    <div class="section-header red">
+      <span class="section-icon">🔍</span>
+      <span class="section-title">02 — Reconnaissance & Port Scanning</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">THREAT HUNTING</span>
+    </div>
+    <table class="red">
+      <thead><tr><th>Purpose</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>SYN scan (Nmap default) <span class="badge badge-crit">CRIT</span></td><td>tcp.flags == 0x002</td></tr>
+        <tr><td>SYN-ACK response (open ports)</td><td>tcp.flags == 0x012</td></tr>
+        <tr><td>RST-ACK (closed port response)</td><td>tcp.flags == 0x014</td></tr>
+        <tr><td>TCP NULL scan (no flags)</td><td>tcp.flags == 0x000</td></tr>
+        <tr><td>TCP FIN scan</td><td>tcp.flags == 0x001</td></tr>
+        <tr><td>TCP XMAS scan (FIN+PSH+URG)</td><td>tcp.flags == 0x029</td></tr>
+        <tr><td>TCP ACK scan (firewall mapping)</td><td>tcp.flags == 0x010 && tcp.window_size == 0</td></tr>
+        <tr><td>ICMP ping sweep</td><td>icmp.type == 8</td></tr>
+        <tr><td>ICMP echo replies</td><td>icmp.type == 0</td></tr>
+        <tr><td>UDP scan (ICMP port unreachable)</td><td>icmp.type == 3 && icmp.code == 3</td></tr>
+        <tr><td>OS fingerprinting (TTL analysis)</td><td>ip.ttl &lt; 64</td></tr>
+        <tr><td>OS fingerprint (unusual TCP opts)</td><td>tcp.options.timestamp</td></tr>
+        <tr><td>Nmap version scan indicator</td><td>tcp.flags.push == 1 && tcp.len &gt; 0 && tcp.flags.ack == 1</td></tr>
+        <tr><td>Massive RST responses (scan)</td><td>tcp.flags.reset == 1</td></tr>
+        <tr><td>High SYN rate from one IP</td><td>ip.src == &lt;IP&gt; && tcp.flags.syn == 1 && tcp.flags.ack == 0</td></tr>
+        <tr><td>SNMP enumeration</td><td>snmp && udp.port == 161</td></tr>
+        <tr><td>NetBIOS enumeration</td><td>nbns</td></tr>
+        <tr><td>SMB enumeration</td><td>smb2.cmd == 0 || smb2.cmd == 5</td></tr>
+        <tr><td>LDAP enumeration</td><td>ldap.filter</td></tr>
+        <tr><td>mDNS/Bonjour discovery</td><td>mdns</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 3: DoS/DDoS -->
+  <div class="section">
+    <div class="section-header orange">
+      <span class="section-icon">💥</span>
+      <span class="section-title">03 — DoS / DDoS Detection</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">AVAILABILITY</span>
+    </div>
+    <table class="orange">
+      <thead><tr><th>Attack Type</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>SYN flood <span class="badge badge-crit">CRIT</span></td><td>tcp.flags.syn == 1 && tcp.flags.ack == 0</td></tr>
+        <tr><td>ICMP flood (Ping of Death)</td><td>icmp && frame.len &gt; 1000</td></tr>
+        <tr><td>UDP flood</td><td>udp && ip.src == &lt;attacker_IP&gt;</td></tr>
+        <tr><td>RST flood (connection tear)</td><td>tcp.flags.reset == 1</td></tr>
+        <tr><td>ACK flood</td><td>tcp.flags.ack == 1 && tcp.flags.syn == 0 && tcp.len == 0</td></tr>
+        <tr><td>Smurf attack</td><td>icmp.type == 8 && ip.dst == 255.255.255.255</td></tr>
+        <tr><td>IP fragmentation attack</td><td>ip.flags.mf == 1 || ip.frag_offset &gt; 0</td></tr>
+        <tr><td>DNS amplification <span class="badge badge-high">HIGH</span></td><td>dns.flags.response == 1 && udp.length &gt; 400</td></tr>
+        <tr><td>NTP amplification (monlist)</td><td>ntp && udp.length &gt; 200</td></tr>
+        <tr><td>SSDP amplification</td><td>udp.port == 1900</td></tr>
+        <tr><td>Memcached amplification</td><td>udp.port == 11211</td></tr>
+        <tr><td>HTTP flood (Layer 7)</td><td>http.request.method == "GET" && ip.src == &lt;IP&gt;</td></tr>
+        <tr><td>Slow HTTP (Slowloris)</td><td>http && tcp.window_size &lt; 1000</td></tr>
+        <tr><td>DHCP starvation</td><td>bootp.option.dhcp == 1</td></tr>
+        <tr><td>Teardrop (overlapping frags)</td><td>ip.frag_offset &gt; 0 && ip.flags.mf == 0</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider page-break"></div>
+
+  <!-- SECTION 4: MALWARE/C2 -->
+  <div class="section">
+    <div class="section-header purple">
+      <span class="section-icon">🐛</span>
+      <span class="section-title">04 — Malware & C2 Detection</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">THREAT INTEL</span>
+    </div>
+    <table class="purple">
+      <thead><tr><th>Indicator</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>Beaconing (periodic SYN to IP) <span class="badge badge-crit">CRIT</span></td><td>tcp.flags.syn == 1 && ip.dst == &lt;C2_IP&gt;</td></tr>
+        <tr><td>DNS tunneling (long subdomain)</td><td>dns.qry.name matches "[a-z0-9]{30,}"</td></tr>
+        <tr><td>DNS over non-standard port</td><td>dns && udp.port != 53 && tcp.port != 53</td></tr>
+        <tr><td>HTTPS on non-443 port</td><td>ssl && tcp.port != 443</td></tr>
+        <tr><td>HTTP C2 (empty user-agent)</td><td>http.user_agent == ""</td></tr>
+        <tr><td>HTTP C2 (curl agent)</td><td>http.user_agent contains "curl"</td></tr>
+        <tr><td>HTTP C2 (python agent)</td><td>http.user_agent contains "python"</td></tr>
+        <tr><td>HTTP C2 (wget agent)</td><td>http.user_agent contains "Wget"</td></tr>
+        <tr><td>Base64 payload in URI</td><td>http.request.uri matches "=[A-Za-z0-9+/]{20,}"</td></tr>
+        <tr><td>Large DNS TXT (exfil channel)</td><td>dns.resp.type == 16 && dns.resp.len &gt; 100</td></tr>
+        <tr><td>IRC C2 (classic botnet)</td><td>tcp.port == 6667 || tcp.port == 6697</td></tr>
+        <tr><td>Metasploit Meterpreter default</td><td>tcp.port == 4444</td></tr>
+        <tr><td>Cobalt Strike beacon (default)</td><td>tcp.port == 50050</td></tr>
+        <tr><td>Empire C2 default</td><td>tcp.port == 8080 && http</td></tr>
+        <tr><td>Reverse shell indicators</td><td>tcp.port == 1337 || tcp.port == 31337</td></tr>
+        <tr><td>ICMP tunneling</td><td>icmp && data.len &gt; 64</td></tr>
+        <tr><td>DNS fast-flux (many IPs/domain)</td><td>dns.count.answers &gt; 5 && dns.flags.response == 1</td></tr>
+        <tr><td>JA3 hash (known malware TLS)</td><td>tls.handshake.ja3 == "&lt;hash&gt;"</td></tr>
+        <tr><td>Tor traffic (entry/exit nodes)</td><td>tcp.port == 9001 || tcp.port == 9030</td></tr>
+        <tr><td>Tor hidden service traffic</td><td>tcp.port == 9050</td></tr>
+        <tr><td>Suspicious PowerShell download</td><td>http.request.uri contains "powershell"</td></tr>
+        <tr><td>HTA/scriptlet dropper</td><td>http.request.uri contains ".hta"</td></tr>
+        <tr><td>Office macro dropper</td><td>http.response.code == 200 && http contains ".doc"</td></tr>
+      </tbody>
+    </table>
+    <div class="tip-box">
+      <strong>💡 PRO TIP — BEACONING DETECTION</strong>
+      Use Statistics &gt; Conversations, sort by packets/time. Regular intervals (every 30s, 60s, 5min) between same two IPs = strong beaconing indicator. Cross-reference with Statistics &gt; IO Graph to visualize the pattern.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 5: CREDENTIALS / EXFIL -->
+  <div class="section">
+    <div class="section-header yellow">
+      <span class="section-icon">🔑</span>
+      <span class="section-title">05 — Credential Theft & Data Exfiltration</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">DATA LOSS</span>
+    </div>
+    <table class="yellow">
+      <thead><tr><th>Method</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>HTTP Basic Auth (cleartext) <span class="badge badge-crit">CRIT</span></td><td>http.authorization</td></tr>
+        <tr><td>HTTP form POST (login)</td><td>http.request.method == "POST" && http contains "password"</td></tr>
+        <tr><td>FTP password (cleartext)</td><td>ftp.request.command == "PASS"</td></tr>
+        <tr><td>FTP username</td><td>ftp.request.command == "USER"</td></tr>
+        <tr><td>FTP data transfer</td><td>ftp-data</td></tr>
+        <tr><td>Telnet cleartext session</td><td>telnet</td></tr>
+        <tr><td>POP3 cleartext login</td><td>pop.request.command == "PASS"</td></tr>
+        <tr><td>IMAP cleartext login</td><td>imap contains "LOGIN"</td></tr>
+        <tr><td>SMTP cleartext AUTH</td><td>smtp.auth.credentials</td></tr>
+        <tr><td>NTLM hashes over network</td><td>ntlmssp</td></tr>
+        <tr><td>NTLM Auth attempts</td><td>ntlmssp.auth</td></tr>
+        <tr><td>NTLMv2 challenge/response</td><td>ntlmssp.ntlmserverchallenge</td></tr>
+        <tr><td>Large HTTP POST (exfil)</td><td>http.request.method == "POST" && http.content_length &gt; 5000</td></tr>
+        <tr><td>Large outbound transfer</td><td>tcp.len &gt; 1000 && ip.dst == &lt;external_IP&gt;</td></tr>
+        <tr><td>DNS exfiltration (high entropy)</td><td>dns.qry.name matches "[a-zA-Z0-9]{20,}\."</td></tr>
+        <tr><td>ICMP data exfil</td><td>icmp.type == 8 && data.len &gt; 100</td></tr>
+        <tr><td>LDAP cleartext bind</td><td>ldap.authentication == simple</td></tr>
+        <tr><td>SNMP community string sniff</td><td>snmp.community</td></tr>
+        <tr><td>SMB file access (sensitive)</td><td>smb2.filename contains "password"</td></tr>
+        <tr><td>RDP credentials indicator</td><td>tcp.port == 3389 && tls.handshake.type == 1</td></tr>
+        <tr><td>Email attachment exfil (SMTP)</td><td>smtp && data.len &gt; 10000</td></tr>
+        <tr><td>Pastebin-style upload</td><td>http.host contains "paste"</td></tr>
+        <tr><td>Cloud storage upload (exfil)</td><td>http.host contains "dropbox" || http.host contains "drive.google"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider page-break"></div>
+
+  <!-- SECTION 6: LATERAL MOVEMENT -->
+  <div class="section">
+    <div class="section-header blue">
+      <span class="section-icon">🏠</span>
+      <span class="section-title">06 — Lateral Movement</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">POST-EXPLOITATION</span>
+    </div>
+    <table class="blue">
+      <thead><tr><th>Technique</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>SMB file share access <span class="badge badge-high">HIGH</span></td><td>smb || smb2</td></tr>
+        <tr><td>SMB authentication attempt</td><td>smb2.cmd == 1</td></tr>
+        <tr><td>SMB tree connect (share map)</td><td>smb2.cmd == 3</td></tr>
+        <tr><td>SMB file creation/write</td><td>smb2.cmd == 5</td></tr>
+        <tr><td>Pass-the-Hash via SMB</td><td>smb2 && ntlmssp.auth</td></tr>
+        <tr><td>PsExec remote execution</td><td>smb2.filename contains "PSEXESVC"</td></tr>
+        <tr><td>WMI remote execution</td><td>tcp.port == 135</td></tr>
+        <tr><td>WinRM (remote PowerShell)</td><td>tcp.port == 5985 || tcp.port == 5986</td></tr>
+        <tr><td>RDP lateral movement</td><td>tcp.port == 3389</td></tr>
+        <tr><td>RDP brute force</td><td>tcp.port == 3389 && tcp.flags.syn == 1</td></tr>
+        <tr><td>SSH lateral movement</td><td>tcp.port == 22</td></tr>
+        <tr><td>VNC remote access</td><td>tcp.port == 5900 || tcp.port == 5901</td></tr>
+        <tr><td>Telnet lateral (legacy)</td><td>tcp.port == 23</td></tr>
+        <tr><td>DCOM abuse (DCE/RPC)</td><td>dcerpc</td></tr>
+        <tr><td>At/Scheduled Task via SMB</td><td>smb2.filename contains ".job"</td></tr>
+        <tr><td>WPAD hijacking</td><td>http.request.uri contains "wpad.dat"</td></tr>
+        <tr><td>Token impersonation (LSA)</td><td>tcp.port == 49152</td></tr>
+        <tr><td>NTLM relay attack</td><td>ntlmssp && ip.dst != ip.src</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 7: DNS -->
+  <div class="section">
+    <div class="section-header teal">
+      <span class="section-icon">🌐</span>
+      <span class="section-title">07 — DNS Analysis</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">RECON / EXFIL</span>
+    </div>
+    <table class="teal">
+      <thead><tr><th>Purpose</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>All DNS traffic</td><td>dns</td></tr>
+        <tr><td>DNS queries only</td><td>dns.flags.response == 0</td></tr>
+        <tr><td>DNS responses only</td><td>dns.flags.response == 1</td></tr>
+        <tr><td>NXDOMAIN (non-existent domain)</td><td>dns.flags.rcode == 3</td></tr>
+        <tr><td>SERVFAIL</td><td>dns.flags.rcode == 2</td></tr>
+        <tr><td>REFUSED</td><td>dns.flags.rcode == 5</td></tr>
+        <tr><td>DNS ANY query (amplification)</td><td>dns.qry.type == 255</td></tr>
+        <tr><td>DNS zone transfer (AXFR)</td><td>dns.qry.type == 252</td></tr>
+        <tr><td>DNS incremental zone xfer</td><td>dns.qry.type == 251</td></tr>
+        <tr><td>DNS A record query</td><td>dns.qry.type == 1</td></tr>
+        <tr><td>DNS AAAA (IPv6) query</td><td>dns.qry.type == 28</td></tr>
+        <tr><td>DNS MX (mail) query</td><td>dns.qry.type == 15</td></tr>
+        <tr><td>DNS TXT record (C2/exfil)</td><td>dns.qry.type == 16</td></tr>
+        <tr><td>DNS PTR (reverse lookup)</td><td>dns.qry.type == 12</td></tr>
+        <tr><td>DNS SRV (service discovery)</td><td>dns.qry.type == 33</td></tr>
+        <tr><td>Long domain (tunneling)</td><td>dns.qry.name matches ".{50,}"</td></tr>
+        <tr><td>High entropy domain (DGA)</td><td>dns.qry.name matches "[a-z0-9]{12,}\.(com|net|org|info)"</td></tr>
+        <tr><td>DNS over TCP (large payload)</td><td>dns && tcp</td></tr>
+        <tr><td>Multiple DNS answers (fast-flux)</td><td>dns.count.answers &gt; 5</td></tr>
+        <tr><td>Suspicious TLD queries</td><td>dns.qry.name matches "\.(xyz|top|click|tk)$"</td></tr>
+        <tr><td>Internal DNS to external server</td><td>dns && ip.dst != &lt;internal_dns_ip&gt;</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider page-break"></div>
+
+  <!-- SECTION 8: TLS/SSL -->
+  <div class="section">
+    <div class="section-header lime">
+      <span class="section-icon">🔒</span>
+      <span class="section-title">08 — TLS / SSL Analysis</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">ENCRYPTION</span>
+    </div>
+    <table class="lime">
+      <thead><tr><th>Purpose</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>All TLS traffic</td><td>tls</td></tr>
+        <tr><td>TLS Client Hello</td><td>tls.handshake.type == 1</td></tr>
+        <tr><td>TLS Server Hello</td><td>tls.handshake.type == 2</td></tr>
+        <tr><td>TLS Certificate</td><td>tls.handshake.type == 11</td></tr>
+        <tr><td>TLS Certificate Request</td><td>tls.handshake.type == 13</td></tr>
+        <tr><td>TLS Alert (connection issue)</td><td>tls.record.content_type == 21</td></tr>
+        <tr><td>SSLv2 (critically insecure) <span class="badge badge-crit">CRIT</span></td><td>ssl.record.version == 0x0002</td></tr>
+        <tr><td>SSLv3 (POODLE vulnerable) <span class="badge badge-crit">CRIT</span></td><td>ssl.record.version == 0x0300</td></tr>
+        <tr><td>TLS 1.0 (weak) <span class="badge badge-high">HIGH</span></td><td>tls.record.version == 0x0301</td></tr>
+        <tr><td>TLS 1.1 (weak) <span class="badge badge-high">HIGH</span></td><td>tls.record.version == 0x0302</td></tr>
+        <tr><td>TLS 1.2 (acceptable)</td><td>tls.record.version == 0x0303</td></tr>
+        <tr><td>TLS 1.3 (preferred)</td><td>tls.record.version == 0x0304</td></tr>
+        <tr><td>JA3 client fingerprint</td><td>tls.handshake.ja3</td></tr>
+        <tr><td>JA3S server fingerprint</td><td>tls.handshake.ja3s</td></tr>
+        <tr><td>TLS SNI (hostname)</td><td>tls.handshake.extensions_server_name</td></tr>
+        <tr><td>Specific SNI hostname</td><td>tls.handshake.extensions_server_name == "evil.com"</td></tr>
+        <tr><td>TLS to non-standard port</td><td>tls && tcp.port != 443 && tcp.port != 8443</td></tr>
+        <tr><td>Certificate Common Name</td><td>tls.handshake.certificate</td></tr>
+        <tr><td>Expired certificate</td><td>tls.handshake.cert_expiration</td></tr>
+        <tr><td>NULL cipher suite</td><td>tls.handshake.ciphersuite == 0x0000</td></tr>
+        <tr><td>RC4 cipher (broken)</td><td>tls.handshake.ciphersuite == 0x0005</td></tr>
+        <tr><td>Export-grade cipher (FREAK)</td><td>tls.handshake.ciphersuite &lt; 0x0010</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 9: ARP -->
+  <div class="section">
+    <div class="section-header pink">
+      <span class="section-icon">📡</span>
+      <span class="section-title">09 — ARP Poisoning & MITM</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">NETWORK</span>
+    </div>
+    <div class="two-col">
+      <table class="pink">
+        <thead><tr><th>Purpose</th><th>Filter</th></tr></thead>
+        <tbody>
+          <tr><td>All ARP traffic</td><td>arp</td></tr>
+          <tr><td>ARP requests</td><td>arp.opcode == 1</td></tr>
+          <tr><td>ARP replies</td><td>arp.opcode == 2</td></tr>
+          <tr><td>Gratuitous ARP <span class="badge badge-high">HIGH</span></td><td>arp.isSolicited == 0</td></tr>
+          <tr><td>Duplicate IP detected</td><td>arp.duplicate-address-detected</td></tr>
+          <tr><td>ARP flood from one MAC</td><td>arp && eth.src == &lt;MAC&gt;</td></tr>
+          <tr><td>ARP reply without request</td><td>arp.opcode == 2 && !arp.opcode == 1</td></tr>
+          <tr><td>RARP (reverse ARP)</td><td>arp.opcode == 3 || arp.opcode == 4</td></tr>
+        </tbody>
+      </table>
+
+      <div>
+        <div class="indicator-grid">
+          <div class="indicator">
+            <div class="indicator-title">🚨 ARP Spoofing Indicator</div>
+            <div class="indicator-desc">Same IP with different MAC addresses appearing in ARP replies = active MITM</div>
+          </div>
+          <div class="indicator warn">
+            <div class="indicator-title">⚠️ Gratuitous ARP</div>
+            <div class="indicator-desc">ARP reply sent without request. Could be legit (IP change) or attack (poisoning)</div>
+          </div>
+          <div class="indicator">
+            <div class="indicator-title">🚨 DHCP Spoofing</div>
+            <div class="indicator-desc">Multiple DHCP OFFER responses = rogue DHCP server = gateway hijack</div>
+          </div>
+          <div class="indicator warn">
+            <div class="indicator-title">⚠️ MAC Flooding</div>
+            <div class="indicator-desc">Huge number of unique MACs = CAM table overflow = switch becomes hub</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider page-break"></div>
+
+  <!-- SECTION 10: HTTP ATTACKS -->
+  <div class="section">
+    <div class="section-header red">
+      <span class="section-icon">🔥</span>
+      <span class="section-title">10 — HTTP / Web Application Attacks</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">WEB SECURITY</span>
+    </div>
+    <table class="red">
+      <thead><tr><th>Attack Type</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>All HTTP traffic</td><td>http</td></tr>
+        <tr><td>HTTP GET requests</td><td>http.request.method == "GET"</td></tr>
+        <tr><td>HTTP POST requests</td><td>http.request.method == "POST"</td></tr>
+        <tr><td>HTTP PUT requests</td><td>http.request.method == "PUT"</td></tr>
+        <tr><td>HTTP DELETE requests</td><td>http.request.method == "DELETE"</td></tr>
+        <tr><td>HTTP OPTIONS (CORS probe)</td><td>http.request.method == "OPTIONS"</td></tr>
+        <tr><td>HTTP 200 OK</td><td>http.response.code == 200</td></tr>
+        <tr><td>HTTP 301/302 redirect</td><td>http.response.code == 301 || http.response.code == 302</td></tr>
+        <tr><td>HTTP 401 Unauthorized</td><td>http.response.code == 401</td></tr>
+        <tr><td>HTTP 403 Forbidden</td><td>http.response.code == 403</td></tr>
+        <tr><td>HTTP 404 Not Found</td><td>http.response.code == 404</td></tr>
+        <tr><td>HTTP 500 Server Error</td><td>http.response.code == 500</td></tr>
+        <tr><td>SQL injection in URI <span class="badge badge-crit">CRIT</span></td><td>http.request.uri contains "' OR" || http.request.uri contains "UNION SELECT"</td></tr>
+        <tr><td>SQL injection (encoded)</td><td>http.request.uri contains "%27" || http.request.uri contains "%22"</td></tr>
+        <tr><td>Directory traversal</td><td>http.request.uri contains "../"</td></tr>
+        <tr><td>Path traversal (encoded)</td><td>http.request.uri contains "%2e%2e"</td></tr>
+        <tr><td>XSS attempt</td><td>http.request.uri contains "&lt;script&gt;"</td></tr>
+        <tr><td>XSS (encoded)</td><td>http.request.uri contains "%3Cscript%3E"</td></tr>
+        <tr><td>Command injection</td><td>http.request.uri contains "cmd=" || http.request.uri contains ";id;"</td></tr>
+        <tr><td>Web shell access</td><td>http.request.uri contains ".php?cmd" || http.request.uri contains "shell.php"</td></tr>
+        <tr><td>File inclusion (LFI/RFI)</td><td>http.request.uri contains "file=" || http.request.uri contains "include="</td></tr>
+        <tr><td>Executable download</td><td>http.request.uri contains ".exe" || http.request.uri contains ".ps1"</td></tr>
+        <tr><td>Nikto scanner</td><td>http.user_agent contains "Nikto"</td></tr>
+        <tr><td>SQLmap scanner</td><td>http.user_agent contains "sqlmap"</td></tr>
+        <tr><td>Burp Suite scanner</td><td>http.user_agent contains "BurpSuite"</td></tr>
+        <tr><td>Dirbuster/Gobuster</td><td>http.user_agent contains "DirBuster" || http.user_agent contains "gobuster"</td></tr>
+        <tr><td>HTTP host header injection</td><td>http.host contains "&lt;" || http.host contains "'"</td></tr>
+        <tr><td>Suspicious referrer</td><td>http.referer contains "evil" || http.referer matches "https?://[0-9]{1,3}\."</td></tr>
+        <tr><td>Cookie theft attempt</td><td>http.cookie contains "document.cookie"</td></tr>
+        <tr><td>SSRF probe</td><td>http.request.uri contains "169.254.169.254" || http.request.uri contains "localhost"</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 11: TCP PERFORMANCE -->
+  <div class="section">
+    <div class="section-header blue">
+      <span class="section-icon">📊</span>
+      <span class="section-title">11 — TCP Performance & Analysis</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">PERFORMANCE</span>
+    </div>
+    <table class="blue">
+      <thead><tr><th>Issue</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>All TCP retransmissions</td><td>tcp.analysis.retransmission</td></tr>
+        <tr><td>Fast retransmissions</td><td>tcp.analysis.fast_retransmission</td></tr>
+        <tr><td>Spurious retransmissions</td><td>tcp.analysis.spurious_retransmission</td></tr>
+        <tr><td>Duplicate ACKs</td><td>tcp.analysis.duplicate_ack</td></tr>
+        <tr><td>Out-of-order packets</td><td>tcp.analysis.out_of_order</td></tr>
+        <tr><td>Zero window (flow stop)</td><td>tcp.analysis.zero_window</td></tr>
+        <tr><td>Window full</td><td>tcp.analysis.window_full</td></tr>
+        <tr><td>Window update</td><td>tcp.analysis.window_update</td></tr>
+        <tr><td>TCP keep-alive</td><td>tcp.analysis.keep_alive</td></tr>
+        <tr><td>TCP keep-alive ACK</td><td>tcp.analysis.keep_alive_ack</td></tr>
+        <tr><td>Connection reset</td><td>tcp.flags.reset == 1</td></tr>
+        <tr><td>RST from server side</td><td>tcp.flags.reset == 1 && tcp.flags.ack == 1</td></tr>
+        <tr><td>Incomplete handshakes</td><td>tcp.flags.syn == 1 && !tcp.flags.ack</td></tr>
+        <tr><td>High RTT (slow response)</td><td>tcp.analysis.ack_rtt &gt; 0.5</td></tr>
+        <tr><td>Segment not captured</td><td>tcp.analysis.lost_segment</td></tr>
+        <tr><td>ACK to unseen segment</td><td>tcp.analysis.ack_lost_segment</td></tr>
+        <tr><td>Small window size</td><td>tcp.window_size &lt; 1024</td></tr>
+        <tr><td>Large window (good)</td><td>tcp.window_size &gt; 65535</td></tr>
+        <tr><td>Specific TCP stream</td><td>tcp.stream eq 5</td></tr>
+        <tr><td>Nagle algorithm issue</td><td>tcp.len &lt; 10 && tcp.flags.push == 0</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider page-break"></div>
+
+  <!-- SECTION 12: ICMP -->
+  <div class="section">
+    <div class="section-header orange">
+      <span class="section-icon">🛡️</span>
+      <span class="section-title">12 — ICMP Analysis</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">NETWORK LAYER</span>
+    </div>
+    <div class="two-col">
+      <table class="orange">
+        <thead><tr><th>ICMP Type</th><th>Filter</th></tr></thead>
+        <tbody>
+          <tr><td>All ICMP</td><td>icmp</td></tr>
+          <tr><td>Echo request (ping)</td><td>icmp.type == 8</td></tr>
+          <tr><td>Echo reply</td><td>icmp.type == 0</td></tr>
+          <tr><td>Destination unreachable</td><td>icmp.type == 3</td></tr>
+          <tr><td>Network unreachable</td><td>icmp.type == 3 && icmp.code == 0</td></tr>
+          <tr><td>Host unreachable</td><td>icmp.type == 3 && icmp.code == 1</td></tr>
+          <tr><td>Protocol unreachable</td><td>icmp.type == 3 && icmp.code == 2</td></tr>
+          <tr><td>Port unreachable</td><td>icmp.type == 3 && icmp.code == 3</td></tr>
+          <tr><td>Fragmentation needed</td><td>icmp.type == 3 && icmp.code == 4</td></tr>
+          <tr><td>Source quench (deprecated)</td><td>icmp.type == 4</td></tr>
+          <tr><td>ICMP redirect (MITM risk)</td><td>icmp.type == 5</td></tr>
+          <tr><td>TTL exceeded (traceroute)</td><td>icmp.type == 11</td></tr>
+          <tr><td>Timestamp request</td><td>icmp.type == 13</td></tr>
+          <tr><td>ICMP tunneling (large data)</td><td>icmp && data.len &gt; 64</td></tr>
+          <tr><td>ICMP tunneling (very large)</td><td>icmp && data.len &gt; 500</td></tr>
+          <tr><td>Covert channel ICMP</td><td>icmp && icmp.type == 8 && data.len &gt; 200</td></tr>
+        </tbody>
+      </table>
+      <table class="orange">
+        <thead><tr><th>ICMPv6 Type</th><th>Filter</th></tr></thead>
+        <tbody>
+          <tr><td>All ICMPv6</td><td>icmpv6</td></tr>
+          <tr><td>Echo request v6</td><td>icmpv6.type == 128</td></tr>
+          <tr><td>Echo reply v6</td><td>icmpv6.type == 129</td></tr>
+          <tr><td>Neighbor Solicitation</td><td>icmpv6.type == 135</td></tr>
+          <tr><td>Neighbor Advertisement</td><td>icmpv6.type == 136</td></tr>
+          <tr><td>Router Advertisement</td><td>icmpv6.type == 134</td></tr>
+          <tr><td>Router Solicitation</td><td>icmpv6.type == 133</td></tr>
+          <tr><td>Redirect (v6)</td><td>icmpv6.type == 137</td></tr>
+          <tr><td>Destination Unreachable</td><td>icmpv6.type == 1</td></tr>
+          <tr><td>Packet Too Big</td><td>icmpv6.type == 2</td></tr>
+          <tr><td>Time Exceeded</td><td>icmpv6.type == 3</td></tr>
+          <tr><td>Rogue RA attack</td><td>icmpv6.type == 134 && ipv6.src != &lt;legit_router&gt;</td></tr>
+          <tr><td>NDP spoofing</td><td>icmpv6.type == 136 && ipv6.src == &lt;suspect&gt;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 13: AD/KERBEROS -->
+  <div class="section">
+    <div class="section-header purple">
+      <span class="section-icon">🔐</span>
+      <span class="section-title">13 — Active Directory & Kerberos Attacks</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">IDENTITY</span>
+    </div>
+    <table class="purple">
+      <thead><tr><th>Attack / Event</th><th>Wireshark Filter</th></tr></thead>
+      <tbody>
+        <tr><td>All Kerberos traffic</td><td>kerberos</td></tr>
+        <tr><td>AS-REQ (auth request)</td><td>kerberos.msg_type == 10</td></tr>
+        <tr><td>AS-REP (TGT issued)</td><td>kerberos.msg_type == 11</td></tr>
+        <tr><td>TGS-REQ (service ticket req)</td><td>kerberos.msg_type == 12</td></tr>
+        <tr><td>TGS-REP (service ticket)</td><td>kerberos.msg_type == 13</td></tr>
+        <tr><td>AP-REQ (application auth)</td><td>kerberos.msg_type == 14</td></tr>
+        <tr><td>Kerberoasting <span class="badge badge-crit">CRIT</span></td><td>kerberos.msg_type == 12 && kerberos.etype == 23</td></tr>
+        <tr><td>AS-REP Roasting (no preauth)</td><td>kerberos.msg_type == 11 && kerberos.etype == 23</td></tr>
+        <tr><td>Pass-the-Ticket</td><td>kerberos.msg_type == 14 && kerberos.etype == 17</td></tr>
+        <tr><td>Golden Ticket indicator</td><td>kerberos && kerberos.ticket_lifetime &gt; 99999</td></tr>
+        <tr><td>Kerberos error (wrong password)</td><td>kerberos.msg_type == 30 && kerberos.error_code == 24</td></tr>
+        <tr><td>Kerberos pre-auth failure</td><td>kerberos.error_code == 18</td></tr>
+        <tr><td>DC discovery (LDAP)</td><td>ldap && udp.port == 389</td></tr>
+        <tr><td>LDAP enumeration</td><td>ldap.filter</td></tr>
+        <tr><td>LDAP anonymous bind</td><td>ldap.authentication == simple && ldap.bindRequest</td></tr>
+        <tr><td>DCSync attack (DRS replication)</td><td>drsuapi || msrpc && tcp.port == 135</td></tr>
+        <tr><td>NTLM downgrade attack</td><td>ntlmssp && ntlmssp.ntlmflags.negotiate_ntlm == 1</td></tr>
+        <tr><td>Overpass-the-Hash</td><td>kerberos && ntlmssp</td></tr>
+        <tr><td>Silver Ticket (forged ST)</td><td>kerberos.msg_type == 14 && ip.src != &lt;KDC_IP&gt;</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider page-break"></div>
+
+  <!-- SECTION 14: GENERAL SOC -->
+  <div class="section">
+    <div class="section-header teal">
+      <span class="section-icon">🧰</span>
+      <span class="section-title">14 — General SOC Analyst Filters</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">DAILY USE</span>
+    </div>
+    <div class="two-col">
+      <table class="teal">
+        <thead><tr><th>Purpose</th><th>Filter</th></tr></thead>
+        <tbody>
+          <tr><td>Traffic from specific IP</td><td>ip.src == x.x.x.x</td></tr>
+          <tr><td>Traffic to specific IP</td><td>ip.dst == x.x.x.x</td></tr>
+          <tr><td>Any traffic involving IP</td><td>ip.addr == x.x.x.x</td></tr>
+          <tr><td>Between two specific hosts</td><td>ip.addr == x.x.x.x && ip.addr == y.y.y.y</td></tr>
+          <tr><td>Exclude specific IP</td><td>!ip.addr == x.x.x.x</td></tr>
+          <tr><td>Exclude internal subnet</td><td>!ip.addr == 192.168.0.0/16</td></tr>
+          <tr><td>Specific TCP port</td><td>tcp.port == 443</td></tr>
+          <tr><td>Multiple ports</td><td>tcp.port == 80 || tcp.port == 443</td></tr>
+          <tr><td>Port range</td><td>tcp.port &gt;= 1024 && tcp.port &lt;= 65535</td></tr>
+          <tr><td>Non-standard HTTP port</td><td>http && tcp.port != 80 && tcp.port != 8080</td></tr>
+          <tr><td>Specific MAC address</td><td>eth.addr == xx:xx:xx:xx:xx:xx</td></tr>
+          <tr><td>Specific source MAC</td><td>eth.src == xx:xx:xx:xx:xx:xx</td></tr>
+          <tr><td>Broadcast traffic</td><td>eth.dst == ff:ff:ff:ff:ff:ff</td></tr>
+          <tr><td>IPv6 only</td><td>ipv6</td></tr>
+          <tr><td>IPv4 only</td><td>ip</td></tr>
+          <tr><td>Packets larger than MTU</td><td>frame.len &gt; 1500</td></tr>
+          <tr><td>Jumbo frames</td><td>frame.len &gt; 9000</td></tr>
+        </tbody>
+      </table>
+      <table class="teal">
+        <thead><tr><th>Purpose</th><th>Filter</th></tr></thead>
+        <tbody>
+          <tr><td>Time range start</td><td>frame.time &gt;= "2026-01-01 00:00:00"</td></tr>
+          <tr><td>Time range end</td><td>frame.time &lt;= "2026-01-01 23:59:59"</td></tr>
+          <tr><td>Specific TCP stream</td><td>tcp.stream eq 42</td></tr>
+          <tr><td>Specific UDP stream</td><td>udp.stream eq 10</td></tr>
+          <tr><td>GeoIP filtering (needs DB)</td><td>ip.geoip.country == "RU"</td></tr>
+          <tr><td>Non-RFC1918 (public IPs)</td><td>!ip.addr == 10.0.0.0/8 && !ip.addr == 172.16.0.0/12 && !ip.addr == 192.168.0.0/16</td></tr>
+          <tr><td>Multicast traffic</td><td>ip.dst &gt;= 224.0.0.0 && ip.dst &lt;= 239.255.255.255</td></tr>
+          <tr><td>VLAN-tagged frames</td><td>vlan</td></tr>
+          <tr><td>Specific VLAN ID</td><td>vlan.id == 100</td></tr>
+          <tr><td>Fragmented packets</td><td>ip.flags.mf == 1</td></tr>
+          <tr><td>Marked packets only</td><td>frame.marked == 1</td></tr>
+          <tr><td>Packets with errors</td><td>frame.has_errors</td></tr>
+          <tr><td>Contains specific string</td><td>frame contains "password"</td></tr>
+          <tr><td>Contains hex pattern</td><td>frame contains 4d:5a (MZ EXE header)</td></tr>
+          <tr><td>NOT a specific protocol</td><td>!http && !dns && !tls</td></tr>
+          <tr><td>Only established TCP</td><td>tcp.flags.syn == 0 && tcp.flags.ack == 1 && tcp.len &gt; 0</td></tr>
+          <tr><td>Encrypted traffic only</td><td>tls || ssh || ipsec</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider page-break"></div>
+
+  <!-- SECTION 15: PORT REFERENCE -->
+  <div class="section">
+    <div class="section-header yellow">
+      <span class="section-icon">📦</span>
+      <span class="section-title">15 — Common Port Quick Reference</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">REFERENCE</span>
+    </div>
+    <div class="ref-grid">
+      <div class="ref-card"><span class="port">21</span><span class="proto">FTP</span><span class="desc">File Transfer — Cleartext!</span></div>
+      <div class="ref-card"><span class="port">22</span><span class="proto">SSH</span><span class="desc">Secure Shell</span></div>
+      <div class="ref-card"><span class="port">23</span><span class="proto">Telnet</span><span class="desc">Remote Shell — Cleartext!</span></div>
+      <div class="ref-card"><span class="port">25</span><span class="proto">SMTP</span><span class="desc">Email Transfer</span></div>
+      <div class="ref-card"><span class="port">53</span><span class="proto">DNS</span><span class="desc">Domain Name System</span></div>
+      <div class="ref-card"><span class="port">67/68</span><span class="proto">DHCP</span><span class="desc">IP Address Assignment</span></div>
+      <div class="ref-card"><span class="port">80</span><span class="proto">HTTP</span><span class="desc">Web — Cleartext!</span></div>
+      <div class="ref-card"><span class="port">88</span><span class="proto">Kerberos</span><span class="desc">AD Authentication</span></div>
+      <div class="ref-card"><span class="port">110</span><span class="proto">POP3</span><span class="desc">Email Retrieval</span></div>
+      <div class="ref-card"><span class="port">135</span><span class="proto">RPC/WMI</span><span class="desc">Windows Remote Mgmt</span></div>
+      <div class="ref-card"><span class="port">137-139</span><span class="proto">NetBIOS</span><span class="desc">Legacy Windows</span></div>
+      <div class="ref-card"><span class="port">143</span><span class="proto">IMAP</span><span class="desc">Email Retrieval</span></div>
+      <div class="ref-card"><span class="port">161/162</span><span class="proto">SNMP</span><span class="desc">Network Management</span></div>
+      <div class="ref-card"><span class="port">389</span><span class="proto">LDAP</span><span class="desc">Directory Services</span></div>
+      <div class="ref-card"><span class="port">443</span><span class="proto">HTTPS</span><span class="desc">Encrypted Web</span></div>
+      <div class="ref-card"><span class="port">445</span><span class="proto">SMB</span><span class="desc">File Sharing / Lateral</span></div>
+      <div class="ref-card"><span class="port">465</span><span class="proto">SMTPS</span><span class="desc">Encrypted Email</span></div>
+      <div class="ref-card"><span class="port">514</span><span class="proto">Syslog</span><span class="desc">Log Forwarding</span></div>
+      <div class="ref-card"><span class="port">587</span><span class="proto">SMTP/TLS</span><span class="desc">Email Submission</span></div>
+      <div class="ref-card"><span class="port">636</span><span class="proto">LDAPS</span><span class="desc">Encrypted LDAP</span></div>
+      <div class="ref-card"><span class="port">993</span><span class="proto">IMAPS</span><span class="desc">Encrypted IMAP</span></div>
+      <div class="ref-card"><span class="port">995</span><span class="proto">POP3S</span><span class="desc">Encrypted POP3</span></div>
+      <div class="ref-card"><span class="port">1433</span><span class="proto">MSSQL</span><span class="desc">Microsoft SQL Server</span></div>
+      <div class="ref-card"><span class="port">1521</span><span class="proto">Oracle</span><span class="desc">Oracle Database</span></div>
+      <div class="ref-card"><span class="port">3306</span><span class="proto">MySQL</span><span class="desc">MySQL Database</span></div>
+      <div class="ref-card"><span class="port">3389</span><span class="proto">RDP</span><span class="desc">Remote Desktop</span></div>
+      <div class="ref-card"><span class="port">4444</span><span class="proto">Meterpreter</span><span class="desc">Metasploit Default!</span></div>
+      <div class="ref-card"><span class="port">5432</span><span class="proto">PostgreSQL</span><span class="desc">Postgres Database</span></div>
+      <div class="ref-card"><span class="port">5900</span><span class="proto">VNC</span><span class="desc">Virtual Network Console</span></div>
+      <div class="ref-card"><span class="port">5985</span><span class="proto">WinRM</span><span class="desc">Remote PowerShell</span></div>
+      <div class="ref-card"><span class="port">6667</span><span class="proto">IRC</span><span class="desc">Classic C2 Channel!</span></div>
+      <div class="ref-card"><span class="port">8080</span><span class="proto">HTTP-Alt</span><span class="desc">Proxy / Alt Web</span></div>
+      <div class="ref-card"><span class="port">8443</span><span class="proto">HTTPS-Alt</span><span class="desc">Alt Encrypted Web</span></div>
+      <div class="ref-card"><span class="port">9001</span><span class="proto">Tor</span><span class="desc">Tor Relay Port</span></div>
+      <div class="ref-card"><span class="port">27017</span><span class="proto">MongoDB</span><span class="desc">MongoDB Database</span></div>
+    </div>
+  </div>
+
+  <div class="divider page-break"></div>
+
+  <!-- SECTION 16: ADVANCED FILTERS -->
+  <div class="section">
+    <div class="section-header lime">
+      <span class="section-icon">⚡</span>
+      <span class="section-title">16 — Advanced & Miscellaneous Filters</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">ADVANCED</span>
+    </div>
+    <div class="two-col">
+      <table class="lime">
+        <thead><tr><th>Protocol / Use Case</th><th>Filter</th></tr></thead>
+        <tbody>
+          <tr><td>DHCP all traffic</td><td>bootp || dhcp</td></tr>
+          <tr><td>DHCP Discover</td><td>bootp.option.dhcp == 1</td></tr>
+          <tr><td>DHCP Offer (rogue server)</td><td>bootp.option.dhcp == 2</td></tr>
+          <tr><td>DHCP Request</td><td>bootp.option.dhcp == 3</td></tr>
+          <tr><td>DHCP ACK</td><td>bootp.option.dhcp == 5</td></tr>
+          <tr><td>NFS file system traffic</td><td>nfs</td></tr>
+          <tr><td>VoIP (SIP) calls</td><td>sip</td></tr>
+          <tr><td>RTP media stream</td><td>rtp</td></tr>
+          <tr><td>BGP routing protocol</td><td>bgp</td></tr>
+          <tr><td>OSPF routing</td><td>ospf</td></tr>
+          <tr><td>GRE tunneling</td><td>gre</td></tr>
+          <tr><td>IPsec ESP (encrypted)</td><td>esp</td></tr>
+          <tr><td>IPsec AH</td><td>ah</td></tr>
+          <tr><td>L2TP tunneling</td><td>l2tp</td></tr>
+          <tr><td>PPTP tunneling</td><td>pptp</td></tr>
+          <tr><td>BitTorrent P2P</td><td>bittorrent</td></tr>
+          <tr><td>Cryptocurrency (Bitcoin)</td><td>tcp.port == 8333</td></tr>
+          <tr><td>Tor guard relay</td><td>tcp.port == 9001</td></tr>
+          <tr><td>Tor directory</td><td>tcp.port == 9030</td></tr>
+          <tr><td>Cobalt Strike JARM</td><td>tcp.port == 50050</td></tr>
+        </tbody>
+      </table>
+      <table class="lime">
+        <thead><tr><th>Use Case</th><th>Filter</th></tr></thead>
+        <tbody>
+          <tr><td>Wireless deauth frames</td><td>wlan.fc.type_subtype == 12</td></tr>
+          <tr><td>Wireless probe requests</td><td>wlan.fc.type_subtype == 4</td></tr>
+          <tr><td>Wireless beacon frames</td><td>wlan.fc.type_subtype == 8</td></tr>
+          <tr><td>WPS probe (attack)</td><td>wlan_mgt.tag.number == 221</td></tr>
+          <tr><td>EAPOL (WPA handshake)</td><td>eapol</td></tr>
+          <tr><td>STP (spanning tree)</td><td>stp</td></tr>
+          <tr><td>CDP (Cisco discovery)</td><td>cdp</td></tr>
+          <tr><td>LLDP (link layer disc)</td><td>lldp</td></tr>
+          <tr><td>MPLS traffic</td><td>mpls</td></tr>
+          <tr><td>Contains MZ header (EXE)</td><td>frame contains 4d:5a</td></tr>
+          <tr><td>Contains PDF header</td><td>frame contains 25:50:44:46</td></tr>
+          <tr><td>Contains ZIP header</td><td>frame contains 50:4b:03:04</td></tr>
+          <tr><td>Regex in payload</td><td>frame matches "\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b"</td></tr>
+          <tr><td>ICS/SCADA Modbus</td><td>modbus || tcp.port == 502</td></tr>
+          <tr><td>ICS/SCADA DNP3</td><td>dnp3 || tcp.port == 20000</td></tr>
+          <tr><td>ICS BACnet</td><td>bacnet || udp.port == 47808</td></tr>
+          <tr><td>QUIC protocol (HTTP/3)</td><td>quic || udp.port == 443</td></tr>
+          <tr><td>HTTP/2 traffic</td><td>http2</td></tr>
+          <tr><td>WebSocket upgrade</td><td>http.upgrade contains "websocket"</td></tr>
+          <tr><td>Multicast DNS poisoning</td><td>mdns && ip.src != &lt;legit_host&gt;</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- SECTION 17: FILE EXTRACTION -->
+  <div class="section">
+    <div class="section-header pink">
+      <span class="section-icon">🗂️</span>
+      <span class="section-title">17 — File & Object Extraction</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">FORENSICS</span>
+    </div>
+    <table class="pink">
+      <thead><tr><th>Object Type</th><th>Method / Filter</th></tr></thead>
+      <tbody>
+        <tr><td>Extract HTTP files</td><td>File &gt; Export Objects &gt; HTTP</td></tr>
+        <tr><td>Extract SMB files</td><td>File &gt; Export Objects &gt; SMB</td></tr>
+        <tr><td>Extract TFTP files</td><td>File &gt; Export Objects &gt; TFTP</td></tr>
+        <tr><td>Extract FTP-DATA files</td><td>File &gt; Export Objects &gt; FTP-DATA</td></tr>
+        <tr><td>Extract IMF (email)</td><td>File &gt; Export Objects &gt; IMF</td></tr>
+        <tr><td>Extract DICOM (medical)</td><td>File &gt; Export Objects &gt; DICOM</td></tr>
+        <tr><td>Reconstruct TCP stream</td><td>Right-click &gt; Follow &gt; TCP Stream &gt; Save As</td></tr>
+        <tr><td>Reconstruct UDP stream</td><td>Right-click &gt; Follow &gt; UDP Stream &gt; Save As</td></tr>
+        <tr><td>Reconstruct TLS stream</td><td>Right-click &gt; Follow &gt; TLS Stream (requires key)</td></tr>
+        <tr><td>Decrypt TLS (with key file)</td><td>Edit &gt; Preferences &gt; RSA Keys (or SSLKEYLOGFILE)</td></tr>
+        <tr><td>Extract raw bytes</td><td>File &gt; Export Packet Dissections &gt; As Plain Text</td></tr>
+        <tr><td>Find PE/EXE in traffic</td><td>frame contains 4d:5a (MZ header)</td></tr>
+        <tr><td>Find PDF in traffic</td><td>frame contains 25:50:44:46 (%PDF)</td></tr>
+        <tr><td>Find ZIP in traffic</td><td>frame contains 50:4b:03:04 (PK header)</td></tr>
+        <tr><td>Find Office docs</td><td>frame contains d0:cf:11:e0 (OLE2 header)</td></tr>
+        <tr><td>Extract via tshark CLI</td><td>tshark -r file.pcap --export-objects http,/output/dir</td></tr>
+        <tr><td>Carve with NetworkMiner</td><td>Load PCAP in NetworkMiner &gt; Files tab</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="divider page-break"></div>
+
+  <!-- SECTION 18: IOC WORKFLOW -->
+  <div class="section">
+    <div class="section-header red">
+      <span class="section-icon">📋</span>
+      <span class="section-title">18 — IOC Hunting Workflow</span>
+      <div class="section-accent"></div>
+      <span class="section-tag">INCIDENT RESPONSE</span>
+    </div>
+
+    <div class="workflow">
+      <div class="step"><span class="step-num">PHASE 1</span><span class="step-text">Initial Triage & Scope</span></div>
+      <div class="step"><span class="step-num">PHASE 2</span><span class="step-text">Identify Anomalies</span></div>
+      <div class="step"><span class="step-num">PHASE 3</span><span class="step-text">Pivot & Correlate</span></div>
+      <div class="step"><span class="step-num">PHASE 4</span><span class="step-text">Extract IOCs</span></div>
+      <div class="step"><span class="step-num">PHASE 5</span><span class="step-text">Document & Report</span></div>
+    </div>
+
+    <table class="red">
+      <thead><tr><th>IOC Type</th><th>Where to Look / Filter</th></tr></thead>
+      <tbody>
+        <tr><td>Suspicious IP addresses</td><td>Statistics &gt; Endpoints → cross-reference with threat intel</td></tr>
+        <tr><td>Malicious domain names</td><td>dns.qry.name → export and check against blocklists</td></tr>
+        <tr><td>C2 URLs</td><td>http.request.full_uri → export all URIs</td></tr>
+        <tr><td>Malware file hashes</td><td>Export objects → hash with sha256sum</td></tr>
+        <tr><td>User-Agent strings</td><td>http.user_agent → look for rare/unusual agents</td></tr>
+        <tr><td>JA3 TLS fingerprints</td><td>tls.handshake.ja3 → check against ja3er.com db</td></tr>
+        <tr><td>Compromised credentials</td><td>ftp.request.command || http.authorization || ntlmssp.auth</td></tr>
+        <tr><td>Lateral movement paths</td><td>smb2 + ip.src timeline → map hop-by-hop</td></tr>
+        <tr><td>Exfiltrated data volume</td><td>Statistics &gt; Conversations → sort by bytes sent externally</td></tr>
+        <tr><td>Attack timeline</td><td>frame.time with key event filters → build chronology</td></tr>
+        <tr><td>Victim hosts</td><td>Cross-reference destinations of C2 traffic with internal IPs</td></tr>
+        <tr><td>Persistence mechanisms</td><td>Look for scheduled tasks via SMB .job files, WMI subscriptions</td></tr>
+      </tbody>
+    </table>
+
+    <div class="tip-box">
+      <strong>💡 ANALYST TIPS — MAXIMIZE EFFECTIVENESS</strong>
+      1. Always save filters you use frequently as Wireshark "Filter Buttons" for fast reuse. &nbsp;|&nbsp;
+      2. Use coloring rules (View &gt; Coloring Rules) to highlight suspicious traffic by type. &nbsp;|&nbsp;
+      3. Use tshark for scripted/automated analysis of large PCAPs. &nbsp;|&nbsp;
+      4. Combine Wireshark with NetworkMiner for passive OS/host fingerprinting. &nbsp;|&nbsp;
+      5. Always correlate PCAP findings with SIEM logs, EDR telemetry and firewall logs for full context.
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div style="margin-top: 48px; padding: 24px; background: var(--panel); border: 1px solid var(--border); text-align: center;">
+    <div style="font-family: var(--head); font-size: 13px; color: var(--accent); letter-spacing: 3px; margin-bottom: 8px;">WIRESHARK SOC ANALYST CHEAT SHEET</div>
+    <div style="font-family: var(--mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1px;">
+      200+ FILTERS &nbsp;·&nbsp; 18 CATEGORIES &nbsp;·&nbsp; RECON · DoS · MALWARE · C2 · EXFIL · LATERAL MOVEMENT · DNS · TLS · ARP · HTTP · KERBEROS &nbsp;·&nbsp; 2026
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
