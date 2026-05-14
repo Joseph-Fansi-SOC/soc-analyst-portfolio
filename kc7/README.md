@@ -42,4 +42,12 @@ Completed May 2026 — Certificate ID: 56330
 
 ## KC7 Security Analyst III
 
-📁 security-analyst-III/ — coming soon
+📁 security-analyst-III/
+
+In progress — May 2026
+
+| Investigation | Type | Date |
+| --- | --- | --- |
+| Titan Shield | Social engineering, phishing & data exfiltration | May 11, 2026 |
+
+**Learning modules completed:** KQL 201 (ID: 55489)
