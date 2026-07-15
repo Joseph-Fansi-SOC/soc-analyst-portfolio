@@ -1,0 +1,672 @@
+﻿/////////////ai Wok Foods: A Challenging Culinary Mystery/////////////
+
+////Section 1: KQL 101 🐣 done
+
+///Section 2: Tummy Trouble, make it Double
+
+search *
+| distinct $table
+
+//What's Delphia's username? 
+Employees
+| where username contains "Evans" //deevans , Email; delphia_evans@daiwokfoods.com; 192.168.0.31; ABVJ-MACHINE; Restaurant Staff
+///What's the company domain? //daiwokfoods.com
+///What's the hostname of Delphia's computer?ABVJ-MACHINE
+//What is Delphia's Role at Dai Wok Foods?Restaurant Staff
+
+//Let's take a look at the SecurityAlerts table for anything related to Delphia's username or host machine. When was the first alert related to Delphia? Right click and copy the information in the timestamp field.
+
+SecurityAlerts
+| where description contains "deevans"
+| summarize FirstSeen = min(timestamp)
+/////2023-04-04T10:14:35.000Z
+
+//What's the full subject line that was listed on this alert? Provide the subject line without the quotes.
+SecurityAlerts
+| where description contains "deevans" ///[EXTERNAL] Formal action on food poisoning
+
+//Let's go back and check for more of Delphia's information now. What IP address is assigned to her computer?
+Employees
+| where hostname  contains "ABVJ-MACHINE"
+| project ip_addr ///192.168.0.31
+
+
+//What is Delphia's email address?
+Employees
+| where hostname  contains "ABVJ-MACHINE"
+| project email_addr ///delphia_evans@daiwokfoods.com
+
+//Let's investigate her emails using the Email table. How many emails did she receive?
+Email
+| where recipient =="delphia_evans@daiwokfoods.com"
+|count 
+
+//How many external emails did Delphia receive?
+Email
+| where recipient =="delphia_evans@daiwokfoods.com"
+| where sender !contains "daiwokfoods.com" //15
+
+//Let's look for the specific email with the subject that was found on Q6 that was sent to Delphia. When was the email sent to her?
+Email
+| where recipient =="delphia_evans@daiwokfoods.com"
+| where subject contains "[EXTERNAL] Formal action on food poisoning" ///2023-04-02T20:40:54.000Z
+
+//Who sent the email?
+Email
+| where recipient =="delphia_evans@daiwokfoods.com"
+| where subject contains "[EXTERNAL] Formal action on food poisoning" 
+| project sender //county.county@yahoo.com
+
+//How many emails did this email address send to Dai Wok Employees?
+Email
+| where sender =="county.county@yahoo.com"
+//14
+
+/////This is odd. There seems to be a different email addresses in the reply_to email. Let's take the unique reply_to email addresses and find more sender addresses from those. How many emails are there?
+Email
+| where sender =="county.county@yahoo.com"
+| distinct reply_to
+
+complaint_county@gmail.com
+county.county@yahoo.com
+official@verizon.com
+
+//total Email with 3 senders
+Email
+| where reply_to  =="county.county@yahoo.com"
+or  reply_to   =="complaint_county@gmail.com"
+or  reply_to   =="official@verizon.com"
+| distinct sender
+/// 43 Emails in total
+///5 uique sender 
+official@verizon.com
+county.county@yahoo.com
+complaint_county@gmail.com
+service_official@yandex.com
+official@gmail.com
+
+//(OPTIONAL QUESTION) - How many total emails were sent by this threat actor?
+
+let EmailsActor = datatable(Email: string)
+[
+  "official@verizon.com",
+  "county.county@yahoo.com",
+  "complaint_county@gmail.com",
+  "service_official@yandex.com",
+ "official@gmail.com"
+];
+Email
+| where sender in (EmailsActor)
+///64
+
+//There's a lot of domains listed in the link column from Q14. How many unique URLs are there? they means with unique domain
+
+Email
+| where reply_to  =="county.county@yahoo.com"
+or  reply_to   =="complaint_county@gmail.com"
+or  reply_to   =="official@verizon.com"
+| distinct link
+| parse link with @"https://" domains1 "/"*
+| parse link with @"http://" domains2 "/"*
+| extend resultdomainEmail = coalesce(domains1, domains2)
+|distinct resultdomainEmail
+///12
+
+complaints-lawoffice.business
+foodadministration-legal-services.com
+legal-services-complaints.business
+complaints-cityofficialsfood.business
+legal-services-lawoffice.com
+foodadministration-legal-services.business
+complaints-cityofficialsfood.com
+foodadministration-cityofficialsfood.business
+foodadministrationlegal-services.business
+cityofficialsfoodlawoffice.com
+foodadministrationcityofficialsfood.business
+foodadministrationcomplaints.business
+
+//Let's check to see if anybody clicked on links from these domains. Search the OutboundNetworkEvents table to see if there are any hits on the domains found in Q17. What is the domain name (not the full link) of the URL found?
+
+
+
+let DomainsActor = datatable(domain: string)
+[
+ "complaints-lawoffice.business",
+"foodadministration-legal-services.com",
+"legal-services-complaints.business",
+"complaints-cityofficialsfood.business",
+"legal-services-lawoffice.com",
+"foodadministration-legal-services.business",
+"complaints-cityofficialsfood.com",
+"foodadministration-cityofficialsfood.business",
+"foodadministrationlegal-services.business",
+"cityofficialsfoodlawoffice.com",
+"foodadministrationcityofficialsfood.business",
+"foodadministrationcomplaints.business"
+];
+OutboundNetworkEvents
+| where url has_any (DomainsActor)
+//// https://complaints-cityofficialsfood.com/search/published/images/images/large_order.xlsx
+////complaints-cityofficialsfood.com
+
+//Who clicked on the link? Provide the full name.
+
+let DomainsActor = datatable(domain: string)
+[
+ "complaints-lawoffice.business",
+"foodadministration-legal-services.com",
+"legal-services-complaints.business",
+"complaints-cityofficialsfood.business",
+"legal-services-lawoffice.com",
+"foodadministration-legal-services.business",
+"complaints-cityofficialsfood.com",
+"foodadministration-cityofficialsfood.business",
+"foodadministrationlegal-services.business",
+"cityofficialsfoodlawoffice.com",
+"foodadministrationcityofficialsfood.business",
+"foodadministrationcomplaints.business"
+];
+let Whoclick=
+OutboundNetworkEvents
+| where url has_any (DomainsActor)
+| project src_ip;
+Employees
+| where ip_addr in (Whoclick)
+| project name, role, hostname, email_addr, ip_addr, username
+/////John Garcia, 192.168.3.86, john_garcia@daiwokfoods.com
+
+///What is their role in the company? see query above
+//Logistics Coordinator
+
+///What is their hostname?see query above
+//LVJW-LAPTOP
+
+//Let's take their email address and take a look back at the emails that we've seen from the threat actor on Q14. Do we see their email address in here? Yes / No
+
+Email
+| where reply_to  =="county.county@yahoo.com"
+or  reply_to   =="complaint_county@gmail.com"
+or  reply_to   =="official@verizon.com"
+| where sender == "john_garcia@daiwokfoods.com"
+//no
+
+////When did this employee receive the suspicious email?
+
+///The supecious Email from complaints-cityofficialsfood.com
+
+Email
+| where recipient =="john_garcia@daiwokfoods.com"
+| where link contains "complaints-cityofficialsfood.com" ///question 18
+///////2023-04-03T18:04:56.000Z
+
+////(OPTIONAL QUESTION) - Based on the answer you found in Question 16, how many distinct roles were targeted by the threat actor?
+
+let EmailsActor = datatable(Email: string)
+[
+  "official@verizon.com",
+  "county.county@yahoo.com",
+  "complaint_county@gmail.com",
+  "service_official@yandex.com",
+ "official@gmail.com"
+];
+let Roletargeted=
+Email
+| where sender in (EmailsActor)///64
+| distinct recipient;
+Employees
+| where email_addr in (Roletargeted)
+| distinct role //15
+
+///What's the reply_to email address of the suspicious email found in Q23?
+//When did this employee receive the suspicious email? :datetime(2023-04-03T18:04:56Z)
+
+Email
+| where recipient =="john_garcia@daiwokfoods.com"
+| where link contains "complaints-cityofficialsfood.com" ///question 18
+///////2023-04-03T18:04:56.000Z
+| project reply_to ///service_official@yandex.com
+
+
+/////Using Google or Bing, search for the name of the domain in the email address (do not go to the domain directly). What country is this domain from?
+///service_official@yandex.com   ; domain yandex.com  https://www.whois.com/whois/yandex.com
+
+//russia
+
+////Let's take the domain name from the suspicious email and search for it in the PassiveDns table.
+
+///How many records are related to that domain?
+
+Email
+| where recipient =="john_garcia@daiwokfoods.com"
+| where link contains "complaints-cityofficialsfood.com" ///here the supecious domain name
+
+PassiveDns
+| where domain contains "complaints-cityofficialsfood.com" ///9
+
+//below the IPs
+
+77.112.237.13
+189.100.73.140
+188.216.230.252
+179.58.169.157
+179.58.169.157
+177.43.27.137
+177.43.27.137
+134.173.137.45
+131.162.160.193
+
+///Still looking at the PassiveDNS records from question 27. We want to identify what IP address the domain resolved to at the time nearest to the time that the email was sent to the employee.
+
+//Which IP address was did the domain resolved to at the time of the activity?
+
+// the time that the email was sent to the employee is 2023-04-03T18:04:56.000Z
+
+PassiveDns
+| where domain contains "complaints-cityofficialsfood.com"
+| where timestamp > datetime(2023-04-03T18:04:56.000Z)
+//////179.58.169.157
+
+
+///Using a GeoIP service such as MaxMind (https://www.maxmind.com/en/geoip-demo) or Censys (https://search.censys.io), let's look up this IP address. What country does this IP address appear to be located in?
+///https://www.abuseipdb.com/check/179.58.169.157
+//// Bolivia
+
+
+//////Let's check the InboundNetworkEvents table to see if that IP address had browsed around our Dai Wok Foods website before. How many records did you find related to that IP address? Answer 0 if there are none.
+
+InboundNetworkEvents
+| where src_ip contains "179.58.169.157"
+//3
+
+//What was the earliest thing the IP address searched for? Replace %20 with a space.
+
+//http://daiwokfoods.com/search?query=store%20managers
+
+//store managers
+
+//There were more IP addresses related to the domain from the suspicious email. Let's take all of them and search across the InboundNetworkEvents. How many records total were found?
+
+
+let IPsActor = datatable(domain: string)
+[
+"77.112.237.13",
+"189.100.73.140",
+"188.216.230.252",
+"179.58.169.157",
+"179.58.169.157",
+"177.43.27.137",
+"134.173.137.45",
+"131.162.160.193"
+];
+InboundNetworkEvents
+| where src_ip in (IPsActor)
+///49
+
+///When was the earliest timestamp observed in Q32?
+//2023-03-26T01:20:14.000Z
+
+///Let's check the login attempts from our compromised employee in AuthenticationEvents. How many distinct source IP addresses were used by the employee to log in?
+
+/// our compromise Employee Informations
+/////John Garcia, 192.168.3.86, john_garcia@daiwokfoods.com
+//Logistics Coordinator
+//LVJW-LAPTOP
+//jogarcia
+
+AuthenticationEvents
+| where username contains "jogarcia"
+| distinct src_ip
+
+2.20.114.29
+192.168.3.86
+
+///One IP looks like a private (local) IP address. What country is the other IP address from?
+///2.20.114.29  strange IP
+
+//https://www.abuseipdb.com/check/2.20.114.29
+//italy
+
+
+//How many records in AuthenticationEvents are related to that IP address?
+
+AuthenticationEvents
+| where src_ip contains "2.20.114.29"
+//12
+
+///Let's go back to the suspicious email we first found in Q23. The link field has the domain name we've been tracking but also has a reference to a filename at the end of it. What is it?
+Email
+| where recipient =="john_garcia@daiwokfoods.com"
+| where link contains "complaints-cityofficialsfood.com" ///question 18
+///////2023-04-03T18:04:56.000Z ///[EXTERNAL] Legal notice of customer complaint
+/////https://complaints-cityofficialsfood.com/search/published/images/images/large_order.xlsx
+
+//How many emails reference the same filename?
+///large_order.xlsx
+Email
+| where link contains "large_order.xlsx" ///13
+
+///Let's search the FileCreationEvents table for this file. How many host machines have this file?
+FileCreationEvents
+| where filename contains "large_order.xlsx"
+| distinct hostname //LVJW-LAPTOP; jogarcia //1
+
+///Where was this file located on the host machine? Copy and paste the full path.
+//C:\Users\jogarcia\Downloads\large_order.xlsx
+
+//When was this file created on the host machine? //2023-04-03T18:39:12.000Z
+
+//What's the SHA256 hash of this file?
+
+///b9d3c969135f1e9abe22fd744c691ec1d1bc0853beffe5aed3f8b78b3d738501
+
+////Let's use VirusTotal (https://www.virustotal.com/gui/home/search) to search for this SHA256 hash. Were there any results? Yes / No.
+///no
+
+///Let's look at the ProcessEvents table for this host machine. How many records are associated with this compromised host?
+ProcessEvents
+| where hostname contains "LVJW-LAPTOP"
+///466
+
+///Let's filter starting with the first time we saw the suspicious file created on Q41. What's the name of the file from the process_commandline that occurs not long after the file was created?
+
+
+//When was this file created on the host machine? //2023-04-03T18:39:12.000Z
+ProcessEvents
+| where timestamp > datetime(2023-04-03T18:39:12.000Z)
+| where hostname contains "LVJW-LAPTOP"
+|take 10
+///c5k3fsys.3bp.ps1
+
+////cmd.exe /c start %SYSTEMROOT%\system32\WindowsPowerShell\v1.0\powershell.exe -noni -nop -exe bypass -f \\share1\Admin$\c5k3fsys.3bp.ps1
+
+///What's the parent_process_hash from Question 45?
+662124b0c998fd0826c192514b1f57f8002f2ab031996aa6dd7832f561679779
+
+//Using VirusTotal, search the parent_process_hash from Q46. What is the popular threat label for this hash?
+///https://www.virustotal.com/gui/file/662124b0c998fd0826c192514b1f57f8002f2ab031996aa6dd7832f561679779
+trojan.powershell/malgent
+
+///What threat actor is this file associated with? /// FIN7;CarbonSpider(go to community tab on virustotal)
+
+////What is the md5 hash of this file?  d405909fd2fd021372444b7b36a3b806
+
+//The indicator is referenced in a threat report by a well known cybersecurity company. What type of operations did the company mention this threat actor shifted to doing?
+///read this link https://cloud.google.com/blog/topics/threat-intelligence/evolution-of-fin7/?hl=en
+///ransomware
+
+
+/////Section 3: Chaos 😱
+//A law enforcement agency warned Dai Wok Foods that they may been targeted by a threat actor. This coincides with a lot of computers at different restaurants sites being locked out recently. The agency said the threat actor may have sent the malware with the file name "Local_County_Updates.xlsx". When was the first time this file was seen?
+
+Email
+| where link contains "Local_County_Updates.xlsx"
+| order by timestamp desc 
+///2023-05-12T09:22:48.000Z
+
+//Who was the email sender? 
+//restaurant@verizon.com
+
+//Who was the reply_to email address? miguel_waters@hoisumsupplies.com
+
+///Oh no! Looks like one of our partners may have been affected. Let's investigate our employees and see if they may have clicked on the link. When did the first employee click on the link?
+
+//doreen_myers@daiwokfoods.com and william_perez@daiwokfoods.com are the recipeint 
+
+////http://operations-management.hk/published/share/share/modules/Local_County_Updates.xlsx
+
+OutboundNetworkEvents
+| where url contains "http://operations-management.hk/published/share/share/modules/Local_County_Updates.xlsx"
+| order by timestamp asc  
+///2023-05-12T10:00:55.000Z  ; 192.168.1.176; 192.168.3.243
+
+///What's the role of the employee who clicked on the link?
+
+let rolecompromisedEmploy=
+OutboundNetworkEvents
+| where url contains "http://operations-management.hk/published/share/share/modules/Local_County_Updates.xlsx"
+| distinct src_ip;
+Employees
+| where ip_addr has_any (rolecompromisedEmploy)
+| project role
+///Ingredient Procurement
+
+//////(ADVANCED) Investigate all of the domains and emails associated with the threat actor. When is the first time this threat actor sent an email to Dai Wok Foods?
+
+Email
+| where link contains "Local_County_Updates.xlsx"
+
+restaurant@verizon.com
+miguel_waters@hoisumsupplies.com
+
+
+
+Email
+| where reply_to contains "restaurant@verizon.com" or reply_to contains "miguel_waters@hoisumsupplies.com" or sender contains "restaurant@verizon.com" or sender contains "miguel_waters@hoisumsupplies.com"
+
+kathryn_wilde@langingredients.com
+management@protonmail.com
+
+
+
+
+let EmailsActor = datatable(Email: string)
+[
+  "restaurant@verizon.com",
+  "miguel_waters@hoisumsupplies.com",
+  "kathryn_wilde@langingredients.com",
+  "management@protonmail.com",
+  "employee@protonmail.com"
+];
+Email
+| where sender in (EmailsActor)
+| sort by timestamp asc
+/////datetime( 2023-05-06T08:33:13Z)
+
+
+/// other solution
+
+let ThreatEmails =
+Email
+| where sender in ("restaurant@verizon.com", "miguel_waters@hoisumsupplies.com")
+   or reply_to in ("restaurant@verizon.com", "miguel_waters@hoisumsupplies.com");
+let ThreatDomains =
+ThreatEmails
+| extend domain = tostring(parse_url(link).Host)
+| distinct domain;
+Email
+| extend domain = tostring(parse_url(link).Host)
+| where domain in (ThreatDomains)
+| sort by timestamp asc
+
+/////datetime( 2023-05-06T08:33:13Z)
+
+
+///////(ADVANCED) How many unique domains are associated with this threat actor?
+
+let ThreatEmails =
+Email
+| where sender in ("restaurant@verizon.com", "miguel_waters@hoisumsupplies.com")
+   or reply_to in ("restaurant@verizon.com", "miguel_waters@hoisumsupplies.com");
+let ThreatDomains =
+ThreatEmails
+| extend domain = tostring(parse_url(link).Host)
+| distinct domain;
+Email
+| extend domain = tostring(parse_url(link).Host)
+| where domain in (ThreatDomains)
+| sort by timestamp asc
+| distinct domain
+
+///from the link we have 5 filename 
+Closing_Locations.xlsx
+Pay_Raises.lnk
+HR_Notes.pdf
+Schedule_Changes.xlsx
+Local_County_Updates.xlsx
+
+
+//below the domain 
+human-resources-operations.hk
+operationslegal-services.hk
+operations-management.hk
+
+////3 domain associated with threat actor
+
+
+///(ADVANCED) How many malware files placed by the threat actor are still present across all of the Dai Wok host machines?
+
+//- 1-identifying infected hosts:
+
+let infectedfiles = dynamic([
+"Closing_Locations.xlsx",
+"Pay_Raises.lnk",
+"HR_Notes.pdf",
+"Schedule_Changes.xlsx",
+"Local_County_Updates.xlsx"
+]);
+FileCreationEvents
+| where filename in (infectedfiles)
+| distinct hostname
+
+//7 infected host
+VQRT-DESKTOP
+S3XE-DESKTOP
+JP9Y-DESKTOP
+KLWM-DESKTOP
+1FK7-MACHINE
+68DY-LAPTOP
+RWK7-MACHINE
+
+let InfectedHosts= datatable(hostname: string)
+[
+"VQRT-DESKTOP",
+"S3XE-DESKTOP",
+"JP9Y-DESKTOP",
+"KLWM-DESKTOP",
+"1FK7-MACHINE",
+"68DY-LAPTOP",
+"RWK7-MACHINE",
+];
+FileCreationEvents
+| where hostname has_any (InfectedHosts)
+|distinct filename
+
+
+
+///find the rest of the file on the Dai Wok host machines
+
+let ThreatFiles = datatable(filename:string)
+[
+"Closing_Locations.xlsx",
+"Pay_Raises.lnk",
+"HR_Notes.pdf",
+"Schedule_Changes.xlsx",
+"Local_County_Updates.xlsx"
+];
+let InfectedHosts = datatable(hostname:string)
+[
+"VQRT-DESKTOP",
+"S3XE-DESKTOP",
+"JP9Y-DESKTOP",
+"KLWM-DESKTOP",
+"1FK7-MACHINE",
+"68DY-LAPTOP",
+"RWK7-MACHINE"
+];
+let MalwareFiles =
+FileCreationEvents
+| where hostname  in (InfectedHosts)
+| sort by hostname asc, timestamp asc
+| serialize
+| extend NextFile = next(filename)
+| where filename in (ThreatFiles)
+| where isnotempty(NextFile)
+| where NextFile !in (ThreatFiles)
+| distinct NextFile;
+FileCreationEvents
+| where hostname  in (InfectedHosts)
+| where filename in (MalwareFiles)
+//| summarize MalwareFileCount = dcount(filename)
+
+// we have 8 file next + 5 found in ThreatFiles in total we have 13 files
+however.pages
+config.ini
+cy.exe
+libexpa.dll
+scvhost.exe
+config.ini
+libexpa.dll
+///from the link we have 5 filename 
+Closing_Locations.xlsx
+Pay_Raises.lnk
+HR_Notes.pdf
+Schedule_Changes.xlsx
+Local_County_Updates.xlsx
+
+////(ADVANCED) Which threat actor is this publicly reported as?
+
+///21ff279ba30d227e32e63cb388bf8c2d21c4fd7e935b3087088579b29e56d81d ; filename ===  libexpa.dll
+///https://www.virustotal.com/gui/file/21ff279ba30d227e32e63cb388bf8c2d21c4fd7e935b3087088579b29e56d81d/community
+//on virustotal it is Rorschach;Bablock;STORM-1219
+
+
+//(ADVANCED) What is the MITRE ID for the technique used by the threat actor to execute malware payloads?
+
+///response research on the net MITRE ATT&CK ID: T1574.002 – DLL Side-Loading
+
+
+//(ADVANCED) What is the SHA256 hash of the file used for the technique found in Q10? check the query above 
+
+/// filename ===  libexpa.dll
+
+/// it is the it is the execution-driving malware binary associated with the technique
+///Response is 4874d336c5c7c2f558cfd5954655cacfc85bcfcb512a45fb0ff461ce9c38b86d
+
+///(ADVANCED) What legitimate process is being used by the threat actor from what you found for Q10?
+//we need to check the technique Has in parentprocess hash and process hash
+
+/// filename ===  libexpa.dll
+
+/// it is the it is the execution-driving malware binary associated with the technique
+///Response is 4874d336c5c7c2f558cfd5954655cacfc85bcfcb512a45fb0ff461ce9c38b86d
+
+ProcessEvents
+| where parent_process_hash contains "4874d336c5c7c2f558cfd5954655cacfc85bcfcb512a45fb0ff461ce9c38b86d"
+or process_hash contains "4874d336c5c7c2f558cfd5954655cacfc85bcfcb512a45fb0ff461ce9c38b86d"
+//process name is notepad.exe
+
+//What file was used by the threat actor for Q10 but is no longer found on any of the host machines?
+
+
+however.pages
+config.ini
+cy.exe
+libexpa.dll
+scvhost.exe
+config.ini
+libexpa.dll
+Closing_Locations.xlsx
+Pay_Raises.lnk
+HR_Notes.pdf
+Schedule_Changes.xlsx
+Local_County_Updates.xlsx
+
+ProcessEvents
+| where parent_process_hash contains "4874d336c5c7c2f558cfd5954655cacfc85bcfcb512a45fb0ff461ce9c38b86d"
+or process_hash contains "4874d336c5c7c2f558cfd5954655cacfc85bcfcb512a45fb0ff461ce9c38b86d"
+//check the command line : cy.exe --run=1337 --pt=C:\Users\Public\Desktop\winutils.dll --cg=C:\Users\Public\Desktop\config.ini --we=C:\Users\Public\Desktop\cy.exe
+////winutils.dll
+
+
+///What type of attack is this? What will likely happen soon?
+////winutils.dll
+///// is a Ransomware
+
+ProcessEvents
+| where process_commandline contains "delete"
+//////vssadmin.exe delete shadows /All /Quiet
+
+/// the correct and answe
+Scheduled Task
+
+//IAM HERE

