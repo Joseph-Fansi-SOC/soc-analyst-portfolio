@@ -1,0 +1,464 @@
+﻿//*****Ressources******///
+//https://learn.microsoft.com/en-us/kusto/query/sql-cheat-sheet?view=azure-data-explorer&preserve-view=true
+//https://learn.microsoft.com/en-us/azure/data-explorer/web-ui-query-keyboard-shortcuts
+//https://learn.microsoft.com/en-us/kusto/query/kql-quick-reference?view=azure-data-explorer&preserve-view=true
+
+//*******KQL 301*******//
+//Section 1: Introduction//
+
+////******When you're tracking an attack, the pieces are scattered across different data sources. The email logs show who received a phishing message. The network logs reveal who clicked the link. The authentication logs show whether anyone entered their credentials. To understand what really happened, you need to connect these tables together.
+////******In KQL 301, you'll learn how to combine data from multiple tables using joins and unions. You'll also pick up advanced techniques for reshaping data, like expanding lists into individual rows and extracting structured information from messy strings.
+////******We'll put these skills to work investigating a phishing attack from the first email through to the attacker's final actions.
+
+///**Employees	ip_addr, email_addr, username	Employee directory
+///**Email	recipient, sender, link	Email messages
+///**OutboundNetworkEvents	src_ip, url	Clicks and web traffic
+///**AuthenticationEvents	username, src_ip	Login attempts
+///**Our dataset also includes ProxyEvents (web traffic with full URLs due to SSL inspection), FirewallEvents, and DnsEvents.
+///**ip_addr in Employees matches src_ip in network tables
+///**email_addr in Employees matches recipient in Email
+///**username in Employee matchs username in AuthenticationEvents
+
+//***Let's set the scene for our investigation.
+//***Security received reports of unusual network traffic at Whiskers and Wonders Animal Shelter. Analyst Jamie Torres discovered evidence of a sophisticated attack targeting the shelter's donation processing systems.
+//***The attack began with a phishing campaign. Nine employees received emails appearing to be from HR (noreply@whiskersandwonders-hr.com) about "Employee Benefits Update". These emails contained malicious links to api-sync-updates.top that installed donor data theft malware on three workstations.
+//***The compromised employees are Alex Rivera (Development Officer), David Okonkwo (Adoption Coordinator), and Jessica Huang (Adoption Coordinator).
+//***The malware establishes persistent C2 connections to "update-cdn-service.xyz" and "api-sync-updates.top" - domains designed to mimic legitimate CDN services but hosted on suspicious infrastructure at 185.174.137.42.
+//***Our job: trace the attack from initial email to final impact.
+
+//**First, let's find the phishing emails.
+Email
+| where sender == "noreply@whiskersandwonders-hr.com"
+| count
+//How many phishing emails were sent? 9
+
+///****Section 2: Correlation Techniques
+
+//**"Susan went to funbrain.com" is much more compelling than "User 10.10.16.2 went to funbrain.com."
+let cat_care_specialist_ip = 
+    Employees
+    | where role == "Cat Care Specialist"
+    | distinct ip_addr;
+ProxyEvents
+| where src_ip in (cat_care_specialist_ip)
+| limit 100
+
+//Here's the same correlation using a lookup
+Employees
+| where role == "Cat Care Specialist"
+| project name, ip_addr
+| lookup    (
+    ProxyEvents                                  
+ ) on $left.ip_addr == $right.src_ip  
+| where isnotempty( url)
+
+//***let + in :	Filters to matching rows, columns from ONE table only
+//**lookup :	Adds columns from a reference table
+//**join :	Full control, columns from BOTH tables, multiple join types
+
+//**How many employees clicked the phishing link?
+let victim_ips =     
+    ProxyEvents
+    | where domain in ("api-sync-updates.top", "update-cdn-service.xyz")
+    | distinct src_ip;
+Employees
+| where ip_addr in (victim_ips)
+//**Response is 3 employees; Alex Rivera, David Okonkwo, Jessica Huang
+
+//**Who was the first person to click on a link to the malcious domain? (name)
+ProxyEvents
+| where domain in ("api-sync-updates.top", "update-cdn-service.xyz")
+| lookup Employees on $left.src_ip == $right.ip_addr
+| project-reorder timestamp, src_ip, name
+//**response: David Okonkwo
+
+//*You are joining Employees data (your enrichment data) against Authentication data (you main) data to see the names of accounts that were compromised. Which table is the left table?
+
+//Use let + in when:
+//You need to filter one table based on values in another
+//You don't need columns from both tables
+//You just need some quick and basic filtering
+
+//Use lookup when:
+//You want to add columns from a reference table
+//You have One-to-one matching (IP → Employee, Hostname → Asset)
+//Every row needs to be enriched
+
+//Use join when:
+//You need to handle non-matches (leftouter, leftanti)
+//You need columns from both tables for analysis
+//You have complex matching or multiple matches per row
+
+//Two employees received links to update-cdn-service.xyz. What is the first email recipient's IP address?
+Email
+| where sender == "noreply@whiskersandwonders-hr.com"
+| lookup Employees on $left.recipient == $right.email_addr
+| project-reorder timestamp, sender, recipient, ip_addr
+//Response; IP-adrr10.10.16.7
+
+//What is the hostname of the last employee to receive an email matching this pattern?
+Email
+| where links has "aspca.org"
+| lookup Employees on $left.recipient == $right.email_addr
+| project-reorder timestamp, sender, recipient, ip_addr, hostname 
+// Response; IIHO-DESKTOP
+
+//Which role received the most emails from aspca.org
+Email
+| where links has "aspca.org"
+| lookup Employees on $left.recipient == $right.email_addr
+| project-reorder timestamp, sender, recipient, ip_addr, hostname , role
+// Response; Adoption Coordinator
+
+//This shows raw click data, but we only see IP addresses, not names. We need to bring in the Employees table.
+//How many results do we get?
+ProxyEvents
+| where domain in ("api-sync-updates.top", "update-cdn-service.xyz")
+// Response;12
+
+//When did Alex click on a link?
+//Remember: ProxyEvents uses src_ip and url, Employees uses ip_addr, Email uses links.
+Email
+| where sender == "noreply@whiskersandwonders-hr.com"
+| lookup Employees on $left.recipient == $right.email_addr
+| project-reorder timestamp, sender, recipient, ip_addr
+| mv-expand links to typeof(string)
+| lookup 
+    (
+        ProxyEvents 
+    )
+    on $left.ip_addr == $right.src_ip , $left.links == $right.url //check Alex
+| project email_sent_at=timestamp, sender, recipient, ip_addr, links, link_clicked_at=timestamp1 // for Alex: 2025-06-05T16:33:00.000Z
+
+//When did Jessica click on a link? (copy paste) ; 2025-06-05T16:58:00.000Z
+
+///*******Section 3: Advanced Joins******
+//Use lookup for simple enrichment. Use join when you need control over matching behavior.
+//The kind= parameter specifies the join type.
+
+//How many results do we get back after the join?
+Email
+| where sender == "diego_hernandez@whiskersandwonders.org" //15 responses
+
+Email
+| where sender == "diego_hernandez@whiskersandwonders.org"
+| join kind=leftouter Employees on $left.recipient == $right.email_addr
+| project-reorder timestamp, sender, recipient, ip_addr //15 responses
+
+//How many results do we get back now?
+Email
+| where sender == "diego_hernandez@whiskersandwonders.org"
+| join kind=inner Employees on $left.recipient == $right.email_addr
+| project-reorder timestamp, sender, recipient, ip_addr //7 responses
+
+//How many results do we get back this time?
+
+Email
+| where sender == "diego_hernandez@whiskersandwonders.org"
+| join kind=rightouter Employees on $left.recipient == $right.email_addr
+| where isempty(sender)
+| project name, email_addr
+
+//What percent of users clicked on the link?
+
+Email
+| where links has "update-cdn-service.xyz"
+| mv-expand links to typeof(string)
+| join kind=leftouter Employees on $left.recipient == $right.email_addr
+| join kind=leftouter (    
+    ProxyEvents
+    | where url has "update-cdn-service.xyz"
+) on $left.ip_addr == $right.src_ip, $left.links == $right.url
+| project timestamp, sender, recipient, links, clicked_at = timestamp1 //0
+
+//Right now we're seeing everyone who received the email. To filter down to just those who didn't click, add:
+//| where isempty(clicked_at)
+
+//How many employees received an email but did not click on the attached link?
+Email
+| where links has "api-sync-updates.top"
+| mv-expand links to typeof(string)
+| join kind=leftouter Employees on $left.recipient == $right.email_addr
+| join kind=leftouter (    
+    ProxyEvents
+    | where url has "api-sync-updates.top"
+) on $left.ip_addr == $right.src_ip, $left.links == $right.url
+| project timestamp, sender, recipient, links, clicked_at = timestamp1
+
+//Notice how we join on multiple keys by separating them with commas:
+//| join kind=leftouter Table on $left.col_a == $right.col_a, $left.col_b == $right.col_b
+//Most common one are: inner, leftouter, leftanti.
+Employees
+| join kind=leftanti (
+    AuthenticationEvents
+   | where timestamp between (datetime(2025-06-01) .. datetime(2025-06-07))
+) on $left.username == $right.username
+
+//What is the name of the employee with no auth data?
+
+Employees
+| join kind=leftanti (
+    AuthenticationEvents
+//    | where timestamp between (datetime(2025-06-01) .. datetime(2025-06-07))
+) on $left.username == $right.username //Jason Chen
+
+//How many emails were received where the recipients did not click the link?
+
+Email
+| where sender == "noreply@whiskersandwonders-hr.com"
+| join kind=leftanti (
+    AuthenticationEvents
+    | distinct username
+) on $left.recipient == $right.username
+| project timestamp, sender, recipient
+
+
+Email
+| where sender == "noreply@whiskersandwonders-hr.com"
+| mv-expand links to typeof(string)
+| join kind=leftanti (
+    ProxyEvents
+    | where url has "whiskersandwonders"
+) on $left.links == $right.url
+| project timestamp, sender, recipient, links
+| distinct recipient
+
+//Enter semi join to continue.
+Employees
+| join kind=leftsemi (
+    Email
+    | where links has "update-cdn-service.xyz"
+) on $left.email_addr == $right.recipient
+//What roles do the clickers belong to? (List all of them) Development Officer, Adoption Coordinator
+
+
+//******Section 4: Text Processing
+///***parse
+
+ProxyEvents
+| take 100
+| parse url with "https://" domain "/" *
+
+//This extracts the domain from a URL:
+//-Look for the literal text "https://"
+//-Capture everything until the next "/" into a new column called domain
+// Ignore the rest (*)
+//From https://evil.com/malware/download.exe, you get domain = "evil.com"
+
+
+/////*****parse <column> with "<literal>" ColumnName "<literal>" *
+
+///*******parse email_addr with username "@" domain
+//////////--                    ^^^^^^^^     ^^^^^^
+//////////--                    captured    captured (everything remaining)
+
+//How many characters are in the longest email address username?
+
+//The Employees table has an email_addr column with values like diego_hernandez@whiskersandwonders.org.
+
+//Write a query that:
+
+//Parses the email address to extract the username (the part before the @)
+//Projects just the name and username columns
+//For example, Diego's row should show:
+
+///name	            username
+///Diego Hernandez	diego_hernandez
+
+Employees
+| take 100
+| parse email_addr with username "@" domain
+| extend username_length = strlen(username)
+| top 1 by username_length desc 
+//dr._sarah_winters@whiskersandwonders.org // 17
+
+// The split() function breaks a string into an array at a delimiter:
+Employees
+| extend parts = split(email_addr, "@")
+| extend username = parts[0]
+| extend domain = parts[1]
+
+//This splits alice@company.com into ["alice", "company.com"], then extracts each part by index.
+//split vs parse:
+//split: Simple delimiter, returns an array
+//parse: Complex patterns, creates named columns directly
+
+//What is the first filename created on pawilson's machine?//
+//
+//The FileCreationEvents table has a path column with values like C:\Users\daokonkwo\Downloads\reality.exe.
+
+FileCreationEvents
+| where username == 'pawilson' // Time first file name== spotify.exe
+
+//or *****//
+
+FileCreationEvents
+| where username == 'pawilson'
+| extend parts = split(path, "\\")
+| extend filename = tostring(parts[-1])
+| order by timestamp asc
+| take 1
+
+//What domain sent the most emails?
+//Use split() to extract domains from sender addresses:
+
+Email
+| extend sender_domain = split(sender, "@")[1]
+| summarize count() by tostring(sender_domain)
+| sort by count_ desc
+//whiskersandwonders.org
+
+//Use parse to extract domains from URLs in ProxyEvents.
+//How many unique domains were visited?
+
+ProxyEvents
+| parse url with protocol "://" domain "/" *
+| parse url with protocol2 "://" domain2
+| extend final_domain = iff(isnotempty(domain), domain, domain2)
+| distinct final_domain
+| count
+
+//or //
+
+ProxyEvents
+| extend domain = tostring(split(split(url, "://")[1], "/")[0])
+| distinct domain
+| count
+
+
+//Section 5: Final Investigation
+
+//Challenge 1: Identify all phishing recipients
+//Find all employees who received the phishing email from noreply@whiskersandwonders-hr.com with their names and roles.
+
+//How many unique employees received the phishing email?
+
+Email
+| where sender == "noreply@whiskersandwonders-hr.com"
+| lookup Employees on $left.recipient == $right.email_addr
+
+| distinct name //Alex Rivera, Jessica Huang, David Okonkwo
+| count
+
+//Challenge 2: Calculate click rate
+
+//Join phishing emails with click events to find who clicked.
+
+//What percentage of emails resulted in a click? (Round to nearest whole number)
+
+
+Email
+| where links has "api-sync-updates.top" or links has "update-cdn-service.xyz"
+| mv-expand links to typeof(string)
+| join kind=leftouter Employees on $left.recipient == $right.email_addr
+| join kind=leftouter (    
+    ProxyEvents
+    | where url has "api-sync-updates.top" or url has "update-cdn-service.xyz"
+) on $left.ip_addr == $right.src_ip, $left.links == $right.url
+| project timestamp, sender, recipient, links, clicked_at = timestamp1 //(3/9 =1/3=33%)
+| summarize total = count(), clicked = countif(isnotempty(clicked_at))
+| extend percentage = round(100.0 * clicked / total, 2)
+
+// or simply
+
+Email
+| where links has_any ("api-sync-updates.top", "update-cdn-service.xyz")
+| mv-expand links to typeof(string)
+| join kind=leftouter Employees on $left.recipient == $right.email_addr
+| join kind=leftouter (    
+    ProxyEvents
+    | where url has_any ("api-sync-updates.top", "update-cdn-service.xyz")
+) on $left.ip_addr == $right.src_ip, $left.links == $right.url
+| summarize total = count(), clicked = countif(isnotempty(timestamp1))
+| extend percentage = round(100.0 * clicked / total, 2)
+
+//Challenge 3: Confirm active compromise
+//Find evidence of ongoing C2 communication from compromised workstations.
+//  How many accounts appear to be compromised?
+
+AuthenticationEvents
+| where result == "Successful Login"
+| where username in (
+    Email
+    | where sender == "noreply@whiskersandwonders-hr.com"
+    | distinct recipient
+    | join Employees on $left.recipient == $right.email_addr
+    | distinct username
+)
+| distinct username //Alex Rivera, Jessica Huang, David Okonkwo
+| count //3
+
+//Challenge 4: Find most recent attacker activity
+//Identify the latest C2 communication.
+//What is this type of activity called?
+
+ProxyEvents
+| where url has_any ("api-sync-updates.top", "update-cdn-service.xyz")
+| summarize latest_c2 = max(timestamp) by url
+| order by latest_c2 desc
+//https://api-sync-updates.top/heartbeat at 6/7/2025, 9:05:55 PM
+
+///heartbeat — classic C2 beaconing pattern, malware checking in with the C2 server
+///api/v1/config and /api/v1/status — C2 tasking endpoints (getting instructions/config)
+//reality.exe — malware download
+//since.pdf — likely a malicious file disguised as a PDF
+
+// called beaconing
+
+//Challenge 5: Calculate attack duration
+
+// Use union to build a complete timeline from first phishing email to last C2 beacon.
+union
+(
+    Email
+    | where sender == "noreply@whiskersandwonders-hr.com"
+    | project timestamp, event = "Phishing Email", detail = sender
+),
+(
+    ProxyEvents
+    | where url has_any ("api-sync-updates.top", "update-cdn-service.xyz")
+    | project timestamp, event = "C2 Communication", detail = url
+)
+| order by timestamp asc
+
+//How many minutes passed between the first phishing email and the attacker's last action?
+
+//the first phishing email:  2025-06-02T16:00:00.000Z
+//the attacker's last action: 2025-06-07T21:05:55.000Z
+
+union
+(
+    Email
+    | where sender == "noreply@whiskersandwonders-hr.com"
+    | project timestamp, event = "Phishing Email", detail = sender
+),
+(
+    ProxyEvents
+    | where url has_any ("api-sync-updates.top", "update-cdn-service.xyz")
+    | project timestamp, event = "C2 Communication", detail = url
+)
+| summarize first_action = min(timestamp), last_action = max(timestamp)
+| extend minutes_elapsed = datetime_diff('minute', last_action, first_action)
+
+//the first phishing email:  2025-06-02T16:00:00.000Z
+//the attacker's last action: 2025-06-07T21:05:55.000Z
+
+//minutes_elapsed : 7505 min
+
+//You traced a phishing attack from initial email through ongoing C2 communication, connecting data across multiple tables to build the complete picture.
+
+//Skills Mastered in KQL 301:
+
+//Operator	              Purpose
+//let + in	              Filter by values from another table
+//lookup	              Add reference data
+//join kind=inner	      Only matching records
+//join kind=leftouter     All left rows, matches from right
+//join kind=leftanti	  Left rows with NO match
+//join kind=leftsemi	  Filter by existence in right
+//union	                  Combine rows from multiple tables
+//mv-expand	              Expand arrays into rows
+//parse	                  Extract data using patterns
+//split	                  Break strings at delimiters
+
+// These techniques apply to any investigation spanning multiple data sources.
