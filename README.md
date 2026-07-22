@@ -1,5 +1,5 @@
 # SOC Analyst Portfolio — Dr. Joseph Fansi
-Aspiring SOC Analyst (L1) actively building hands-on defensive security skills.
+About Me: Aspiring SOC Analyst (L1) actively building hands-on defensive security skills.
 
 ---
 
