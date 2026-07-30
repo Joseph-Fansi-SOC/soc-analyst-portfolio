@@ -40,6 +40,7 @@ Each report demonstrates a structured SOC investigation process:
 
 ## 🥈 Frognado in Valdoria — Intrusion Investigation
 **Focus:** Attack reconstruction, log correlation, threat hunting
+![Frognado in Valdoria](https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/I%E2%80%99m%20safe!.png)
 
 ## 🥉 Titan Shield — Microsoft Defender XDR Investigation
 **Focus:** Endpoint detection, Defender telemetry, alert investigation
