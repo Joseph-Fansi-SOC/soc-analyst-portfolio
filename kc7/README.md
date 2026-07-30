@@ -27,6 +27,9 @@ Completed April 2026 — Certificate ID: 52639
 ---
 
 ## KC7 Security Analyst II
+<a href="https://kc7cyber.com/badges/earned/56330">
+  <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/KC7_SA2.png" width="100" alt="Sec Analyst II">
+</a>
 
 📁 security-analyst-II/
 
