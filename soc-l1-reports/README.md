@@ -36,7 +36,9 @@ Each report demonstrates a structured SOC investigation process:
 
 ## 🥇 JoJo's Hospital — Ransomware Investigation
 **Focus:** Ransomware analysis, endpoint compromise, lateral movement, incident response
-<img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/JoJo's%20Badge.png" width="100">
+<a href="https://kc7cyber.com/badges/earned/52638">
+  <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/JoJo's%20Badge.png" width="100" alt="Jojo's Hospital">
+</a>
 
 ## 🥈 Frognado in Valdoria — Intrusion Investigation
 **Focus:** Attack reconstruction, log correlation, threat hunting
