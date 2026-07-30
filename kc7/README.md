@@ -7,7 +7,7 @@ detecting adversary behaviour in real datasets.
 
 ---
 
-## 🏅KC7 Security Analyst I — Investigating Security Events & Threat Evidence
+## 🏅 KC7 Security Analyst I — Investigating Security Events & Threat Evidence
 **Focus:** IOC analysis, hypothesis-driven investigation, event correlation, structured queries
 <a href="https://kc7cyber.com/badges/earned/52639">
   <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/KC7_SA1.png" width="100" alt="Sec Analyst I">
@@ -27,7 +27,8 @@ Completed April 2026 — Certificate ID: 52639
 
 ---
 
-## KC7 Security Analyst II
+## 🏅 KC7 Security Analyst II — Advanced Security Investigation & Evidence Correlation
+**Focus:** External data integration, cross-system analysis, investigative decision-making, lead prioritization
 <a href="https://kc7cyber.com/badges/earned/56330">
   <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/KC7_SA2.png" width="100" alt="Sec Analyst II">
 </a>
