@@ -60,6 +60,9 @@ Each report demonstrates a structured SOC investigation process:
 
 ## 🏅 Critical Compromise in Chicago — ICS Investigation
 **Focus:** ICS security, Windows evidence analysis, persistence detection
+<a href="https://kc7cyber.com/badges/earned/63716">
+  <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/ChicagoPowerBadge.png" width="100" alt="Critical Compromise in Chicago">
+</a>
 
 ---
 
