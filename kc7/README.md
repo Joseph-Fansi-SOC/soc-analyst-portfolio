@@ -64,6 +64,9 @@ Completed — june 2026 — Certificate ID: 64237
 ---
 
 ## KC7 Security Analyst IV
+<a href="https://kc7cyber.com/badges/earned/68045">
+  <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/KC7_SA4.png" width="100" alt="Sec Analyst IV">
+</a>
 
 📁 security-analyst-IV/
 
