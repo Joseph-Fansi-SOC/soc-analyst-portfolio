@@ -48,6 +48,9 @@ Each report demonstrates a structured SOC investigation process:
 
 ## 🥉 Titan Shield — Microsoft Defender XDR Investigation
 **Focus:** Endpoint detection, Defender telemetry, alert investigation
+<a href="https://kc7cyber.com/badges/earned/56536">
+  <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/Titan%20Shield%20(1).png" width="100" alt="Titan Shield">
+</a>
 
 ## 🏅 AzureCrest — Cloud Identity Investigation
 **Focus:** Azure authentication, identity compromise, cloud security
