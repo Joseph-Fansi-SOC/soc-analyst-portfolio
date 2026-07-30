@@ -13,7 +13,7 @@ Each report documents the investigation process, evidence, analysis, and conclus
 SOC L1 skills: phishing, endpoint analysis, authentication, lateral movement, ransomware, cloud logs, and incident reporting.
 
 
-# I. TOP 5 From KC7.com
+## I. TOP 5 From KC7.com
 
 🥇 JoJo's Hospital — Complete ransomware investigation
 🥈 Frognado in Valdoria — End-to-end intrusion reconstruction
