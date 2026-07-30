@@ -1,36 +1,64 @@
-# SOC L1 Reports
+# SOC Level 1 Investigation Reports
 
-This directory contains my SOC Level 1 investigation reports completed through:
+This directory contains hands-on SOC Analyst L1 investigation reports completed through:
 
-- KC7
+- KC7 Cybersecurity
 - CyberDefenders
 - TryHackMe
-- Client investigations (sanitized)
-- Other hands-on SOC labs
+- Home lab investigations
+- Sanitized client investigations
 
-Each report documents the investigation process, evidence, analysis, and conclusions using industry-standard SOC methodologies.
+Each report demonstrates a structured SOC investigation process:
 
-SOC L1 skills: phishing, endpoint analysis, authentication, lateral movement, ransomware, cloud logs, and incident reporting.
+- Alert triage
+- Log analysis and event correlation
+- Threat investigation
+- Incident timeline creation
+- IOC extraction
+- MITRE ATT&CK mapping
+- Findings and remediation recommendations
 
+---
 
-## I. TOP 5 From KC7.com
+# SOC L1 Skills Demonstrated
 
-🥇 JoJo's Hospital — Complete ransomware investigation
-🥈 Frognado in Valdoria — End-to-end intrusion reconstruction
-🥉 Titan Shield — Microsoft Defender XDR investigation
-🏅 AzureCrest (Full Version) — Cloud and identity investigation
-🏅 Critical Compromise in Chicago – ICS — Specialized environment investigation
+- Phishing & email security investigations
+- Endpoint analysis and malware investigation
+- Authentication and identity analysis
+- Threat hunting with KQL
+- Microsoft security tooling concepts
+- Cloud security investigations
+- Incident reporting and documentation
 
-This combination demonstrates proficiency across:
+---
 
-Endpoint investigation
-Email security
-Identity and authentication
-Cloud security
-Microsoft security tooling
-Threat hunting
-KQL
-Timeline reconstruction
-Incident reporting
-MITRE ATT&CK mapping
+# Featured KC7 Investigations
 
+## 🥇 JoJo's Hospital — Ransomware Investigation
+**Focus:** Ransomware analysis, endpoint compromise, lateral movement, incident response
+
+## 🥈 Frognado in Valdoria — Intrusion Investigation
+**Focus:** Attack reconstruction, log correlation, threat hunting
+
+## 🥉 Titan Shield — Microsoft Defender XDR Investigation
+**Focus:** Endpoint detection, Defender telemetry, alert investigation
+
+## 🏅 AzureCrest — Cloud Identity Investigation
+**Focus:** Azure authentication, identity compromise, cloud security
+
+## 🏅 Critical Compromise in Chicago — ICS Investigation
+**Focus:** ICS security, Windows evidence analysis, persistence detection
+
+---
+
+# Report Format
+
+Each investigation includes:
+
+- Executive Summary
+- Investigation Timeline
+- Evidence Analysis
+- Detection Queries
+- MITRE ATT&CK Mapping
+- Indicators of Compromise (IOCs)
+- Recommendations
