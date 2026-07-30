@@ -44,8 +44,6 @@ Completed May 2026 — Certificate ID: 56330
 | Whiskermania | Networking101 & network analysis | May 4, 2026 |
 | Inside Encryptodera | Insider threat, ransomware & crypto theft | May 9, 2026 |
 
-**Learning modules completed:** KQL 201 (ID: 55489) · Decoding 101
-
 ---
 
 ## 🏅 KC7 Security Analyst III — Advanced Threat Investigation & Attack Lifecycle Analysis
@@ -62,7 +60,6 @@ Completed — june 2026 — Certificate ID: 64237
 | --- | --- | --- |
 | Titan Shield | Social engineering, phishing & data exfiltration | May 11, 2026 |
 
-**Learning modules completed:** KQL 201 (ID: 55489)
 
 ---
 
