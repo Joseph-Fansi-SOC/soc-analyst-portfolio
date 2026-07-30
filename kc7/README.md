@@ -44,10 +44,19 @@ Completed May 2026 — Certificate ID: 56330
 
 📁 security-analyst-III/
 
-In progress — May 2026
+Completed — june 2026 — Certificate ID: 64237
 
 | Investigation | Type | Date |
 | --- | --- | --- |
 | Titan Shield | Social engineering, phishing & data exfiltration | May 11, 2026 |
 
 **Learning modules completed:** KQL 201 (ID: 55489)
+
+---
+
+## KC7 Security Analyst IV
+
+📁 security-analyst-IV/
+
+Completed — july 2026 — Certificate ID: 68045
+
