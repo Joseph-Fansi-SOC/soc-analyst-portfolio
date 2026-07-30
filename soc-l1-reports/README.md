@@ -64,6 +64,12 @@ Each report demonstrates a structured SOC investigation process:
   <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/ChicagoPowerBadge.png" width="100" alt="Critical Compromise in Chicago">
 </a>
 
+## 🏅 Spooky Sweets — Investigating Intellectual Property Exfiltration
+**Focus:** Threat hunting, file compression artifacts, TTP identification, incident response
+<a href="https://kc7cyber.com/badges/earned/75094">
+  <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/spookybadge.png" width="100" alt="Spooky Sweets">
+</a>
+
 ---
 
 # Report Format
