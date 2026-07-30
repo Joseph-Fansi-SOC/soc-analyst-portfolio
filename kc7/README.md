@@ -8,6 +8,9 @@ detecting adversary behaviour in real datasets.
 ---
 
 ## KC7 Security Analyst I
+<a href="https://kc7cyber.com/badges/earned/52639">
+  <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/KC7_SA1.png" width="100" alt="Sec Analyst I">
+</a>
 
 📁 security-analyst-I/
 
