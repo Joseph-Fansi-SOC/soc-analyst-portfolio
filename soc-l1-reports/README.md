@@ -54,6 +54,9 @@ Each report demonstrates a structured SOC investigation process:
 
 ## 🏅 AzureCrest — Cloud Identity Investigation
 **Focus:** Azure authentication, identity compromise, cloud security
+<a href="https://kc7cyber.com/badges/earned/63057">
+  <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/AzureCrestFull_Badge.png" width="100" alt="AzureCrest">
+</a>
 
 ## 🏅 Critical Compromise in Chicago — ICS Investigation
 **Focus:** ICS security, Windows evidence analysis, persistence detection
