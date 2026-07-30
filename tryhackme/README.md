@@ -6,6 +6,7 @@ Started: November 2025 (after CompTIA Security+)
 - Cyber Security 101 — THM-56USFRQG9K
 - SOC Level 1 — THM-EBBKII5I2C
 - Advent of Cyber 2025 — THM-4TQYJBCJUT
-- AI Security —THM-CM0S7DDOOK
+- AI Security — THM-CM0S7DDOOK
+- SOC Level 2 — THM-EDVCS6C2M8.pdf
 
 ### Write-ups coming soon
