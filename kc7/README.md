@@ -48,7 +48,8 @@ Completed May 2026 — Certificate ID: 56330
 
 ---
 
-## KC7 Security Analyst III
+## 🏅 KC7 Security Analyst III — Advanced Threat Investigation & Attack Lifecycle Analysis
+**Focus:** Full attack lifecycle analysis, compromise mapping, complex investigations, evidence-based conclusions
 <a href="https://kc7cyber.com/badges/earned/64237">
   <img src="https://kc7photos-cfhbcabpaxb2f8fn.z03.azurefd.net/photos/KC7_SA3.png" width="100" alt="Sec Analyst III">
 </a>
