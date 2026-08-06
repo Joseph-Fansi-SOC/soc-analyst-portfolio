@@ -1,4 +1,4 @@
-# Red Stealer Malware Investigation (Red Stealer Malware)
+# Red Stealer Malware Investigation (Malware Analysis / IOC Intelligence)
 
 ## Executive Summary
 
