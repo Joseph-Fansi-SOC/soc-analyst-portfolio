@@ -1,4 +1,4 @@
-# 3CX Supply Chain Investigation (Supply Chain Attack)
+# 3CX Supply Chain Investigation (Supply Chain Malware Attack)
 
 ## Executive Summary
 
