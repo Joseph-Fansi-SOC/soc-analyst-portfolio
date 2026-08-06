@@ -70,3 +70,9 @@ AI assistance never replaced technical analysis or investigative decision-making
 This portfolio reflects my own practical work completed through hands-on labs, home lab exercises, and cybersecurity platforms.
 
 AI was used as a documentation and learning assistant to improve clarity, consistency, and communication of technical findings while maintaining ownership of the investigative process.
+
+---
+
+## AI Assistance
+
+AI was used to support documentation, report organization, MITRE ATT&CK mapping review, and Markdown formatting. All technical analysis, IOC validation, and investigative conclusions were performed and verified by me.
