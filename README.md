@@ -161,14 +161,11 @@ Supported use cases:
 | 🤖 AI Projects | **SOC Automation** |
 
 ---
-
 # 📂 Repository Structure
 
 ```text
 soc-analyst-portfolio/
 
-├── Home-Lab/
-│
 ├── SOC-Investigations/
 │   ├── 001-3CX-Supply-Chain/
 │   ├── 002-Yellow-RAT/
@@ -177,21 +174,34 @@ soc-analyst-portfolio/
 │   ├── 005-Red-Stealer/
 │   └── 006-WebStrike/
 │
-├── KC7/
-│
-├── Reports/
-│
-├── Detection-Rules/
+├── Home-Lab/
+│   └── Splunk • Wazuh • Wireshark projects
 │
 ├── KQL-Queries/
+│   ├── KC7-Investigations.md
+│   ├── Detection-Queries.md
+│   └── Threat-Hunting-Queries.md
+│
+├── Detection-Rules/
+│   └── Detection engineering content
 │
 ├── MITRE-Mappings/
+│   └── ATT&CK technique references and mappings
 │
 ├── AI-Assisted-Workflows/
+│   ├── AI usage documentation
+│   └── Security workflow automation
+│
+├── Reports/
+│   ├── SOC-Level-1/
+│   ├── TryHackMe/
+│   └── Lab-Progress/
 │
 ├── Assets/
+│   └── Supporting screenshots, diagrams, and evidence
 │
 └── cheat-sheets/
+    └── Analyst reference material
 ```
 
 ---
