@@ -1,7 +1,8 @@
 # 🛡️ SOC Analyst Portfolio
 
-> **Joseph Fansi**  
-> Aspiring **SOC Analyst (Tier 1)** | Blue Team | Threat Hunting | SIEM | Incident Response | AI-Assisted Security Operations
+**Joseph Fansi**
+
+Aspiring **SOC Analyst (Tier 1)** | Blue Team | Threat Hunting | Incident Response | SIEM | AI-Assisted Security Operations
 
 ---
 
@@ -9,27 +10,122 @@
 
 Welcome to my cybersecurity portfolio.
 
-I'm an aspiring **SOC Analyst** focused on defensive security, threat detection, incident investigation, and security monitoring.
+I am an aspiring **Security Operations Center (SOC) Analyst** with a strong focus on defensive security, threat detection, incident response, malware analysis, threat hunting, and security monitoring.
 
-Over the past year, I have completed **338 TryHackMe rooms**, achieved a **Top 1% global ranking**, and reached **Global Rank #34 on KC7**, where I develop practical threat hunting skills using enterprise-scale datasets and KQL.
+Over the past year, I have built a complete SOC home lab, completed hundreds of practical blue-team exercises, and documented investigations that simulate real-world SOC workflows.
 
-This repository showcases my home lab investigations, blue team projects, AI-assisted SOC workflows, CTF write-ups, and practical exercises completed while preparing for a career in a Security Operations Center (SOC).
+This portfolio demonstrates my ability to investigate incidents, analyze malicious activity, document findings professionally, and map adversary behavior using the **MITRE ATT&CK Framework**.
 
-My objective is to continuously develop practical blue team skills using industry-standard tools and real-world investigation methodologies.
+---
 
-I also leverage **Artificial Intelligence (AI)** as a productivity and research assistant to enhance investigations, automate repetitive analyst tasks, improve documentation, accelerate threat hunting, and automate reconnaissance workflows while ensuring every finding is manually validated.
+# 🚀 Portfolio Highlights
+
+## 🛡️ SOC Investigations
+
+Hands-on investigations covering:
+
+- Malware Analysis
+- Threat Intelligence
+- Network Forensics
+- Incident Response
+- IOC Analysis
+- MITRE ATT&CK Mapping
+
+Current investigations include:
+
+- 001 – 3CX Supply Chain
+- 002 – Yellow RAT
+- 003 – Lespion
+- 004 – PsExec Hunt
+- 005 – Red Stealer
+- 006 – WebStrike
+
+Each investigation includes:
+
+- Investigation Report
+- Timeline
+- Indicators of Compromise (IOCs)
+- MITRE ATT&CK Mapping
+- Lessons Learned
+
+---
+
+## 🏠 Home Lab
+
+Built from scratch using enterprise security technologies.
+
+### Technologies
+
+- Splunk Enterprise
+- Wazuh SIEM/XDR
+- Wireshark
+- Windows
+- Ubuntu
+- Kali Linux
+
+### Activities
+
+- Threat Hunting
+- Incident Response
+- Malware Analysis
+- Network Traffic Analysis
+- Windows Event Analysis
+- Detection Engineering
+- Security Reporting
+
+---
+
+# 🤖 AI-Assisted Security Operations
+
+Artificial Intelligence is integrated into my workflow as an analyst assistant to improve efficiency while ensuring every investigation is manually validated.
+
+Current AI-assisted activities include:
+
+- Threat Hunting
+- IOC Correlation
+- Splunk SPL Development
+- KQL Threat Hunting
+- Detection Logic
+- MITRE ATT&CK Mapping
+- Investigation Documentation
+- Security Reporting
+- Workflow Automation
+
+---
+
+# 🔎 AI Reconnaissance Automation
+
+An ongoing project focused on automating defensive OSINT investigations using **Claude Code** and **ChatGPT**.
+
+Current capabilities include:
+
+- WHOIS Collection
+- DNS Enumeration
+- Domain Reputation Analysis
+- Threat Intelligence Correlation
+- Email Investigations
+- Infrastructure Profiling
+- Investigation Report Generation
+
+Supported use cases:
+
+- Incident Response
+- Threat Intelligence
+- Threat Hunting
+- Phishing Investigations
+- Business Email Compromise (BEC)
+
+> **All reconnaissance activities rely exclusively on publicly available information (OSINT) and are intended for defensive cybersecurity, incident response, and threat intelligence purposes.**
 
 ---
 
 # 🏆 Community Rankings
 
-My learning is driven by continuous hands-on practice through industry-leading cybersecurity platforms.
-
 ## 🚩 TryHackMe
 
 | Achievement | Value |
 |-------------|-------|
-| 🌍 Global Rank | **#5,625 (Top 1%)** |
+| 🌍 Global Rank | **Top 1% (#5,625)** |
 | 🧩 Completed Rooms | **338** |
 | 🏅 Badges | **55** |
 
@@ -42,16 +138,14 @@ My learning is driven by continuous hands-on practice through industry-leading c
 | Achievement | Value |
 |-------------|-------|
 | 🌍 Global Rank | **#34 Worldwide** |
-| 🏆 Overall Standing | **Top 100** |
 | ⭐ Points | **196,695** |
 | 🎮 Games Completed | **43** |
-| 🏅 Badges Earned | **45** |
+| 🏅 Badges | **45** |
 | 🔥 Current Streak | **107 Days** |
-| 📅 Member Since | **April 2026** |
 | ⏱️ Play Time | **704.8 Hours** |
-| 🚀 Current Level | **89 (3,095 XP to Level 90)** |
+| 🚀 Current Level | **89** |
 
-> KC7 has become one of my primary platforms for developing practical threat hunting skills through enterprise-scale datasets, KQL investigations, and SOC-style security scenarios.
+> KC7 is one of my primary platforms for developing practical threat hunting skills using enterprise-scale datasets and KQL.
 
 ---
 
@@ -61,142 +155,44 @@ My learning is driven by continuous hands-on practice through industry-leading c
 |----------|-------------|
 | 🎓 Professional Certifications | **4** |
 | 🏅 TryHackMe Certificates | **6** |
-| 🚩 TryHackMe Rank | **Top 1% (#5,625)** |
-| 🧩 TryHackMe Rooms | **338** |
+| 🚩 TryHackMe Rank | **Top 1%** |
 | 🛡️ KC7 Global Rank | **#34** |
-| ⭐ KC7 Points | **196,695** |
-| ⏱️ KC7 Play Time | **704.8 Hours** |
 | 🏠 Home Lab | **Splunk • Wazuh • Wireshark** |
-| 🤖 AI | **SOC Automation & AI-Assisted Investigations** |
+| 🤖 AI Projects | **SOC Automation** |
 
 ---
 
-# 🎯 Current Focus
+# 📂 Repository Structure
 
-- 🔍 Threat Hunting
-- 📊 SIEM Monitoring (Splunk)
-- 🖥️ Endpoint Detection & Response (Wazuh)
-- 🌐 Network Traffic Analysis (Wireshark)
-- 📝 Incident Investigation & Reporting
-- 🤖 AI-Assisted Security Operations
-- ⚡ Security Workflow Automation
-- 🎯 Detection Engineering
-- 🔎 OSINT & Reconnaissance
+```text
+soc-analyst-portfolio/
 
----
-
-# 🏠 Home Lab
-
-I built a personal SOC lab to simulate real-world Security Operations Center environments and investigate security events using enterprise-grade tools.
-
-## Technologies
-
-- Splunk Enterprise
-- Wazuh
-- Wireshark
-- Windows Virtual Machines
-- Linux Virtual Machines
-- AI-assisted SOC workflows
-
-## Lab Activities
-
-- Log Analysis
-- Threat Detection
-- Malware Investigation
-- Windows Event Analysis
-- Network Traffic Analysis
-- Incident Response
-- Detection Engineering
-- Threat Hunting
-- Security Reporting
-- IOC Correlation
-- MITRE ATT&CK Mapping
-
----
-
-# 🤖 AI-Assisted Security Operations
-
-Artificial Intelligence is integrated into my workflow as a **security analyst assistant**, helping me improve efficiency while maintaining analyst validation throughout every investigation.
-
-## AI-Assisted Home Lab
-
-I use AI to support:
-
-- Designing and improving SOC lab architecture
-- Building realistic attack simulations
-- Developing detection scenarios
-- Creating Splunk SPL searches
-- Writing KQL threat hunting queries
-- Developing detection logic
-- Creating investigation playbooks
-- Producing professional investigation reports
-- Documenting security findings
-
----
-
-## AI-Assisted Investigations
-
-AI assists my investigations by helping me:
-
-- Analyze Windows Event Logs
-- Correlate Indicators of Compromise (IOCs)
-- Interpret suspicious log activity
-- Generate MITRE ATT&CK mappings
-- Identify attacker techniques
-- Summarize investigation findings
-- Improve incident documentation
-- Accelerate threat hunting workflows
-
----
-
-# 🔍 AI Reconnaissance Automation
-
-One of my ongoing projects is an **AI-assisted reconnaissance workflow** developed with **Claude Code** and **ChatGPT**.
-
-The objective is to automate repetitive OSINT collection while producing structured, analyst-ready investigation reports.
-
-Rather than manually performing dozens of searches, the workflow collects, organizes, and summarizes publicly available intelligence for:
-
-- Domains
-- Email addresses
-- IP addresses
-- Organizations
-
-## Current Capabilities
-
-- Domain reputation analysis
-- WHOIS collection
-- DNS enumeration
-- MX, SPF & DMARC analysis
-- Email address reconnaissance
-- Breach exposure research
-- Infrastructure profiling
-- Threat intelligence collection
-- Investigation report generation
-
-This workflow supports:
-
-- Incident Response
-- Threat Intelligence
-- Threat Hunting
-- Phishing Investigations
-- Business Email Compromise (BEC) investigations
-- Email Security Investigations
-
-> **All reconnaissance activities rely exclusively on publicly available information (OSINT) and are intended for defensive cybersecurity, incident response, and threat intelligence purposes.**
-
----
-
-# 📂 Portfolio
-
-| Folder | Description |
-|---------|-------------|
-| 📁 **home-lab/** | Splunk, Wazuh and Wireshark investigations |
-| 📁 **tryhackme/** | Room write-ups and practical labs |
-| 📁 **cyberdefenders/** | Blue Team CTF investigations |
-| 📁 **kc7/** | Threat hunting investigations using KQL |
-| 📁 **ai-security/** | AI-assisted SOC workflows, prompt engineering and reconnaissance automation |
-| 📁 **cheat-sheets/** | SOC analyst reference guides and analyst notes |
+├── Home-Lab/
+│
+├── SOC-Investigations/
+│   ├── 001-3CX-Supply-Chain/
+│   ├── 002-Yellow-RAT/
+│   ├── 003-Lespion/
+│   ├── 004-PsExec/
+│   ├── 005-Red-Stealer/
+│   └── 006-WebStrike/
+│
+├── KC7/
+│
+├── Reports/
+│
+├── Detection-Rules/
+│
+├── KQL-Queries/
+│
+├── MITRE-Mappings/
+│
+├── AI-Assisted-Workflows/
+│
+├── Assets/
+│
+└── cheat-sheets/
+```
 
 ---
 
@@ -204,21 +200,19 @@ This workflow supports:
 
 ## Security Operations
 
-- SIEM Monitoring
 - Threat Hunting
-- Incident Investigation
-- Detection Engineering
+- Incident Response
 - Security Monitoring
-- Log Analysis
-- Endpoint Analysis
-- Malware Triage
-- Windows Event Analysis
-- Network Traffic Analysis
-- IOC Correlation
-- Digital Forensics
+- Malware Analysis
+- IOC Analysis
 - Threat Intelligence
+- Network Forensics
+- Windows Event Analysis
+- Endpoint Investigation
+- Detection Engineering
+- Log Analysis
+- Digital Forensics
 - OSINT
-- Email & Domain Investigations
 
 ---
 
@@ -227,22 +221,22 @@ This workflow supports:
 - Splunk Enterprise
 - Wazuh
 - Wireshark
+- VirusTotal
+- Any.Run
+- MalwareBazaar
+- ThreatFox
 - KQL
-- Claude Code
-- ChatGPT
 - Git
 - Linux
 - Windows
 
 ---
 
-## Frameworks & Methodologies
+## Frameworks
 
 - MITRE ATT&CK
 - Cyber Kill Chain
 - Incident Response Lifecycle
-- Threat Intelligence
-- OSINT Methodology
 - Detection Engineering
 
 ---
@@ -251,16 +245,14 @@ This workflow supports:
 
 ## Professional Certifications
 
-- ✅ CompTIA Security+ (2025)
-- ✅ ITIL® 4 Foundation (2025)
-- ✅ Google Project Management Professional Certificate (2024)
-- ✅ Scrum Master (2021)
+- ✅ CompTIA Security+
+- ✅ ITIL® 4 Foundation
+- ✅ Google Project Management Professional Certificate
+- ✅ Scrum Master
 
 ---
 
 ## TryHackMe Certifications
-
-Started: **November 2025**
 
 - ✅ Pre Security
 - ✅ Cyber Security 101
@@ -271,46 +263,34 @@ Started: **November 2025**
 
 ---
 
-# 💻 Training Platforms
-
-| Platform | Since |
-|----------|-------|
-| TryHackMe | November 2025 |
-| CyberDefenders | April 2026 |
-| KC7 Threat Hunting | April 2026 |
-
----
-
 # 📈 Current Learning
 
 - Advanced Threat Hunting
 - Detection Engineering
-- Digital Forensics
 - Malware Analysis
+- Digital Forensics
 - Purple Team Operations
 - Threat Intelligence
 - AI-Assisted Security Operations
 - Security Automation
-- Prompt Engineering for Cybersecurity
-- Detection Rule Development
 
 ---
 
-# 🎯 Career Goal
+# 🎯 Career Objective
 
-I'm actively preparing for a **SOC Analyst (Tier 1)** position where I can contribute to monitoring, detecting, investigating, and responding to cybersecurity incidents.
+I am actively preparing for a **SOC Analyst (Tier 1)** position where I can contribute to monitoring, detecting, investigating, and responding to cybersecurity incidents.
 
-Beyond traditional SOC responsibilities, I'm particularly interested in how **Artificial Intelligence can responsibly augment Security Operations** by improving analyst productivity, automating repetitive investigative tasks, generating consistent documentation, and accelerating threat hunting while ensuring every result is validated by the analyst.
+My long-term goal is to combine traditional SOC operations with AI-assisted workflows that improve analyst productivity while ensuring every result is validated by the analyst.
 
 ---
 
 # 📫 Connect With Me
 
-- 💼 LinkedIn: *linkedin.com/in/joseph-fansi*
-- 🚩 TryHackMe: *https://tryhackme.com/p/DrJoFan*
-- 🛡️ KC7: *https://kc7cyber.com/profile/b5d1c517*
-- 💻 GitHub: *github.com/Joseph-Fansi-SOC/soc-analyst-portfolio *
+- 💼 **LinkedIn:** https://linkedin.com/in/joseph-fansi
+- 🚩 **TryHackMe:** https://tryhackme.com/p/DrJoFan
+- 🛡️ **KC7:** https://kc7cyber.com/profile/b5d1c517
+- 💻 **GitHub:** https://github.com/Joseph-Fansi-SOC
 
 ---
 
-> 🚀 **This portfolio is continuously updated as I complete new home lab projects, investigations, threat hunting exercises, AI workflows, certifications, and blue team challenges.**
+> 🚀 **This portfolio is continuously updated with new SOC investigations, home lab projects, threat hunting exercises, AI-assisted workflows, detection rules, and professional development.**
