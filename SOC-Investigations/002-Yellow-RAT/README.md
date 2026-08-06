@@ -1,4 +1,4 @@
-# Yellow RAT Investigation (RAT Malware Analysis)
+# Yellow RAT Investigation (RAT Malware Analysis / Threat Intelligence)
 
 ## Executive Summary
 
