@@ -1,4 +1,4 @@
-# PsExec Lateral Movement Investigation (Lateral Movement / PCAP)
+# PsExec Lateral Movement Investigation (Network Forensics / Lateral Movement)
 
 ## Executive Summary
 
