@@ -1,0 +1,113 @@
+# 🚗 Stolen Connected Vehicle – SOC Investigation
+
+> **Freelance Junior SOC Analyst | Remote Investigation | 07/2026–10/2026**
+
+## Overview
+
+Investigation of a reported stolen connected vehicle from a SOC and DFIR perspective.
+
+The investigation focused on correlating **mobile application/API logs, cloud events, vehicle telemetry and CAN data** to reconstruct the incident timeline and evaluate potential attack scenarios.
+
+## Role
+
+**Freelance Junior SOC Analyst**
+
+### Responsibilities
+
+* Analysis of Mobile App / API logs
+* Analysis of CAN / vehicle data
+* Event correlation
+* Incident timeline reconstruction
+* Investigation of potential attack scenarios
+* Documentation of findings
+
+## Environment
+
+| Area              | Technologies                                        |
+| ----------------- | --------------------------------------------------- |
+| Connected Vehicle | Vehicle Telemetry • CAN                             |
+| Application       | Mobile App • APIs                                   |
+| Analysis          | Splunk • Wireshark • Burp Suite • SavvyCAN • Python |
+| Framework         | MITRE ATT&CK                                        |
+
+## Investigation Workflow
+
+```text
+Incident Report
+      ↓
+Initial Triage
+      ↓
+Evidence Collection
+      ↓
+Log & CAN Analysis
+      ↓
+Event Correlation
+      ↓
+Timeline Reconstruction
+      ↓
+Attack Hypothesis Analysis
+      ↓
+Findings & Documentation
+```
+
+## Investigation Focus
+
+### 1. Mobile App / API Analysis
+
+Analysis of application and API activity to identify:
+
+* Authentication events
+* Device/account activity
+* API requests
+* Vehicle control events
+* Suspicious or unexpected activity
+
+### 2. Vehicle / CAN Analysis
+
+Analysis of available vehicle and CAN data to identify:
+
+* Vehicle state changes
+* Relevant CAN events
+* Communication patterns
+* Events occurring before and during the incident
+
+### 3. Timeline Reconstruction
+
+Correlation of application, API, cloud and vehicle events to reconstruct the sequence of activities surrounding the reported theft.
+
+### 4. Attack Hypotheses
+
+The investigation considered multiple possible scenarios:
+
+* Physical theft
+* Keyless attack
+* Compromised account
+* API / cloud compromise
+* Vehicle compromise
+* Combination of physical and cyber techniques
+
+## MITRE ATT&CK
+
+Relevant techniques were evaluated based on observed evidence and investigative hypotheses.
+
+> **Note:** MITRE ATT&CK mappings are only assigned where supported by the available evidence.
+
+## Key Skills Demonstrated
+
+* SOC Investigation
+* Log Analysis
+* Event Correlation
+* Timeline Reconstruction
+* API Analysis
+* CAN / Vehicle Data Analysis
+* Incident Documentation
+* DFIR Methodology
+* Automotive / IoT Security
+
+## Confidentiality
+
+This investigation was conducted on behalf of a client.
+
+**No personally identifiable information, vehicle identifiers, credentials, tokens, proprietary data or sensitive customer evidence is included in this repository.**
+
+The repository contains only sanitized information describing the investigative methodology, analytical approach and skills demonstrated.
